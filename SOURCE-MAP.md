@@ -1,5 +1,26 @@
 # 开发源码映射与改造边界
 
+## 当前架构导航与证据边界（v2.3 设计增补）
+
+当前开发要求同时见 [开发 SPEC](NIMBALYST-DEVELOPMENT-SPEC.md)、[Trackers 映射](NIMBALYST-TRACKER-MAPPING.md)、[系统规格](NIMBALYST-SYSTEM-SPEC.md) 与 [GUI / TUI / CLI 功能对等及 Hooks 契约](NIMBALYST-TUI-HOOKS-SPEC.md)。本节只登记新的设计要求和待核实接缝，没有新增上游源码阅读、构建或运行证据；下文固定提交、路径、行号和历史结论原样保留。
+
+当前目标是 Nimbalyst GUI、交互式 TUI、非交互 CLI 共用领域服务、命令守卫与权威 Tracker，Hooks 使用同一持久事件并提供受控前置校验。M0 包含独立非图形 demo 服务与三端闭环，不依赖 Electron 图形服务、桌面窗口或显示服务器。同一 GUI 工作区内原生/执行面板共享 TrackerDataSource 实例；跨进程客户端分别持适配实例，共用服务和 `(projectId, trackerId)`，不能共享 renderer atoms 或另建可写任务副本。
+
+| 设计导航（均待实施） | NB-00 必须核实的边界 | 后续归属 |
+|---|---|---|
+| 公共领域服务、独立 demo 服务、command/query 客户端 | 目标 HEAD 的 Electron/DOM 依赖、运行时与存储生命周期、纯终端启动/连接方式；不得假称上游已可无头运行 | NB-01 合同；NB-02 公共核心/demo/CLI 首个闭环，再接 GUI/TUI shell |
+| DemoTrackerDataSource / BabelTrackerDataSource / TrackerCommandRouter / RunControlClient | 对齐既有 TrackerDataSource，核对直接 IPC、documentService、MCP 与文件回流；具体模块位置仍为拟新增 | NB-03/04 模拟三端；NB-05～08 真实服务、守卫与节点 |
+| 交互式 TUI、非交互 CLI | TUI 库许可、Windows 终端/中文/键鼠支持、JSON/JSONL 输出与 PTY/ConPTY 验收；上游支持情况未核验 | NB-00 能力矩阵；NB-01 合同；NB-02～04 M0 |
+| beforeCommand / Hook dispatcher / outbox 消费者 | 拟新增的应用级 Hook 合同，区分核心守卫、命令前校验和提交后事件；不能把厂商 Hook 名称当作已有 Babel API | NB-01 事件/错误/幂等合同；NB-03/04 故障注入；生产阶段再验收持久服务 |
+
+GUI/TUI/CLI/MCP/Hook 的写入均进入同一权限、revision、幂等与完成/归档守卫。Hook 退出码、日志或 run.finished 不能自行证明 DONE；模型测试需保存命令结果、关联事件及权威查询断言，TUI 另有真实终端输入验证。新增业务逐项满足能力矩阵，不能将 M0 宣称为整个 Nimbalyst 全功能终端等价。
+
+下文 §4.2 的 Deck 权威及 DeckTaskProjectionAdapter、AFFiNE/Nextcloud 必选依赖和旧单 GUI M0 建议属于历史方案，不是本轮实施要求；当前使用 canonical TrackerRecord、同一领域服务及上述三端/Hooks 合同。历史源码哈希和已读符号依然仅证明当时的源码定位，不证明这些拟新增模块存在。完整旧包另存于 [reference/v2.2](reference/v2.2/README.md)。
+
+> 最新补充：[Trackers 一一映射与源码审计](NIMBALYST-TRACKER-MAPPING.md)，2026-09-14 实读 HEAD d6e1d008d9ee264a7447f3533fa9f48f158a70b0。旧表的 07779ab 基线和许可描述保留为历史记录，不能冒充新版本检查。新文档定位了 TrackerDataSource、tracker-core、原生看板、保存视图及直接 IPC 写路径。
+
+> 2026-09-14：本机 Nimbalyst HEAD 已再次核对，仍为下述固定提交。源码导航保留；本文涉及 Deck 投影/Nextcloud 必选依赖的旧建议已过时。最新方案见 [ADR-003](decisions/ADR-003.md) 与 [Nimbalyst 系统规格](NIMBALYST-SYSTEM-SPEC.md)：共享任务由 Babel 后台持久化，Nimbalyst 是主底座。
+
 状态：开发规格附件；源码阅读已完成，未执行应用构建或端到端验证。
 
 核验日期：2026-09-13。本文仅定位可复用接口及需要新增的适配层，不宣称六平台协作、远程文件或 Pi 接入已经实现。

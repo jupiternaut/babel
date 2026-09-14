@@ -1,0 +1,20 @@
+{
+  "result": "PASS",
+  "scope": "package-integrity-only",
+  "counts": {
+    "manifest_files": 44,
+    "json_files": 5,
+    "markdown_file_links": 86,
+    "skill_source_hashes": 17,
+    "primary_views": 5
+  },
+  "errors": [],
+  "not_verified": [
+    "external URLs",
+    "Markdown heading anchors",
+    "native schemas",
+    "UI rendering or interaction",
+    "Nimbalyst build",
+    "live agents/devices"
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Design scenarios only; not a native TrackerRecord schema or production API payload",
+  "sourceSpecVersion": "2.2",
+  "mode": "demo",
+  "demoLabel": "演示数据",
+  "fixedNow": "2026-09-14T07:00:00Z",
+  "projectId": "fixture-project-babel",
+  "idNote": "Stable design IDs. NB-01 must adapt records through native schema/accessors without inventing separate identities for the two panels.",
+  "countsNote": "Compute stage counts from the filtered records and sidebar device counts from non-terminal runs. Do not copy arbitrary numbers from image references.",
+  "devices": [
+    {"id": "fixture-device-ubuntu", "label": "Ubuntu", "displayStatus": "演示在线"},
+    {"id": "fixture-device-windows", "label": "Windows", "displayStatus": "演示在线"},
+    {"id": "fixture-device-mac", "label": "MacBook M3", "displayStatus": "演示离线"}
+  ],
+  "baseRecords": [
+    {"trackerId": "fixture-tracker-pdf", "primaryType": "task", "title": "PDF 行间对译", "body": "保留 PDF 原页布局，选择段落查看对应译文。", "revision": 1, "nativeStatusSymbol": "to-do", "archived": false, "expectedStage": "TODO", "originLabel": "Google Tasks", "deviceId": null, "latestRunId": null},
+    {"trackerId": "fixture-tracker-research", "primaryType": "task", "title": "整理研究资料", "body": "为已有研究目录建立入口，保留原文件位置。", "revision": 1, "nativeStatusSymbol": "to-do", "archived": false, "expectedStage": "TODO", "deviceId": null, "latestRunId": null},
+    {"trackerId": "fixture-tracker-sync", "primaryType": "task", "title": "接入任务同步", "body": "将指定 Google Tasks 列表导入为同一份 Tracker 数据，处理重复与断线。", "revision": 3, "nativeStatusSymbol": "in-progress", "archived": false, "expectedStage": "RUNNING", "deviceId": "fixture-device-ubuntu", "latestRunId": "fixture-run-sync-2"},
+    {"trackerId": "fixture-tracker-state", "primaryType": "task", "title": "统一任务状态", "body": "两个面板读取同一条记录，完成和归档保持独立。", "revision": 4, "nativeStatusSymbol": "done", "archived": false, "expectedStage": "DONE", "deviceId": "fixture-device-windows", "latestRunId": "fixture-run-state-1"},
+    {"trackerId": "fixture-tracker-layout", "primaryType": "task", "title": "工作台布局初稿", "body": "左侧管理、中央四列、右侧选中详情。", "revision": 5, "nativeStatusSymbol": "done", "archived": true, "expectedStage": "ARCHIVED", "deviceId": "fixture-device-windows", "latestRunId": "fixture-run-layout-1"}
+  ],
+  "baseRuns": [
+    {"runId": "fixture-run-sync-1", "trackerId": "fixture-tracker-sync", "attempt": 1, "status": "failed", "deviceId": "fixture-device-ubuntu", "endedAt": "2026-09-14T06:40:00Z", "summary": "模拟：增量游标校验失败"},
+    {"runId": "fixture-run-sync-2", "trackerId": "fixture-tracker-sync", "attempt": 2, "status": "executing", "deviceId": "fixture-device-ubuntu", "endedAt": null, "summary": "模拟：正在处理分页与断线重试"},
+    {"runId": "fixture-run-state-1", "trackerId": "fixture-tracker-state", "attempt": 1, "status": "succeeded", "deviceId": "fixture-device-windows", "endedAt": "2026-09-14T06:45:00Z", "summary": "模拟：验证和人工验收通过"},
+    {"runId": "fixture-run-layout-1", "trackerId": "fixture-tracker-layout", "attempt": 1, "status": "succeeded", "deviceId": "fixture-device-windows", "endedAt": "2026-09-14T06:30:00Z", "summary": "模拟：初稿结果已归档"}
+  ],
+  "primaryViews": [
+    {"viewId": "V01", "fixtureId": "board-home", "selectedTrackerId": null, "panel": "closed"},
+    {"viewId": "V02", "fixtureId": "todo-detail", "selectedTrackerId": "fixture-tracker-pdf", "panel": "detail-and-start-summary"},
+    {"viewId": "V03", "fixtureId": "running-session", "selectedTrackerId": "fixture-tracker-sync", "selectedRunId": "fixture-run-sync-2", "panel": "conversation"},
+    {"viewId": "V04", "fixtureId": "review-diff", "selectedTrackerId": "fixture-tracker-sync", "selectedRunId": "fixture-run-sync-2", "panel": "diff-and-review", "scenarioOverlay": {"runStatus": "review_required", "nativeStatusSymbol": "in-review", "revision": 4, "expectedStage": "RUNNING", "verificationLabel": "模拟验证通过，待验收"}},
+    {"viewId": "V05", "fixtureId": "archive-history", "selectedTrackerId": "fixture-tracker-layout", "selectedRunId": "fixture-run-layout-1", "panel": "history-and-restore"}
+  ],
+  "presentationData": {
+    "V02": {"acceptance": ["点击段落可以同时定位原文和译文", "批注保存后重新打开仍定位原页与原段落"], "startButton": "开始模拟", "saveButton": "保存", "providerLabel": "Pi（模拟）"},
+    "V03": {"message": "已完成任务映射，正在处理增量同步。", "toolActivities": [{"label": "读取 Google Tasks", "state": "succeeded"}, {"label": "按任务 ID 去重", "state": "succeeded"}, {"label": "处理分页与断线重试", "state": "executing"}], "editingLabel": "正在编辑 google-tasks.ts…", "diffSummary": {"files": 2, "additions": 42, "deletions": 8}},
+    "V04": {"baseLabel": "模拟基线 demo-base-001（非 Git 提交）", "changedFiles": ["demo/google-tasks.ts", "demo/google-tasks.test.ts"], "diffSummary": {"files": 2, "additions": 42, "deletions": 8}, "acceptance": [{"label": "重复导入不会产生第二条记录", "state": "passed"}, {"label": "分页恢复保留原 Tracker ID", "state": "passed"}], "reviewState": "not_accepted", "evidenceNote": "All verification and diff values are simulated, not measured execution evidence."},
+    "V05": {"viewingRunId": "fixture-run-layout-1", "readOnly": true, "restoreButton": "恢复", "restoreNote": "恢复到归档前状态，不自动执行"}
+  },
+  "semanticCasesNotVisibleOnBaseBoard": [
+    {"caseId": "approved-is-not-done", "primaryType": "task", "nativeStatusSymbol": "approved", "archived": false, "expectedStage": "RUNNING"},
+    {"caseId": "cancelled-is-not-success", "primaryType": "bug", "nativeStatusSymbol": "wont-do", "archived": false, "expectedStage": "RUNNING", "displayGroup": "已终止 / 需处理"},
+    {"caseId": "release-is-not-archive", "primaryType": "release", "nativeStatusSymbol": "released", "archived": false, "expectedStageWhenTypeIncluded": "DONE"},
+    {"caseId": "archive-preserves-status", "primaryType": "bug", "nativeStatusSymbol": "duplicate", "archived": true, "expectedStage": "ARCHIVED", "expectedStageAfterRestore": "RUNNING"},
+    {"caseId": "ready-keeps-dependency-semantics", "assertion": "Ready uses native open-item dependency rules; device reachability is an extra launch check."},
+    {"caseId": "launch-session-is-draft", "assertion": "A linked chat/session alone does not transition a TODO card to RUNNING."}
+  ],
+  "interactionSuites": [
+    {"suiteId": "X01", "name": "同一记录切换两面板", "trackerId": "fixture-tracker-pdf", "assertions": ["same-id", "same-revision-after-edit", "same-data-source-instance", "custom-type-and-view-preserved"]},
+    {"suiteId": "X02", "name": "守卫与错误状态", "states": ["requested", "waiting_input", "failed", "lost", "cancel_requested", "conflict", "empty", "long-title"], "note": "These include execution and UI states; do not add them all to one Tracker status enum."},
+    {"suiteId": "X03", "name": "主题与适配", "themes": ["light", "dark"], "widthsCssPx": [1586, 1280, 1024, 768, 390], "zoomPercent": [100, 200]}
+  ]
+}

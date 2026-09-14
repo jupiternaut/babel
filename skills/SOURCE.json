@@ -1,0 +1,156 @@
+{
+  "schema_version": 1,
+  "bundle_role": "Optional read-only design skill references",
+  "repository": "https://github.com/jakubkrehel/skills",
+  "commit": "267330e1adfc66a718fb65fa6918c1f06d0a689e",
+  "copied_at": "2026-09-14T02:23:32.9011921-05:00",
+  "local_source_snapshot": "C:\\Users\\gengr\\Documents\\Codex-Design-Skills\\sources\\interfaces",
+  "provenance_note": "Copied from an existing local source checkout that was used for the installed Interfaces skill suite. No network download or package installation was performed. Upstream skill files are unchanged. The upstream repository LICENSE is additionally included in each bundled skill directory. Local installed Windows runtime notes were intentionally not copied because they contain machine-specific paths.",
+  "relative_path_base": "skills/",
+  "activation": "Read explicitly when the project task calls for the relevant specialty; not automatically registered or installed.",
+  "skills": [
+    {
+      "name": "better-layout",
+      "upstream_relative_path": "skills/better-layout",
+      "bundled_relative_path": "vendor/better-layout",
+      "license": "MIT",
+      "files": [
+        {
+          "source_path": "skills/better-layout/grouping-and-alignment.md",
+          "bundled_path": "vendor/better-layout/grouping-and-alignment.md",
+          "source_sha256": "f768bce6692f184422d0335d17dc8e6f0df01dbdc8fc57e57edb1ac747f7a672",
+          "bundled_sha256": "f768bce6692f184422d0335d17dc8e6f0df01dbdc8fc57e57edb1ac747f7a672",
+          "modified": false
+        },
+        {
+          "source_path": "skills/better-layout/SKILL.md",
+          "bundled_path": "vendor/better-layout/SKILL.md",
+          "source_sha256": "5d6c3db06a61e04b7920c03a6f7795532f19b1a5c71caeedd333e1186ddaa13a",
+          "bundled_sha256": "5d6c3db06a61e04b7920c03a6f7795532f19b1a5c71caeedd333e1186ddaa13a",
+          "modified": false
+        },
+        {
+          "source_path": "skills/better-layout/spacing-and-adaptivity.md",
+          "bundled_path": "vendor/better-layout/spacing-and-adaptivity.md",
+          "source_sha256": "bc6b92299d7f004311f485237cf44f5f61ffcf728d8546cab072aba670f82bc2",
+          "bundled_sha256": "bc6b92299d7f004311f485237cf44f5f61ffcf728d8546cab072aba670f82bc2",
+          "modified": false
+        },
+        {
+          "source_path": "skills/better-layout/agents/openai.yaml",
+          "bundled_path": "vendor/better-layout/agents/openai.yaml",
+          "source_sha256": "d68a82db5a435b58f6ff9b42abbfdbae56920dbe5790073e894554a97290291e",
+          "bundled_sha256": "d68a82db5a435b58f6ff9b42abbfdbae56920dbe5790073e894554a97290291e",
+          "modified": false
+        },
+        {
+          "source_path": "LICENSE",
+          "bundled_path": "vendor/better-layout/LICENSE",
+          "source_sha256": "596f89eaa3780ea0451ab2870196427ee2d0b1b3d743507af0b2fbffd46e234c",
+          "bundled_sha256": "596f89eaa3780ea0451ab2870196427ee2d0b1b3d743507af0b2fbffd46e234c",
+          "modified": false
+        }
+      ]
+    },
+    {
+      "name": "better-accessibility",
+      "upstream_relative_path": "skills/better-accessibility",
+      "bundled_relative_path": "vendor/better-accessibility",
+      "license": "MIT",
+      "files": [
+        {
+          "source_path": "skills/better-accessibility/focus-and-keyboard.md",
+          "bundled_path": "vendor/better-accessibility/focus-and-keyboard.md",
+          "source_sha256": "c1d337ff7e6243a2806776aa27b490c43038ea9085a8dc6b5edab8939a96a9e2",
+          "bundled_sha256": "c1d337ff7e6243a2806776aa27b490c43038ea9085a8dc6b5edab8939a96a9e2",
+          "modified": false
+        },
+        {
+          "source_path": "skills/better-accessibility/forms.md",
+          "bundled_path": "vendor/better-accessibility/forms.md",
+          "source_sha256": "f8c1f128348e30945632185bcd2fe4c5c5a43fd2787899ffcc301df453103611",
+          "bundled_sha256": "f8c1f128348e30945632185bcd2fe4c5c5a43fd2787899ffcc301df453103611",
+          "modified": false
+        },
+        {
+          "source_path": "skills/better-accessibility/hit-areas.md",
+          "bundled_path": "vendor/better-accessibility/hit-areas.md",
+          "source_sha256": "f132dd959e7da274f24fa8db42751fd2154fb6829a784dc08551808fcbacc1eb",
+          "bundled_sha256": "f132dd959e7da274f24fa8db42751fd2154fb6829a784dc08551808fcbacc1eb",
+          "modified": false
+        },
+        {
+          "source_path": "skills/better-accessibility/motion-and-zoom.md",
+          "bundled_path": "vendor/better-accessibility/motion-and-zoom.md",
+          "source_sha256": "44136fb4b5e44d924813beecc8fa256bd793e399ccd423af865f40a6e5e50e97",
+          "bundled_sha256": "44136fb4b5e44d924813beecc8fa256bd793e399ccd423af865f40a6e5e50e97",
+          "modified": false
+        },
+        {
+          "source_path": "skills/better-accessibility/screen-readers.md",
+          "bundled_path": "vendor/better-accessibility/screen-readers.md",
+          "source_sha256": "7e12e76c8f395645b3857a87069005d72fbb40e23da65a9523e1e748de58a94a",
+          "bundled_sha256": "7e12e76c8f395645b3857a87069005d72fbb40e23da65a9523e1e748de58a94a",
+          "modified": false
+        },
+        {
+          "source_path": "skills/better-accessibility/semantics-and-aria.md",
+          "bundled_path": "vendor/better-accessibility/semantics-and-aria.md",
+          "source_sha256": "ff1f2e7b6465f90dad54147d3601be6673162269455e7a2d8534830321c760f5",
+          "bundled_sha256": "ff1f2e7b6465f90dad54147d3601be6673162269455e7a2d8534830321c760f5",
+          "modified": false
+        },
+        {
+          "source_path": "skills/better-accessibility/SKILL.md",
+          "bundled_path": "vendor/better-accessibility/SKILL.md",
+          "source_sha256": "e6e2baec5655a9bc04961121caaa6bfeb19f3a12bcdde92479500ccc05a7fc43",
+          "bundled_sha256": "e6e2baec5655a9bc04961121caaa6bfeb19f3a12bcdde92479500ccc05a7fc43",
+          "modified": false
+        },
+        {
+          "source_path": "skills/better-accessibility/agents/openai.yaml",
+          "bundled_path": "vendor/better-accessibility/agents/openai.yaml",
+          "source_sha256": "f339cf4a6c29224f312c3cc563d4879d99c949f5f725fee1d38bf5bf9abae63d",
+          "bundled_sha256": "f339cf4a6c29224f312c3cc563d4879d99c949f5f725fee1d38bf5bf9abae63d",
+          "modified": false
+        },
+        {
+          "source_path": "LICENSE",
+          "bundled_path": "vendor/better-accessibility/LICENSE",
+          "source_sha256": "596f89eaa3780ea0451ab2870196427ee2d0b1b3d743507af0b2fbffd46e234c",
+          "bundled_sha256": "596f89eaa3780ea0451ab2870196427ee2d0b1b3d743507af0b2fbffd46e234c",
+          "modified": false
+        }
+      ]
+    },
+    {
+      "name": "better-writing",
+      "upstream_relative_path": "skills/better-writing",
+      "bundled_relative_path": "vendor/better-writing",
+      "license": "MIT",
+      "files": [
+        {
+          "source_path": "skills/better-writing/SKILL.md",
+          "bundled_path": "vendor/better-writing/SKILL.md",
+          "source_sha256": "2f87a69b847d64f4f84778d880c483e3ad604c5e01052cf8cf1c0dd7e3c342a9",
+          "bundled_sha256": "2f87a69b847d64f4f84778d880c483e3ad604c5e01052cf8cf1c0dd7e3c342a9",
+          "modified": false
+        },
+        {
+          "source_path": "skills/better-writing/agents/openai.yaml",
+          "bundled_path": "vendor/better-writing/agents/openai.yaml",
+          "source_sha256": "2066a1f9677d1779858fee3c523d9a36fc12202bcd39b43f2003ec42c60d5d9c",
+          "bundled_sha256": "2066a1f9677d1779858fee3c523d9a36fc12202bcd39b43f2003ec42c60d5d9c",
+          "modified": false
+        },
+        {
+          "source_path": "LICENSE",
+          "bundled_path": "vendor/better-writing/LICENSE",
+          "source_sha256": "596f89eaa3780ea0451ab2870196427ee2d0b1b3d743507af0b2fbffd46e234c",
+          "bundled_sha256": "596f89eaa3780ea0451ab2870196427ee2d0b1b3d743507af0b2fbffd46e234c",
+          "modified": false
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,510 @@
+{
+  "date": "2026-09-14",
+  "commit": "d6e1d008d9ee264a7447f3533fa9f48f158a70b0",
+  "method": "Read-only targeted source review; selected code and test source read, not runtime execution",
+  "files": [
+    {
+      "path": "packages/electron/src/renderer/components/TrackerMode/TrackerMode.tsx",
+      "sha256": "17fbc71539d503fabd2f40d968baa7dabb1fe3b04f4cdfd585df85a6c8238cbd",
+      "anchors": [
+        {
+          "text": "<TrackerSidebar",
+          "line": 292
+        },
+        {
+          "text": "<TrackerMainView",
+          "line": 325
+        }
+      ],
+      "sourceUrl": "https://github.com/nimbalyst/nimbalyst/blob/d6e1d008d9ee264a7447f3533fa9f48f158a70b0/packages/electron/src/renderer/components/TrackerMode/TrackerMode.tsx"
+    },
+    {
+      "path": "packages/electron/src/renderer/components/TrackerMode/TrackerSidebar.tsx",
+      "sha256": "730c388cf1605bfe6dceeab511fa487ae89aef7b841a7be767fddf84a65782d9",
+      "anchors": [
+        {
+          "text": "onSelectType",
+          "line": 78
+        },
+        {
+          "text": "trackerTypes",
+          "line": 59
+        }
+      ],
+      "sourceUrl": "https://github.com/nimbalyst/nimbalyst/blob/d6e1d008d9ee264a7447f3533fa9f48f158a70b0/packages/electron/src/renderer/components/TrackerMode/TrackerSidebar.tsx"
+    },
+    {
+      "path": "packages/electron/src/renderer/components/TrackerMode/TrackerMainView.tsx",
+      "sha256": "18ca17090b7571119013ce68d757b524caeae1c1b806f75a5e8204b54b4e9af6",
+      "anchors": [
+        {
+          "text": "handleLaunchSession",
+          "line": 204
+        },
+        {
+          "text": "archivedItems =",
+          "line": 545
+        },
+        {
+          "text": "handleArchiveItem",
+          "line": 861
+        },
+        {
+          "text": "<KanbanBoard",
+          "line": 1527
+        }
+      ],
+      "sourceUrl": "https://github.com/nimbalyst/nimbalyst/blob/d6e1d008d9ee264a7447f3533fa9f48f158a70b0/packages/electron/src/renderer/components/TrackerMode/TrackerMainView.tsx"
+    },
+    {
+      "path": "packages/electron/src/renderer/components/TrackerMode/KanbanBoard.tsx",
+      "sha256": "d9530192db16606402337086341cf538064d828332b75cc99437222d6a9a27b9",
+      "anchors": [
+        {
+          "text": "interface KanbanBoardProps",
+          "line": 43
+        },
+        {
+          "text": "overrideItems",
+          "line": 56
+        },
+        {
+          "text": "saveTrackerFields",
+          "line": 29
+        }
+      ],
+      "sourceUrl": "https://github.com/nimbalyst/nimbalyst/blob/d6e1d008d9ee264a7447f3533fa9f48f158a70b0/packages/electron/src/renderer/components/TrackerMode/KanbanBoard.tsx"
+    },
+    {
+      "path": "packages/collab-client/src/trackers/dataSource.ts",
+      "sha256": "0d48332dbf5c0cde6aa8da64daadb7ca8049a0e388204ed865f347a7a1e0171e",
+      "anchors": [
+        {
+          "text": "interface TrackerDataSource",
+          "line": 166
+        },
+        {
+          "text": "TrackerDataCommand =",
+          "line": 131
+        }
+      ],
+      "sourceUrl": "https://github.com/nimbalyst/nimbalyst/blob/d6e1d008d9ee264a7447f3533fa9f48f158a70b0/packages/collab-client/src/trackers/dataSource.ts"
+    },
+    {
+      "path": "packages/collab-client/src/trackers/browser/BrowserTrackerDataSource.ts",
+      "sha256": "4d8a064426c35073f2e80ff429a175934958e3811d470ba2529ecd31f3b7ef4d",
+      "anchors": [
+        {
+          "text": "class BrowserTrackerDataSource",
+          "line": 236
+        }
+      ],
+      "sourceUrl": "https://github.com/nimbalyst/nimbalyst/blob/d6e1d008d9ee264a7447f3533fa9f48f158a70b0/packages/collab-client/src/trackers/browser/BrowserTrackerDataSource.ts"
+    },
+    {
+      "path": "packages/electron/src/renderer/services/ElectronTrackerDataSource.ts",
+      "sha256": "ea89676a36d913f07079b59c4ff36f040f0778bbb7d72a67bbb709e45bd1dd5b",
+      "anchors": [
+        {
+          "text": "class ElectronTrackerDataSource",
+          "line": 69
+        }
+      ],
+      "sourceUrl": "https://github.com/nimbalyst/nimbalyst/blob/d6e1d008d9ee264a7447f3533fa9f48f158a70b0/packages/electron/src/renderer/services/ElectronTrackerDataSource.ts"
+    },
+    {
+      "path": "packages/electron/src/renderer/store/listeners/trackerSyncListeners.ts",
+      "sha256": "4a592329b78f9a2f9a59b6e48fe0641976989c8a44cb141fa4495a9ab1f4134f",
+      "anchors": [
+        {
+          "text": "bindTrackerDataSource =",
+          "line": 237
+        },
+        {
+          "text": "handleTrackerDataChange =",
+          "line": 172
+        }
+      ],
+      "sourceUrl": "https://github.com/nimbalyst/nimbalyst/blob/d6e1d008d9ee264a7447f3533fa9f48f158a70b0/packages/electron/src/renderer/store/listeners/trackerSyncListeners.ts"
+    },
+    {
+      "path": "packages/electron/src/renderer/store/atoms/trackers.ts",
+      "sha256": "d71dcad83637358ce0f51e1e784d61e2a63ed640e670c733ac83fb3e42724274",
+      "anchors": [
+        {
+          "text": "setTrackerDataSourceAtom",
+          "line": 851
+        },
+        {
+          "text": "statusScope:",
+          "line": 161
+        }
+      ],
+      "sourceUrl": "https://github.com/nimbalyst/nimbalyst/blob/d6e1d008d9ee264a7447f3533fa9f48f158a70b0/packages/electron/src/renderer/store/atoms/trackers.ts"
+    },
+    {
+      "path": "packages/tracker-core/src/trackerRecord.ts",
+      "sha256": "45101989077a7909cdd4bfff914d2f4f0ebeb47415ad368c132b75e4ed5d484d",
+      "anchors": [
+        {
+          "text": "interface TrackerRecord {",
+          "line": 97
+        },
+        {
+          "text": "interface TrackerRecordSystem",
+          "line": 65
+        },
+        {
+          "text": "localKey?",
+          "line": 109
+        }
+      ],
+      "sourceUrl": "https://github.com/nimbalyst/nimbalyst/blob/d6e1d008d9ee264a7447f3533fa9f48f158a70b0/packages/tracker-core/src/trackerRecord.ts"
+    },
+    {
+      "path": "packages/tracker-core/src/trackerStatusCategory.ts",
+      "sha256": "fc2d917c367242b97dc95b908c8011975b5abaa376550bbc01cf1930361721b1",
+      "anchors": [
+        {
+          "text": "type StatusCategory",
+          "line": 25
+        },
+        {
+          "text": "TERMINAL_CATEGORIES",
+          "line": 47
+        }
+      ],
+      "sourceUrl": "https://github.com/nimbalyst/nimbalyst/blob/d6e1d008d9ee264a7447f3533fa9f48f158a70b0/packages/tracker-core/src/trackerStatusCategory.ts"
+    },
+    {
+      "path": "packages/collab-client/src/trackers/trackerSavedViews.ts",
+      "sha256": "84c61bbb4d5c775fe934cb45702fd33424c5d797163532c754ecd01b747ed485",
+      "anchors": [
+        {
+          "text": "interface SavedViewDefinition",
+          "line": 57
+        },
+        {
+          "text": "interface SavedView {",
+          "line": 97
+        }
+      ],
+      "sourceUrl": "https://github.com/nimbalyst/nimbalyst/blob/d6e1d008d9ee264a7447f3533fa9f48f158a70b0/packages/collab-client/src/trackers/trackerSavedViews.ts"
+    },
+    {
+      "path": "packages/collab-client/src/trackers/trackerReadyQueue.ts",
+      "sha256": "d5594292904294423b05925fdf6bc8b279c12d022402be0ce64de973a6bf8dba",
+      "anchors": [
+        {
+          "text": "createReadySavedView",
+          "line": 62
+        },
+        {
+          "text": "orderTrackerItemsByLeverage",
+          "line": 40
+        }
+      ],
+      "sourceUrl": "https://github.com/nimbalyst/nimbalyst/blob/d6e1d008d9ee264a7447f3533fa9f48f158a70b0/packages/collab-client/src/trackers/trackerReadyQueue.ts"
+    },
+    {
+      "path": "packages/electron/src/renderer/components/TrackerMode/trackerViewDefinition.ts",
+      "sha256": "fdf622830497ef1c37d03f61fa195503bde1fdacdd29e82abc595cd89a1f625f",
+      "anchors": [
+        {
+          "text": "buildCurrentViewDefinition",
+          "line": 20
+        },
+        {
+          "text": "applySavedViewToLayout",
+          "line": 80
+        }
+      ],
+      "sourceUrl": "https://github.com/nimbalyst/nimbalyst/blob/d6e1d008d9ee264a7447f3533fa9f48f158a70b0/packages/electron/src/renderer/components/TrackerMode/trackerViewDefinition.ts"
+    },
+    {
+      "path": "packages/electron/src/renderer/components/TrackerMode/trackerFieldSave.ts",
+      "sha256": "e4eec1b257e9cf88d4e9dfef77b7cfa52f0863c36446709977957f2a7e2ac378",
+      "anchors": [
+        {
+          "text": "routeTrackerWrite",
+          "line": 39
+        },
+        {
+          "text": "saveTrackerFields(",
+          "line": 66
+        },
+        {
+          "text": "catch (error)",
+          "line": 94
+        }
+      ],
+      "sourceUrl": "https://github.com/nimbalyst/nimbalyst/blob/d6e1d008d9ee264a7447f3533fa9f48f158a70b0/packages/electron/src/renderer/components/TrackerMode/trackerFieldSave.ts"
+    },
+    {
+      "path": "packages/electron/src/renderer/components/TrackerMode/trackerSessionLaunch.ts",
+      "sha256": "e38c013c82f0f7e695991243806687995c2e58e8b018d55b52475137d57b7204",
+      "anchors": [
+        {
+          "text": "buildTrackerLaunchContext",
+          "line": 37
+        },
+        {
+          "text": "Update this tracker",
+          "line": 60
+        }
+      ],
+      "sourceUrl": "https://github.com/nimbalyst/nimbalyst/blob/d6e1d008d9ee264a7447f3533fa9f48f158a70b0/packages/electron/src/renderer/components/TrackerMode/trackerSessionLaunch.ts"
+    },
+    {
+      "path": "packages/electron/src/renderer/utils/resolveLinkedSessions.ts",
+      "sha256": "eab86a90abd8c3b0b1ff4afb94d98a332f05498e9c42425b8ac828c84e21c695",
+      "anchors": [
+        {
+          "text": "resolveLinkedSessions",
+          "line": 26
+        }
+      ],
+      "sourceUrl": "https://github.com/nimbalyst/nimbalyst/blob/d6e1d008d9ee264a7447f3533fa9f48f158a70b0/packages/electron/src/renderer/utils/resolveLinkedSessions.ts"
+    },
+    {
+      "path": "packages/electron/src/renderer/components/TrackerMode/TrackerItemChatPanel.tsx",
+      "sha256": "a11e3ce5a43f19598474d1f3f8d030f85083e172bd6d437ecf4f9c603aefe473",
+      "anchors": [
+        {
+          "text": "ChatSidebar",
+          "line": 4
+        },
+        {
+          "text": "resolveTrackerChatSessionId",
+          "line": 20
+        }
+      ],
+      "sourceUrl": "https://github.com/nimbalyst/nimbalyst/blob/d6e1d008d9ee264a7447f3533fa9f48f158a70b0/packages/electron/src/renderer/components/TrackerMode/TrackerItemChatPanel.tsx"
+    },
+    {
+      "path": "packages/electron/src/renderer/components/TrackerMode/TrackerItemDetail.tsx",
+      "sha256": "b9dbb5bfe263243954935f5bac9d190fd984f37805b5a48cd87ca6e3fceffc02",
+      "anchors": [
+        {
+          "text": "resolveLinkedSessions",
+          "line": 44
+        },
+        {
+          "text": "TrackerCommentsSection",
+          "line": 57
+        }
+      ],
+      "sourceUrl": "https://github.com/nimbalyst/nimbalyst/blob/d6e1d008d9ee264a7447f3533fa9f48f158a70b0/packages/electron/src/renderer/components/TrackerMode/TrackerItemDetail.tsx"
+    },
+    {
+      "path": "packages/electron/src/renderer/components/AgentMode/AgentWorkstreamLayout.tsx",
+      "sha256": "523430786cd2bfb139afac3a6fdab1f51f23c3410920102e1fcf10961ce77253",
+      "anchors": [
+        {
+          "text": "stable DOM parent",
+          "line": 31
+        },
+        {
+          "text": "AgentWorkstreamLayout",
+          "line": 32
+        }
+      ],
+      "sourceUrl": "https://github.com/nimbalyst/nimbalyst/blob/d6e1d008d9ee264a7447f3533fa9f48f158a70b0/packages/electron/src/renderer/components/AgentMode/AgentWorkstreamLayout.tsx"
+    },
+    {
+      "path": "packages/extension-sdk/src/agents/AgentProtocol.ts",
+      "sha256": "b6d137a230a5243443e53c4efd796ecc35394cf11e1027c8ceea469abd88c44e",
+      "anchors": [
+        {
+          "text": "canonical home",
+          "line": 15
+        },
+        {
+          "text": "interface SessionOptions",
+          "line": 64
+        }
+      ],
+      "sourceUrl": "https://github.com/nimbalyst/nimbalyst/blob/d6e1d008d9ee264a7447f3533fa9f48f158a70b0/packages/extension-sdk/src/agents/AgentProtocol.ts"
+    },
+    {
+      "path": "packages/runtime/src/ai/server/providers/ExtensionAgentProvider.ts",
+      "sha256": "2b129e624280e92bed547e737408ef0fc71dc2b1e56f2484dbd6ec24f7350740",
+      "anchors": [
+        {
+          "text": "host bridge",
+          "line": 10
+        },
+        {
+          "text": "interface ExtensionAgentBridge",
+          "line": 57
+        }
+      ],
+      "sourceUrl": "https://github.com/nimbalyst/nimbalyst/blob/d6e1d008d9ee264a7447f3533fa9f48f158a70b0/packages/runtime/src/ai/server/providers/ExtensionAgentProvider.ts"
+    },
+    {
+      "path": "packages/electron/src/main/mcp/__tests__/trackerReviewGuard.test.ts",
+      "sha256": "d9614579c3d5713ea4dbd6f71f7ed25ea1d5d6dc1d2d2d81c335c9d010065760",
+      "anchors": [
+        {
+          "text": "only a person",
+          "line": 2
+        },
+        {
+          "text": "tracker_update",
+          "line": 4
+        }
+      ],
+      "sourceUrl": "https://github.com/nimbalyst/nimbalyst/blob/d6e1d008d9ee264a7447f3533fa9f48f158a70b0/packages/electron/src/main/mcp/__tests__/trackerReviewGuard.test.ts"
+    },
+    {
+      "path": "docs/TRANSCRIPT_ARCHITECTURE.md",
+      "sha256": "8dc1c1d32582042fdc9fc61c018bb1d91dc803c28e2021b75bc45949b53596fc",
+      "anchors": [
+        {
+          "text": "sole persisted source",
+          "line": 13
+        },
+        {
+          "text": "InMemoryTranscriptEventStore",
+          "line": 36
+        }
+      ],
+      "sourceUrl": "https://github.com/nimbalyst/nimbalyst/blob/d6e1d008d9ee264a7447f3533fa9f48f158a70b0/docs/TRANSCRIPT_ARCHITECTURE.md"
+    },
+    {
+      "path": "packages/electron/DATABASE.md",
+      "sha256": "b2692ec8e59e4d61d0584a33b00561c3f0173634fed2a43908fd8ad308c44e95",
+      "anchors": [
+        {
+          "text": "SQLite",
+          "line": 22
+        },
+        {
+          "text": "PGLite",
+          "line": 1
+        }
+      ],
+      "sourceUrl": "https://github.com/nimbalyst/nimbalyst/blob/d6e1d008d9ee264a7447f3533fa9f48f158a70b0/packages/electron/DATABASE.md"
+    },
+    {
+      "path": "LICENSING.md",
+      "sha256": "271b521e62a18200cfd54f6a8a876da75c2a8768e2716bdff6b812549196e3a1",
+      "anchors": [
+        {
+          "text": "MIT",
+          "line": 3
+        },
+        {
+          "text": "separate project",
+          "line": 8
+        }
+      ],
+      "sourceUrl": "https://github.com/nimbalyst/nimbalyst/blob/d6e1d008d9ee264a7447f3533fa9f48f158a70b0/LICENSING.md"
+    },
+    {
+      "path": "packages/runtime/src/plugins/TrackerPlugin/models/builtins/plan.yaml",
+      "sha256": "8d83e629d1d88d7950c6c987c33cfb46535591621b99cd581cde17790c08b1aa",
+      "anchors": [
+        {
+          "text": "type: plan",
+          "line": 1
+        },
+        {
+          "text": "name: status",
+          "line": 28
+        }
+      ],
+      "sourceUrl": "https://github.com/nimbalyst/nimbalyst/blob/d6e1d008d9ee264a7447f3533fa9f48f158a70b0/packages/runtime/src/plugins/TrackerPlugin/models/builtins/plan.yaml"
+    },
+    {
+      "path": "packages/runtime/src/plugins/TrackerPlugin/models/builtins/decision.yaml",
+      "sha256": "ecc017c7ad4a053e51cfcc4a9e1dfdd8de194165c57b1c85544ef2d38085a767",
+      "anchors": [
+        {
+          "text": "type: decision",
+          "line": 1
+        },
+        {
+          "text": "name: status",
+          "line": 28
+        }
+      ],
+      "sourceUrl": "https://github.com/nimbalyst/nimbalyst/blob/d6e1d008d9ee264a7447f3533fa9f48f158a70b0/packages/runtime/src/plugins/TrackerPlugin/models/builtins/decision.yaml"
+    },
+    {
+      "path": "packages/runtime/src/plugins/TrackerPlugin/models/builtins/bug.yaml",
+      "sha256": "198236419ed2aa26c876444702893f34631cddf556b94369c2329abce6d5bfb3",
+      "anchors": [
+        {
+          "text": "type: bug",
+          "line": 1
+        },
+        {
+          "text": "name: status",
+          "line": 22
+        }
+      ],
+      "sourceUrl": "https://github.com/nimbalyst/nimbalyst/blob/d6e1d008d9ee264a7447f3533fa9f48f158a70b0/packages/runtime/src/plugins/TrackerPlugin/models/builtins/bug.yaml"
+    },
+    {
+      "path": "packages/runtime/src/plugins/TrackerPlugin/models/builtins/task.yaml",
+      "sha256": "a9087f5ad88b9d112b6c9e8638133a1a686f7e80d0535785eafa41ab06d1d28b",
+      "anchors": [
+        {
+          "text": "type: task",
+          "line": 1
+        },
+        {
+          "text": "name: status",
+          "line": 22
+        }
+      ],
+      "sourceUrl": "https://github.com/nimbalyst/nimbalyst/blob/d6e1d008d9ee264a7447f3533fa9f48f158a70b0/packages/runtime/src/plugins/TrackerPlugin/models/builtins/task.yaml"
+    },
+    {
+      "path": "packages/runtime/src/plugins/TrackerPlugin/models/builtins/idea.yaml",
+      "sha256": "905d2776d4759d1ee583881d24d587872ddb726a2caedfe9faa19eaa7784c29f",
+      "anchors": [
+        {
+          "text": "type: idea",
+          "line": 1
+        },
+        {
+          "text": "name: status",
+          "line": 22
+        }
+      ],
+      "sourceUrl": "https://github.com/nimbalyst/nimbalyst/blob/d6e1d008d9ee264a7447f3533fa9f48f158a70b0/packages/runtime/src/plugins/TrackerPlugin/models/builtins/idea.yaml"
+    },
+    {
+      "path": "packages/runtime/src/plugins/TrackerPlugin/models/builtins/milestone.yaml",
+      "sha256": "e93c294873f0d7e303503e08f82f07d5c2de071570c1c422df74cb983e9a38bb",
+      "anchors": [
+        {
+          "text": "type: milestone",
+          "line": 1
+        },
+        {
+          "text": "name: status",
+          "line": 22
+        }
+      ],
+      "sourceUrl": "https://github.com/nimbalyst/nimbalyst/blob/d6e1d008d9ee264a7447f3533fa9f48f158a70b0/packages/runtime/src/plugins/TrackerPlugin/models/builtins/milestone.yaml"
+    },
+    {
+      "path": "packages/runtime/src/plugins/TrackerPlugin/models/builtins/release.yaml",
+      "sha256": "ad2e2a73cefe7b24d2def431dbcdb5fc7881fc616286dad5a090b8e286ce8e9e",
+      "anchors": [
+        {
+          "text": "type: release",
+          "line": 1
+        },
+        {
+          "text": "name: status",
+          "line": 24
+        }
+      ],
+      "sourceUrl": "https://github.com/nimbalyst/nimbalyst/blob/d6e1d008d9ee264a7447f3533fa9f48f158a70b0/packages/runtime/src/plugins/TrackerPlugin/models/builtins/release.yaml"
+    }
+  ]
+}

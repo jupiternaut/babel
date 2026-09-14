@@ -1,0 +1,462 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-09-14T02:31:05.2496010-05:00",
+  "package": "babel-nimbalyst-dev-kit",
+  "scope": "Specification and design handoff, not an implemented application",
+  "sourceCopiesCompared": 32,
+  "unhashed_outputs": [
+    "VERIFICATION.json"
+  ],
+  "files": [
+    {
+      "path": ".gitignore",
+      "bytes": 39,
+      "sha256": "d6439973d8a506f44142877efa1b34b8f7d904803a04bf61a03ab338883a8e2c",
+      "origin": {
+        "kind": "authored_for_handoff"
+      }
+    },
+    {
+      "path": "AGENTS.md",
+      "bytes": 6489,
+      "sha256": "a02ade155c9b552a84d6232d7359a362f59b7612fbd094c177755dfd965d7fe4",
+      "origin": {
+        "kind": "authored_for_handoff"
+      }
+    },
+    {
+      "path": "decisions/ADR-001.md",
+      "bytes": 2226,
+      "sha256": "788512e0f5d86535cb3380036be94d939cfc91fee7bca801fd3ee5b755d8b743",
+      "origin": {
+        "source": "D:\\Projects\\babel\\decisions\\ADR-001.md",
+        "kind": "local_copy",
+        "source_sha256": "788512e0f5d86535cb3380036be94d939cfc91fee7bca801fd3ee5b755d8b743"
+      }
+    },
+    {
+      "path": "decisions/ADR-002.md",
+      "bytes": 2207,
+      "sha256": "e0708aa792a4b0410e556430a3fc2d2779d3bf39e0491c22d237e36997e956ca",
+      "origin": {
+        "source": "D:\\Projects\\babel\\decisions\\ADR-002.md",
+        "kind": "local_copy",
+        "source_sha256": "e0708aa792a4b0410e556430a3fc2d2779d3bf39e0491c22d237e36997e956ca"
+      }
+    },
+    {
+      "path": "decisions/ADR-003.md",
+      "bytes": 1624,
+      "sha256": "4297654f198cad62999cbe9e902d3220dd9d841d9398e8caffd27e405827311d",
+      "origin": {
+        "source": "D:\\Projects\\babel\\decisions\\ADR-003.md",
+        "kind": "local_copy",
+        "source_sha256": "4297654f198cad62999cbe9e902d3220dd9d841d9398e8caffd27e405827311d"
+      }
+    },
+    {
+      "path": "decisions/ADR-004.md",
+      "bytes": 2477,
+      "sha256": "ff2d427f915c5fced90de011b1d0b57b09428cdff8175b2c0c6eb32d93750a5b",
+      "origin": {
+        "source": "D:\\Projects\\babel\\decisions\\ADR-004.md",
+        "kind": "local_copy",
+        "source_sha256": "ff2d427f915c5fced90de011b1d0b57b09428cdff8175b2c0c6eb32d93750a5b"
+      }
+    },
+    {
+      "path": "design/babel-dashboard-v2-prompt.md",
+      "bytes": 6087,
+      "sha256": "40cc52346d961bc9a8587c0369c0d7530c46f08d813ddfd80416b5a560dd5881",
+      "origin": {
+        "source": "D:\\Projects\\babel\\design\\babel-dashboard-v2-prompt.md",
+        "kind": "local_copy",
+        "source_sha256": "40cc52346d961bc9a8587c0369c0d7530c46f08d813ddfd80416b5a560dd5881"
+      }
+    },
+    {
+      "path": "design/babel-dashboard-v2.png",
+      "bytes": 992162,
+      "sha256": "0b876d44a52897debd61131e1b315b7412d5151fca2aba23f8165e5c43d460b0",
+      "origin": {
+        "source": "D:\\Projects\\babel\\design\\babel-dashboard-v2.png",
+        "kind": "local_copy",
+        "source_sha256": "0b876d44a52897debd61131e1b315b7412d5151fca2aba23f8165e5c43d460b0"
+      }
+    },
+    {
+      "path": "design/demo-fixtures.json",
+      "bytes": 7446,
+      "sha256": "8a0a94a6d17b14ad584ab909314a6ce4ed0814717b6f7f8b47f800b63b1716ec",
+      "origin": {
+        "kind": "authored_for_handoff"
+      }
+    },
+    {
+      "path": "design/nimbalyst-source-evidence.json",
+      "bytes": 18093,
+      "sha256": "d19fdfbfbb7502d850d6b6afc3d1a6697b6a79c7bb639351a19fc47ea9da342f",
+      "origin": {
+        "source": "D:\\Projects\\babel\\design\\nimbalyst-source-evidence.json",
+        "kind": "local_copy",
+        "source_sha256": "d19fdfbfbb7502d850d6b6afc3d1a6697b6a79c7bb639351a19fc47ea9da342f"
+      }
+    },
+    {
+      "path": "design/reference/nimbalyst-trackers-user.png",
+      "bytes": 74552,
+      "sha256": "cba4758a2111f9992d10edad849289aab153726c37381f722ad8d58583371463",
+      "origin": {
+        "source": "C:\\Users\\gengr\\AppData\\Local\\Temp\\codex-clipboard-8c3d615b-a458-4100-a952-5da6a69a38e9.png",
+        "kind": "user_attachment_copy",
+        "source_sha256": "cba4758a2111f9992d10edad849289aab153726c37381f722ad8d58583371463"
+      }
+    },
+    {
+      "path": "design/UI-IMAGE-PROMPTS.md",
+      "bytes": 10271,
+      "sha256": "ff7f6d24d05c4e025cc6dea1e9e8685fd12147548588c72bfc9844aea16f1f3b",
+      "origin": {
+        "kind": "authored_for_handoff"
+      }
+    },
+    {
+      "path": "design/UI-VISUAL-PLAN.md",
+      "bytes": 7232,
+      "sha256": "fc94e8f0c736a50f9a1bef70f4b0ae514cd353d7828449a3c660fae6aa21fba8",
+      "origin": {
+        "kind": "authored_for_handoff"
+      }
+    },
+    {
+      "path": "design/visual-contract.md",
+      "bytes": 8357,
+      "sha256": "e53023db8ecc5282406cd4b260ba53466ffce4e365d3ac8db589ceed3cf4ba83",
+      "origin": {
+        "kind": "authored_for_handoff"
+      }
+    },
+    {
+      "path": "design/visual-manifest.json",
+      "bytes": 1621,
+      "sha256": "b93cb48f0449e6b5f304ec2fc0233ca66179e87e2da96af462b61a932e2463b5",
+      "origin": {
+        "kind": "authored_for_handoff"
+      }
+    },
+    {
+      "path": "ENTRY-AND-BOARD.md",
+      "bytes": 11348,
+      "sha256": "6f0da8a4ba2c27cd9c84d7577bd54c947c0853ba3d4f4829e76ccb3339d28f73",
+      "origin": {
+        "source": "D:\\Projects\\babel\\ENTRY-AND-BOARD.md",
+        "kind": "local_copy",
+        "source_sha256": "6f0da8a4ba2c27cd9c84d7577bd54c947c0853ba3d4f4829e76ccb3339d28f73"
+      }
+    },
+    {
+      "path": "NIMBALYST-DEVELOPMENT-SPEC.md",
+      "bytes": 34260,
+      "sha256": "5d951ba85acb200e436fcc91dc55eafd8da1d66293067cfed67094a9ca106621",
+      "origin": {
+        "source": "D:\\Projects\\babel\\NIMBALYST-DEVELOPMENT-SPEC.md",
+        "kind": "local_copy",
+        "source_sha256": "5d951ba85acb200e436fcc91dc55eafd8da1d66293067cfed67094a9ca106621"
+      }
+    },
+    {
+      "path": "NIMBALYST-IMPLEMENTER-PROMPT.md",
+      "bytes": 2972,
+      "sha256": "6dae04528b370dd9a191e2a8cf1806f176c4d726d393b5a72a05be6c51f8dc38",
+      "origin": {
+        "source": "D:\\Projects\\babel\\NIMBALYST-IMPLEMENTER-PROMPT.md",
+        "kind": "local_copy",
+        "source_sha256": "6dae04528b370dd9a191e2a8cf1806f176c4d726d393b5a72a05be6c51f8dc38"
+      }
+    },
+    {
+      "path": "NIMBALYST-SYSTEM-SPEC.md",
+      "bytes": 13218,
+      "sha256": "0f2501d49650d38db334050edd0c556bd7dd10ed7b3209a430f849133f01f592",
+      "origin": {
+        "source": "D:\\Projects\\babel\\NIMBALYST-SYSTEM-SPEC.md",
+        "kind": "local_copy",
+        "source_sha256": "0f2501d49650d38db334050edd0c556bd7dd10ed7b3209a430f849133f01f592"
+      }
+    },
+    {
+      "path": "NIMBALYST-TRACKER-MAPPING.md",
+      "bytes": 22254,
+      "sha256": "39fcf62578c3f0bf55db981646a6716bc718d794c3789d1ccdbdadb09b54d0c6",
+      "origin": {
+        "source": "D:\\Projects\\babel\\NIMBALYST-TRACKER-MAPPING.md",
+        "kind": "local_copy",
+        "source_sha256": "39fcf62578c3f0bf55db981646a6716bc718d794c3789d1ccdbdadb09b54d0c6"
+      }
+    },
+    {
+      "path": "README.md",
+      "bytes": 4982,
+      "sha256": "a8d02994cff8b9e127d80ea197e48dd408abfb7501fe1b32b081a41a902ed43b",
+      "origin": {
+        "kind": "authored_for_handoff"
+      }
+    },
+    {
+      "path": "reference/v1/PDF-AND-OPS.md",
+      "bytes": 36136,
+      "sha256": "121dd95d1e5dbe2a4ff57a73fba977ef29a7704432933b59336e00fa1d75c82d",
+      "origin": {
+        "source": "D:\\Projects\\babel\\PDF-AND-OPS.md",
+        "kind": "historical_reference_copy",
+        "source_sha256": "121dd95d1e5dbe2a4ff57a73fba977ef29a7704432933b59336e00fa1d75c82d"
+      }
+    },
+    {
+      "path": "scripts/verify-package.py",
+      "bytes": 5932,
+      "sha256": "7d9ff85c2c4d20e6209f96d9c337a5b556dbd5b364eb0a4081b548875e1a591f",
+      "origin": {
+        "kind": "authored_for_handoff"
+      }
+    },
+    {
+      "path": "skills/SKILLS-GUIDE.md",
+      "bytes": 6377,
+      "sha256": "d914c664f65d6b53e278e15044875747bdfbdf2af35952f7f77e5af308aeaf6a",
+      "origin": {
+        "kind": "authored_for_handoff"
+      }
+    },
+    {
+      "path": "skills/SOURCE.json",
+      "bytes": 8104,
+      "sha256": "283dee82ab5a044e913d372ac5484c0372ad211d6e6517f6428e9d1df59a781d",
+      "origin": {
+        "kind": "authored_for_handoff"
+      }
+    },
+    {
+      "path": "skills/vendor/better-accessibility/agents/openai.yaml",
+      "bytes": 124,
+      "sha256": "f339cf4a6c29224f312c3cc563d4879d99c949f5f725fee1d38bf5bf9abae63d",
+      "origin": {
+        "source_sha256": "f339cf4a6c29224f312c3cc563d4879d99c949f5f725fee1d38bf5bf9abae63d",
+        "source": "C:\\Users\\gengr\\Documents\\Codex-Design-Skills\\sources\\interfaces\\skills\\better-accessibility\\agents\\openai.yaml",
+        "repository": "https://github.com/jakubkrehel/skills",
+        "kind": "upstream_skill_copy",
+        "commit": "267330e1adfc66a718fb65fa6918c1f06d0a689e"
+      }
+    },
+    {
+      "path": "skills/vendor/better-accessibility/focus-and-keyboard.md",
+      "bytes": 6450,
+      "sha256": "c1d337ff7e6243a2806776aa27b490c43038ea9085a8dc6b5edab8939a96a9e2",
+      "origin": {
+        "source_sha256": "c1d337ff7e6243a2806776aa27b490c43038ea9085a8dc6b5edab8939a96a9e2",
+        "source": "C:\\Users\\gengr\\Documents\\Codex-Design-Skills\\sources\\interfaces\\skills\\better-accessibility\\focus-and-keyboard.md",
+        "repository": "https://github.com/jakubkrehel/skills",
+        "kind": "upstream_skill_copy",
+        "commit": "267330e1adfc66a718fb65fa6918c1f06d0a689e"
+      }
+    },
+    {
+      "path": "skills/vendor/better-accessibility/forms.md",
+      "bytes": 3802,
+      "sha256": "f8c1f128348e30945632185bcd2fe4c5c5a43fd2787899ffcc301df453103611",
+      "origin": {
+        "source_sha256": "f8c1f128348e30945632185bcd2fe4c5c5a43fd2787899ffcc301df453103611",
+        "source": "C:\\Users\\gengr\\Documents\\Codex-Design-Skills\\sources\\interfaces\\skills\\better-accessibility\\forms.md",
+        "repository": "https://github.com/jakubkrehel/skills",
+        "kind": "upstream_skill_copy",
+        "commit": "267330e1adfc66a718fb65fa6918c1f06d0a689e"
+      }
+    },
+    {
+      "path": "skills/vendor/better-accessibility/hit-areas.md",
+      "bytes": 4051,
+      "sha256": "f132dd959e7da274f24fa8db42751fd2154fb6829a784dc08551808fcbacc1eb",
+      "origin": {
+        "source_sha256": "f132dd959e7da274f24fa8db42751fd2154fb6829a784dc08551808fcbacc1eb",
+        "source": "C:\\Users\\gengr\\Documents\\Codex-Design-Skills\\sources\\interfaces\\skills\\better-accessibility\\hit-areas.md",
+        "repository": "https://github.com/jakubkrehel/skills",
+        "kind": "upstream_skill_copy",
+        "commit": "267330e1adfc66a718fb65fa6918c1f06d0a689e"
+      }
+    },
+    {
+      "path": "skills/vendor/better-accessibility/LICENSE",
+      "bytes": 1090,
+      "sha256": "596f89eaa3780ea0451ab2870196427ee2d0b1b3d743507af0b2fbffd46e234c",
+      "origin": {
+        "source_sha256": "596f89eaa3780ea0451ab2870196427ee2d0b1b3d743507af0b2fbffd46e234c",
+        "source": "C:\\Users\\gengr\\Documents\\Codex-Design-Skills\\sources\\interfaces\\LICENSE",
+        "repository": "https://github.com/jakubkrehel/skills",
+        "kind": "upstream_skill_copy",
+        "commit": "267330e1adfc66a718fb65fa6918c1f06d0a689e"
+      }
+    },
+    {
+      "path": "skills/vendor/better-accessibility/motion-and-zoom.md",
+      "bytes": 4018,
+      "sha256": "44136fb4b5e44d924813beecc8fa256bd793e399ccd423af865f40a6e5e50e97",
+      "origin": {
+        "source_sha256": "44136fb4b5e44d924813beecc8fa256bd793e399ccd423af865f40a6e5e50e97",
+        "source": "C:\\Users\\gengr\\Documents\\Codex-Design-Skills\\sources\\interfaces\\skills\\better-accessibility\\motion-and-zoom.md",
+        "repository": "https://github.com/jakubkrehel/skills",
+        "kind": "upstream_skill_copy",
+        "commit": "267330e1adfc66a718fb65fa6918c1f06d0a689e"
+      }
+    },
+    {
+      "path": "skills/vendor/better-accessibility/screen-readers.md",
+      "bytes": 5173,
+      "sha256": "7e12e76c8f395645b3857a87069005d72fbb40e23da65a9523e1e748de58a94a",
+      "origin": {
+        "source_sha256": "7e12e76c8f395645b3857a87069005d72fbb40e23da65a9523e1e748de58a94a",
+        "source": "C:\\Users\\gengr\\Documents\\Codex-Design-Skills\\sources\\interfaces\\skills\\better-accessibility\\screen-readers.md",
+        "repository": "https://github.com/jakubkrehel/skills",
+        "kind": "upstream_skill_copy",
+        "commit": "267330e1adfc66a718fb65fa6918c1f06d0a689e"
+      }
+    },
+    {
+      "path": "skills/vendor/better-accessibility/semantics-and-aria.md",
+      "bytes": 5452,
+      "sha256": "ff1f2e7b6465f90dad54147d3601be6673162269455e7a2d8534830321c760f5",
+      "origin": {
+        "source_sha256": "ff1f2e7b6465f90dad54147d3601be6673162269455e7a2d8534830321c760f5",
+        "source": "C:\\Users\\gengr\\Documents\\Codex-Design-Skills\\sources\\interfaces\\skills\\better-accessibility\\semantics-and-aria.md",
+        "repository": "https://github.com/jakubkrehel/skills",
+        "kind": "upstream_skill_copy",
+        "commit": "267330e1adfc66a718fb65fa6918c1f06d0a689e"
+      }
+    },
+    {
+      "path": "skills/vendor/better-accessibility/SKILL.md",
+      "bytes": 8365,
+      "sha256": "e6e2baec5655a9bc04961121caaa6bfeb19f3a12bcdde92479500ccc05a7fc43",
+      "origin": {
+        "source_sha256": "e6e2baec5655a9bc04961121caaa6bfeb19f3a12bcdde92479500ccc05a7fc43",
+        "source": "C:\\Users\\gengr\\Documents\\Codex-Design-Skills\\sources\\interfaces\\skills\\better-accessibility\\SKILL.md",
+        "repository": "https://github.com/jakubkrehel/skills",
+        "kind": "upstream_skill_copy",
+        "commit": "267330e1adfc66a718fb65fa6918c1f06d0a689e"
+      }
+    },
+    {
+      "path": "skills/vendor/better-layout/agents/openai.yaml",
+      "bytes": 120,
+      "sha256": "d68a82db5a435b58f6ff9b42abbfdbae56920dbe5790073e894554a97290291e",
+      "origin": {
+        "source_sha256": "d68a82db5a435b58f6ff9b42abbfdbae56920dbe5790073e894554a97290291e",
+        "source": "C:\\Users\\gengr\\Documents\\Codex-Design-Skills\\sources\\interfaces\\skills\\better-layout\\agents\\openai.yaml",
+        "repository": "https://github.com/jakubkrehel/skills",
+        "kind": "upstream_skill_copy",
+        "commit": "267330e1adfc66a718fb65fa6918c1f06d0a689e"
+      }
+    },
+    {
+      "path": "skills/vendor/better-layout/grouping-and-alignment.md",
+      "bytes": 5546,
+      "sha256": "f768bce6692f184422d0335d17dc8e6f0df01dbdc8fc57e57edb1ac747f7a672",
+      "origin": {
+        "source_sha256": "f768bce6692f184422d0335d17dc8e6f0df01dbdc8fc57e57edb1ac747f7a672",
+        "source": "C:\\Users\\gengr\\Documents\\Codex-Design-Skills\\sources\\interfaces\\skills\\better-layout\\grouping-and-alignment.md",
+        "repository": "https://github.com/jakubkrehel/skills",
+        "kind": "upstream_skill_copy",
+        "commit": "267330e1adfc66a718fb65fa6918c1f06d0a689e"
+      }
+    },
+    {
+      "path": "skills/vendor/better-layout/LICENSE",
+      "bytes": 1090,
+      "sha256": "596f89eaa3780ea0451ab2870196427ee2d0b1b3d743507af0b2fbffd46e234c",
+      "origin": {
+        "source_sha256": "596f89eaa3780ea0451ab2870196427ee2d0b1b3d743507af0b2fbffd46e234c",
+        "source": "C:\\Users\\gengr\\Documents\\Codex-Design-Skills\\sources\\interfaces\\LICENSE",
+        "repository": "https://github.com/jakubkrehel/skills",
+        "kind": "upstream_skill_copy",
+        "commit": "267330e1adfc66a718fb65fa6918c1f06d0a689e"
+      }
+    },
+    {
+      "path": "skills/vendor/better-layout/SKILL.md",
+      "bytes": 5725,
+      "sha256": "5d6c3db06a61e04b7920c03a6f7795532f19b1a5c71caeedd333e1186ddaa13a",
+      "origin": {
+        "source_sha256": "5d6c3db06a61e04b7920c03a6f7795532f19b1a5c71caeedd333e1186ddaa13a",
+        "source": "C:\\Users\\gengr\\Documents\\Codex-Design-Skills\\sources\\interfaces\\skills\\better-layout\\SKILL.md",
+        "repository": "https://github.com/jakubkrehel/skills",
+        "kind": "upstream_skill_copy",
+        "commit": "267330e1adfc66a718fb65fa6918c1f06d0a689e"
+      }
+    },
+    {
+      "path": "skills/vendor/better-layout/spacing-and-adaptivity.md",
+      "bytes": 6768,
+      "sha256": "bc6b92299d7f004311f485237cf44f5f61ffcf728d8546cab072aba670f82bc2",
+      "origin": {
+        "source_sha256": "bc6b92299d7f004311f485237cf44f5f61ffcf728d8546cab072aba670f82bc2",
+        "source": "C:\\Users\\gengr\\Documents\\Codex-Design-Skills\\sources\\interfaces\\skills\\better-layout\\spacing-and-adaptivity.md",
+        "repository": "https://github.com/jakubkrehel/skills",
+        "kind": "upstream_skill_copy",
+        "commit": "267330e1adfc66a718fb65fa6918c1f06d0a689e"
+      }
+    },
+    {
+      "path": "skills/vendor/better-writing/agents/openai.yaml",
+      "bytes": 111,
+      "sha256": "2066a1f9677d1779858fee3c523d9a36fc12202bcd39b43f2003ec42c60d5d9c",
+      "origin": {
+        "source_sha256": "2066a1f9677d1779858fee3c523d9a36fc12202bcd39b43f2003ec42c60d5d9c",
+        "source": "C:\\Users\\gengr\\Documents\\Codex-Design-Skills\\sources\\interfaces\\skills\\better-writing\\agents\\openai.yaml",
+        "repository": "https://github.com/jakubkrehel/skills",
+        "kind": "upstream_skill_copy",
+        "commit": "267330e1adfc66a718fb65fa6918c1f06d0a689e"
+      }
+    },
+    {
+      "path": "skills/vendor/better-writing/LICENSE",
+      "bytes": 1090,
+      "sha256": "596f89eaa3780ea0451ab2870196427ee2d0b1b3d743507af0b2fbffd46e234c",
+      "origin": {
+        "source_sha256": "596f89eaa3780ea0451ab2870196427ee2d0b1b3d743507af0b2fbffd46e234c",
+        "source": "C:\\Users\\gengr\\Documents\\Codex-Design-Skills\\sources\\interfaces\\LICENSE",
+        "repository": "https://github.com/jakubkrehel/skills",
+        "kind": "upstream_skill_copy",
+        "commit": "267330e1adfc66a718fb65fa6918c1f06d0a689e"
+      }
+    },
+    {
+      "path": "skills/vendor/better-writing/SKILL.md",
+      "bytes": 6534,
+      "sha256": "2f87a69b847d64f4f84778d880c483e3ad604c5e01052cf8cf1c0dd7e3c342a9",
+      "origin": {
+        "source_sha256": "2f87a69b847d64f4f84778d880c483e3ad604c5e01052cf8cf1c0dd7e3c342a9",
+        "source": "C:\\Users\\gengr\\Documents\\Codex-Design-Skills\\sources\\interfaces\\skills\\better-writing\\SKILL.md",
+        "repository": "https://github.com/jakubkrehel/skills",
+        "kind": "upstream_skill_copy",
+        "commit": "267330e1adfc66a718fb65fa6918c1f06d0a689e"
+      }
+    },
+    {
+      "path": "SOURCE-MAP.md",
+      "bytes": 18638,
+      "sha256": "267a4b0a640faa7f16fe66d0bc2d6c3c714c755c2045a7cd77c1451c1d107e15",
+      "origin": {
+        "source": "D:\\Projects\\babel\\SOURCE-MAP.md",
+        "kind": "local_copy",
+        "source_sha256": "267a4b0a640faa7f16fe66d0bc2d6c3c714c755c2045a7cd77c1451c1d107e15"
+      }
+    },
+    {
+      "path": "START-HERE-PROMPT.md",
+      "bytes": 2637,
+      "sha256": "6ce2e624e59fc4df79957375fe0dacac0162a6ccd2e51a443a4b3c0a34d62e65",
+      "origin": {
+        "kind": "authored_for_handoff"
+      }
+    }
+  ]
+}

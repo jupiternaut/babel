@@ -1,0 +1,1775 @@
+{
+  "generated_at": "2026-09-14T07:11:35.293662+00:00",
+  "scope": "Specification structure and schema examples only; no application/runtime tests",
+  "passed": true,
+  "counts": {
+    "operations": 35,
+    "schemas": 45,
+    "event_types": 10,
+    "tasks": 27,
+    "relative_links": 55,
+    "checks": 346
+  },
+  "jsonschema_checks": "performed",
+  "full_third_party_openapi_validation": "not_performed",
+  "input_sha256": {
+    ".gitattributes": "d60f352d0db1404c70afb4bb8b2ca3fd1c610572aa40720e8a0b7baa7885418c",
+    ".gitignore": "8ee6301fee5f6924bb74f269d2a23a16c7611abf0f628966eab6b6d92a418b16",
+    "ENTRY-AND-BOARD.md": "6f0da8a4ba2c27cd9c84d7577bd54c947c0853ba3d4f4829e76ccb3339d28f73",
+    "IMPLEMENTER-PROMPT.md": "1f16768495496dc4ef194984f51be26d134ac5fd911fdddefbfa995caf07d403",
+    "NIMBALYST-DEVELOPMENT-SPEC.md": "5d951ba85acb200e436fcc91dc55eafd8da1d66293067cfed67094a9ca106621",
+    "NIMBALYST-IMPLEMENTER-PROMPT.md": "6dae04528b370dd9a191e2a8cf1806f176c4d726d393b5a72a05be6c51f8dc38",
+    "NIMBALYST-SYSTEM-SPEC.md": "0f2501d49650d38db334050edd0c556bd7dd10ed7b3209a430f849133f01f592",
+    "NIMBALYST-TRACKER-MAPPING.md": "39fcf62578c3f0bf55db981646a6716bc718d794c3789d1ccdbdadb09b54d0c6",
+    "PDF-AND-OPS.md": "121dd95d1e5dbe2a4ff57a73fba977ef29a7704432933b59336e00fa1d75c82d",
+    "README.md": "f65e277673bd99ce37b211a5013a0456cf654a2cbda1734206450033f5dde42c",
+    "SOURCE-MAP.md": "267a4b0a640faa7f16fe66d0bc2d6c3c714c755c2045a7cd77c1451c1d107e15",
+    "SPEC.md": "293195d646135a7bc017ab7f0b068603453d4a06169d8e76ab245cfe276ca28b",
+    "tasks.json": "b5eedd05e8ce17738aa8d6c19b48d0f339dfb9fc0414464eaf1c4e6bf4a7d9c7",
+    "TASKS.md": "3d42ade67e592ee5350e6b0092ebc7ff3572a35d314627e1e1ce4d2f87aef21e",
+    "validate-spec.py": "b3369a01d69b74ff9181e8dfa148e1c691c3bb73977cc0ddf3e22eb6e3cf53e0",
+    "contracts/events.schema.json": "af7b6d3c60b65fb41d2ee0e51a4cfb0ef256024f461fb7bc67dccf78c8d9c622",
+    "contracts/openapi.json": "8cce61c84e3bb38d293be76da28f0199ba13d32b04f145e2f8ced457f76e266e",
+    "decisions/ADR-001.md": "788512e0f5d86535cb3380036be94d939cfc91fee7bca801fd3ee5b755d8b743",
+    "decisions/ADR-002.md": "e0708aa792a4b0410e556430a3fc2d2779d3bf39e0491c22d237e36997e956ca",
+    "decisions/ADR-003.md": "4297654f198cad62999cbe9e902d3220dd9d841d9398e8caffd27e405827311d",
+    "decisions/ADR-004.md": "ff2d427f915c5fced90de011b1d0b57b09428cdff8175b2c0c6eb32d93750a5b",
+    "design/babel-dashboard-v1-prompt.md": "3b17b8538fce8e8e4948c2a5f4906569bbcffcd1a086bf85a4875d25f4b899ff",
+    "design/babel-dashboard-v1.png": "346fc150f2d98a872ee4c08c92516dcf87a1bb0fe4f5f1af221eca20b334e122",
+    "design/babel-dashboard-v2-prompt.md": "40cc52346d961bc9a8587c0369c0d7530c46f08d813ddfd80416b5a560dd5881",
+    "design/babel-dashboard-v2.png": "0b876d44a52897debd61131e1b315b7412d5151fca2aba23f8165e5c43d460b0",
+    "design/nimbalyst-source-evidence.json": "d19fdfbfbb7502d850d6b6afc3d1a6697b6a79c7bb639351a19fc47ea9da342f"
+  },
+  "checks": [
+    {
+      "name": "OpenAPI version",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Design-only status",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "api local references",
+      "passed": true,
+      "detail": "266 references; []"
+    },
+    {
+      "name": "events local references",
+      "passed": true,
+      "detail": "0 references; []"
+    },
+    {
+      "name": "get /api/v1/worker/attempts/{attempt_id}/inputs/{input_id}: path parameters",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "get /api/v1/worker/attempts/{attempt_id}/inputs/{input_id}: responses",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "downloadWorkerInput: worker authentication",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "post /api/v1/auth/login-flows: path parameters",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "post /api/v1/auth/login-flows: responses",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "loginStart: proof instead of idempotency cache",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "post /api/v1/auth/login-flows/{flow_id}/complete: path parameters",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "post /api/v1/auth/login-flows/{flow_id}/complete: responses",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "loginComplete: proof instead of idempotency cache",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "get /api/v1/me: path parameters",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "get /api/v1/me: responses",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "delete /api/v1/session: path parameters",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "delete /api/v1/session: responses",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "logout: idempotency header",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "logout: conditional CSRF documented",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "get /api/v1/projects: path parameters",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "get /api/v1/projects: responses",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "get /api/v1/projects/{project_id}: path parameters",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "get /api/v1/projects/{project_id}: responses",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "get /api/v1/tasks: path parameters",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "get /api/v1/tasks: responses",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "post /api/v1/tasks/import: path parameters",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "post /api/v1/tasks/import: responses",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "importDeckTask: idempotency header",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "importDeckTask: conditional CSRF documented",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "get /api/v1/tasks/{task_id}: path parameters",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "get /api/v1/tasks/{task_id}: responses",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "post /api/v1/tasks/{task_id}/specifications: path parameters",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "post /api/v1/tasks/{task_id}/specifications: responses",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "createSpecification: idempotency header",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "createSpecification: conditional CSRF documented",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "get /api/v1/specifications/{specification_id}: path parameters",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "get /api/v1/specifications/{specification_id}: responses",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "post /api/v1/runs: path parameters",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "post /api/v1/runs: responses",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "dispatchRun: idempotency header",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "dispatchRun: conditional CSRF documented",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "get /api/v1/runs: path parameters",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "get /api/v1/runs: responses",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "get /api/v1/runs/{run_id}: path parameters",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "get /api/v1/runs/{run_id}: responses",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "post /api/v1/runs/{run_id}/cancel: path parameters",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "post /api/v1/runs/{run_id}/cancel: responses",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "cancelRun: idempotency header",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "cancelRun: conditional CSRF documented",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "post /api/v1/runs/{run_id}/review: path parameters",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "post /api/v1/runs/{run_id}/review: responses",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "reviewRun: idempotency header",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "reviewRun: conditional CSRF documented",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "get /api/v1/runs/{run_id}/events: path parameters",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "get /api/v1/runs/{run_id}/events: responses",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "get /api/v1/shares: path parameters",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "get /api/v1/shares: responses",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "get /api/v1/resources: path parameters",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "get /api/v1/resources: responses",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "post /api/v1/resources: path parameters",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "post /api/v1/resources: responses",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "createManagedText: idempotency header",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "createManagedText: conditional CSRF documented",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "get /api/v1/resources/{resource_id}: path parameters",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "get /api/v1/resources/{resource_id}: responses",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "get /api/v1/resources/{resource_id}/content: path parameters",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "get /api/v1/resources/{resource_id}/content: responses",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "put /api/v1/resources/{resource_id}/content: path parameters",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "put /api/v1/resources/{resource_id}/content: responses",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "writeManagedText: idempotency header",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "writeManagedText: conditional CSRF documented",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "post /api/v1/shares/{share_id}/refresh: path parameters",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "post /api/v1/shares/{share_id}/refresh: responses",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "refreshShare: idempotency header",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "refreshShare: conditional CSRF documented",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "get /api/v1/operations/{operation_id}: path parameters",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "get /api/v1/operations/{operation_id}: responses",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "get /api/v1/workers: path parameters",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "get /api/v1/workers: responses",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "get /api/v1/runs/{run_id}/artifacts: path parameters",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "get /api/v1/runs/{run_id}/artifacts: responses",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "get /api/v1/artifacts/{artifact_id}/content: path parameters",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "get /api/v1/artifacts/{artifact_id}/content: responses",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "post /api/v1/worker/claims: path parameters",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "post /api/v1/worker/claims: responses",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "claimWork: worker authentication",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "claimWork: idempotency header",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "post /api/v1/worker/heartbeats: path parameters",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "post /api/v1/worker/heartbeats: responses",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "workerHeartbeat: worker authentication",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "workerHeartbeat: idempotency header",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "post /api/v1/worker/events: path parameters",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "post /api/v1/worker/events: responses",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "ingestWorkerEvents: worker authentication",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "ingestWorkerEvents: idempotency header",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "post /api/v1/worker/artifacts: path parameters",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "post /api/v1/worker/artifacts: responses",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "uploadWorkerArtifact: worker authentication",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "uploadWorkerArtifact: idempotency header",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "post /api/v1/worker/stop-proofs: path parameters",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "post /api/v1/worker/stop-proofs: responses",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "submitStopProof: worker authentication",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "submitStopProof: idempotency header",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "post /api/v1/runs/{run_id}/reconcile: path parameters",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "post /api/v1/runs/{run_id}/reconcile: responses",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "reconcileRun: idempotency header",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "reconcileRun: conditional CSRF documented",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Unique operation IDs",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Separate stop-proof and reconciliation APIs",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Run safety fields are required",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Immutable worker input manifest is required",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Event contracts agree",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Unique event types",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Run states agree with state event",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Unique task IDs",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "No fabricated implementation status",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Task dependencies exist, acyclic, release-consistent",
+      "passed": true,
+      "detail": "[]"
+    },
+    {
+      "name": "WB-000: Markdown heading",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-000: implementation goal",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-000: acceptance and scope",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-001: Markdown heading",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-001: implementation goal",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-001: acceptance and scope",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-002: Markdown heading",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-002: implementation goal",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-002: acceptance and scope",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-003: Markdown heading",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-003: implementation goal",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-003: acceptance and scope",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-004: Markdown heading",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-004: implementation goal",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-004: acceptance and scope",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-005: Markdown heading",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-005: implementation goal",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-005: acceptance and scope",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-006: Markdown heading",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-006: implementation goal",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-006: acceptance and scope",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-007: Markdown heading",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-007: implementation goal",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-007: acceptance and scope",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-008: Markdown heading",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-008: implementation goal",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-008: acceptance and scope",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-009: Markdown heading",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-009: implementation goal",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-009: acceptance and scope",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-010: Markdown heading",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-010: implementation goal",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-010: acceptance and scope",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-011: Markdown heading",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-011: implementation goal",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-011: acceptance and scope",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-012: Markdown heading",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-012: implementation goal",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-012: acceptance and scope",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-013: Markdown heading",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-013: implementation goal",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-013: acceptance and scope",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-014: Markdown heading",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-014: implementation goal",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-014: acceptance and scope",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-015: Markdown heading",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-015: implementation goal",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-015: acceptance and scope",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-016: Markdown heading",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-016: implementation goal",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-016: acceptance and scope",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-017: Markdown heading",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-017: implementation goal",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-017: acceptance and scope",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-018: Markdown heading",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-018: implementation goal",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-018: acceptance and scope",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-019: Markdown heading",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-019: implementation goal",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-019: acceptance and scope",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-020: Markdown heading",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-020: implementation goal",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-020: acceptance and scope",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-021: Markdown heading",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-021: implementation goal",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-021: acceptance and scope",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-022: Markdown heading",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-022: implementation goal",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-022: acceptance and scope",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-023: Markdown heading",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-023: implementation goal",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-023: acceptance and scope",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-024: Markdown heading",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-024: implementation goal",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-024: acceptance and scope",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-025: Markdown heading",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-025: implementation goal",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-025: acceptance and scope",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-026: Markdown heading",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-026: implementation goal",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WB-026: acceptance and scope",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "ENTRY-AND-BOARD.md: paired fences",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "ENTRY-AND-BOARD.md: link decisions/ADR-003.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "ENTRY-AND-BOARD.md: link NIMBALYST-SYSTEM-SPEC.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "IMPLEMENTER-PROMPT.md: paired fences",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "IMPLEMENTER-PROMPT.md: link NIMBALYST-IMPLEMENTER-PROMPT.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "IMPLEMENTER-PROMPT.md: link decisions/ADR-003.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "IMPLEMENTER-PROMPT.md: link NIMBALYST-SYSTEM-SPEC.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "NIMBALYST-DEVELOPMENT-SPEC.md: paired fences",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "NIMBALYST-DEVELOPMENT-SPEC.md: link NIMBALYST-TRACKER-MAPPING.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "NIMBALYST-DEVELOPMENT-SPEC.md: link NIMBALYST-SYSTEM-SPEC.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "NIMBALYST-DEVELOPMENT-SPEC.md: link decisions/ADR-004.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "NIMBALYST-DEVELOPMENT-SPEC.md: link NIMBALYST-IMPLEMENTER-PROMPT.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "NIMBALYST-DEVELOPMENT-SPEC.md: link design/babel-dashboard-v2.png",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "NIMBALYST-DEVELOPMENT-SPEC.md: link NIMBALYST-SYSTEM-SPEC.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "NIMBALYST-IMPLEMENTER-PROMPT.md: paired fences",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "NIMBALYST-SYSTEM-SPEC.md: paired fences",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "NIMBALYST-SYSTEM-SPEC.md: link NIMBALYST-DEVELOPMENT-SPEC.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "NIMBALYST-SYSTEM-SPEC.md: link NIMBALYST-TRACKER-MAPPING.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "NIMBALYST-SYSTEM-SPEC.md: link decisions/ADR-003.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "NIMBALYST-SYSTEM-SPEC.md: link design/babel-dashboard-v2.png",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "NIMBALYST-SYSTEM-SPEC.md: link SOURCE-MAP.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "NIMBALYST-SYSTEM-SPEC.md: link ENTRY-AND-BOARD.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "NIMBALYST-TRACKER-MAPPING.md: paired fences",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "NIMBALYST-TRACKER-MAPPING.md: link NIMBALYST-DEVELOPMENT-SPEC.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "NIMBALYST-TRACKER-MAPPING.md: link design/nimbalyst-source-evidence.json",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "PDF-AND-OPS.md: paired fences",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "README.md: paired fences",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "README.md: link NIMBALYST-DEVELOPMENT-SPEC.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "README.md: link NIMBALYST-TRACKER-MAPPING.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "README.md: link NIMBALYST-IMPLEMENTER-PROMPT.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "README.md: link NIMBALYST-SYSTEM-SPEC.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "README.md: link decisions/ADR-003.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "README.md: link NIMBALYST-DEVELOPMENT-SPEC.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "README.md: link NIMBALYST-TRACKER-MAPPING.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "README.md: link NIMBALYST-IMPLEMENTER-PROMPT.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "README.md: link SPEC.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "README.md: link contracts/openapi.json",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "README.md: link contracts/events.schema.json",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "README.md: link SOURCE-MAP.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "README.md: link PDF-AND-OPS.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "README.md: link TASKS.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "README.md: link tasks.json",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "README.md: link decisions/ADR-001.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "README.md: link IMPLEMENTER-PROMPT.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "README.md: link validate-spec.py",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "README.md: link validation-report.json",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "SOURCE-MAP.md: paired fences",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "SOURCE-MAP.md: link NIMBALYST-TRACKER-MAPPING.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "SOURCE-MAP.md: link decisions/ADR-003.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "SOURCE-MAP.md: link NIMBALYST-SYSTEM-SPEC.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "SPEC.md: paired fences",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "SPEC.md: link decisions/ADR-003.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "SPEC.md: link NIMBALYST-SYSTEM-SPEC.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TASKS.md: paired fences",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TASKS.md: link NIMBALYST-DEVELOPMENT-SPEC.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TASKS.md: link NIMBALYST-TRACKER-MAPPING.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TASKS.md: link decisions/ADR-003.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "decisions\\ADR-001.md: paired fences",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "decisions\\ADR-002.md: paired fences",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "decisions\\ADR-002.md: link ADR-003.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "decisions\\ADR-002.md: link ../ENTRY-AND-BOARD.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "decisions\\ADR-002.md: link ADR-001.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "decisions\\ADR-003.md: paired fences",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "decisions\\ADR-003.md: link ADR-002.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "decisions\\ADR-003.md: link ../NIMBALYST-SYSTEM-SPEC.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "decisions\\ADR-004.md: paired fences",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "decisions\\ADR-004.md: link ../NIMBALYST-TRACKER-MAPPING.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "decisions\\ADR-004.md: link ../NIMBALYST-DEVELOPMENT-SPEC.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "design\\babel-dashboard-v1-prompt.md: paired fences",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "design\\babel-dashboard-v1-prompt.md: link babel-dashboard-v1.png",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "design\\babel-dashboard-v2-prompt.md: paired fences",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "design\\babel-dashboard-v2-prompt.md: link babel-dashboard-v2.png",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Input: schema syntax",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Error: schema syntax",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "LoginStart: schema syntax",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "LoginFlow: schema syntax",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "LoginComplete: schema syntax",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Session: schema syntax",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Pending: schema syntax",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Principal: schema syntax",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Project: schema syntax",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TaskImport: schema syntax",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Task: schema syntax",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "SpecificationCreate: schema syntax",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Specification: schema syntax",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "RunCreate: schema syntax",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Run: schema syntax",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Reason: schema syntax",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Review: schema syntax",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Share: schema syntax",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Resource: schema syntax",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TextWrite: schema syntax",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "ResourceCreate: schema syntax",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Refresh: schema syntax",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Operation: schema syntax",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Worker: schema syntax",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Claim: schema syntax",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Lease: schema syntax",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WorkerEnvelope: schema syntax",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Heartbeat: schema syntax",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "HeartbeatAck: schema syntax",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "RunEvent: schema syntax",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WorkerEvent: schema syntax",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "EventBatch: schema syntax",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "EventAck: schema syntax",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "ArtifactCreate: schema syntax",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Artifact: schema syntax",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "ProjectPage: schema syntax",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TaskPage: schema syntax",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "RunPage: schema syntax",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "SharePage: schema syntax",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "ResourcePage: schema syntax",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "WorkerPage: schema syntax",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "ArtifactPage: schema syntax",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "StopProof: schema syntax",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "StopProofAck: schema syntax",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Reconcile: schema syntax",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "run.state: valid example",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "run.state: rejects extra payload field",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "attempt.activity: valid example",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "attempt.activity: rejects extra payload field",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "attempt.output: valid example",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "attempt.output: rejects extra payload field",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "verification.result: valid example",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "verification.result: rejects extra payload field",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "artifact.published: valid example",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "artifact.published: rejects extra payload field",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "attempt.cost: valid example",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "attempt.cost: rejects extra payload field",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "source.changed: valid example",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "source.changed: rejects extra payload field",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "attempt.stopped: valid example",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "attempt.stopped: rejects extra payload field",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "review.recorded: valid example",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "review.recorded: rejects extra payload field",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "notification.status: valid example",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "notification.status: rejects extra payload field",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Event rejects invalid sequence",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Event rejects invalid event_id",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Event rejects invalid type",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Event rejects unknown state",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Session cookie example",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Session bearer example",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Session forbids token in cookie response",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Session forbids missing bearer",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Specification rejects empty acceptance list",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Reconciliation requires evidence",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Reconciliation evidence example",
+      "passed": true,
+      "detail": ""
+    }
+  ]
+}

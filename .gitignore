@@ -4,8 +4,10 @@
 *.pem
 *.key
 __pycache__/
+*.pyc
 .venv/
 node_modules/
+implementation/
 .DS_Store
 Thumbs.db
 *.log

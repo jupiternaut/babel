@@ -1,0 +1,1725 @@
+{
+  "schemaVersion": 1,
+  "specVersion": "2.3",
+  "package": "babel-github-specifications",
+  "createdAt": "2026-09-14T08:06:49.756877+00:00",
+  "scope": "Published specifications and design references, not application implementation",
+  "excludedTrees": [
+    "implementation/",
+    ".git/"
+  ],
+  "unhashed_outputs": [
+    "VERIFICATION.json"
+  ],
+  "files": [
+    {
+      "path": ".gitattributes",
+      "bytes": 93,
+      "sha256": "0ca58adb16c0aadc11a0570f6fdf4a5f3279c6239a3386f4f794ace625b69437",
+      "origin": {
+        "kind": "publication_entry_or_configuration"
+      }
+    },
+    {
+      "path": ".gitignore",
+      "bytes": 121,
+      "sha256": "8b5aac9f007ff61af20e3aa84fec3fc8020f485aebb0539ad5b1c6e0bdb72dd9",
+      "origin": {
+        "kind": "publication_adaptation",
+        "source_sha256": "d6439973d8a506f44142877efa1b34b8f7d904803a04bf61a03ab338883a8e2c",
+        "previous_origin": {
+          "kind": "authored_for_handoff"
+        }
+      }
+    },
+    {
+      "path": "AGENTS.md",
+      "bytes": 9124,
+      "sha256": "8a240ebaf2b2cd160d86362dc662a712b2dd5adc80e10e965de13a63b5ad19c0",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "8a240ebaf2b2cd160d86362dc662a712b2dd5adc80e10e965de13a63b5ad19c0",
+        "previous_origin": {
+          "kind": "revised_for_v2.3",
+          "previous_sha256": "a02ade155c9b552a84d6232d7359a362f59b7612fbd094c177755dfd965d7fe4",
+          "previous_origin": {
+            "kind": "authored_for_handoff"
+          },
+          "reason": "GUI/TUI/CLI parity and application Hooks requirements"
+        }
+      }
+    },
+    {
+      "path": "CAPABILITY-MATRIX.md",
+      "bytes": 6450,
+      "sha256": "db02ff32ec9537239c6928eed5c5e173de72cb85ce99150c85b783094a212a4a",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "db02ff32ec9537239c6928eed5c5e173de72cb85ce99150c85b783094a212a4a",
+        "previous_origin": {
+          "kind": "authored_for_v2.3"
+        }
+      }
+    },
+    {
+      "path": "ENTRY-AND-BOARD.md",
+      "bytes": 11348,
+      "sha256": "6f0da8a4ba2c27cd9c84d7577bd54c947c0853ba3d4f4829e76ccb3339d28f73",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "6f0da8a4ba2c27cd9c84d7577bd54c947c0853ba3d4f4829e76ccb3339d28f73",
+        "previous_origin": {
+          "source": "D:\\Projects\\babel\\ENTRY-AND-BOARD.md",
+          "kind": "local_copy",
+          "source_sha256": "6f0da8a4ba2c27cd9c84d7577bd54c947c0853ba3d4f4829e76ccb3339d28f73"
+        }
+      }
+    },
+    {
+      "path": "IMPLEMENTER-PROMPT.md",
+      "bytes": 399,
+      "sha256": "a7a0fab3854cc0e18c1e13246f3061f3494b23b09c3b84b85cb556f98059ce0f",
+      "origin": {
+        "kind": "publication_entry_or_configuration"
+      }
+    },
+    {
+      "path": "MULTI-AGENT-PLAN.md",
+      "bytes": 7994,
+      "sha256": "d5b24a1abd46dca188f469347e070b19ed38b83d2d95592ee0901538c334004d",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "d5b24a1abd46dca188f469347e070b19ed38b83d2d95592ee0901538c334004d",
+        "previous_origin": {
+          "reason": "Development parallel task orchestration",
+          "kind": "authored_for_v2.3"
+        }
+      }
+    },
+    {
+      "path": "NIMBALYST-DEVELOPMENT-SPEC.md",
+      "bytes": 38869,
+      "sha256": "7d750131382c17fb6f79ccfad28066c89023d270fdcb52de4b2d0f1b798da686",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "7d750131382c17fb6f79ccfad28066c89023d270fdcb52de4b2d0f1b798da686",
+        "previous_origin": {
+          "kind": "revised_for_v2.3",
+          "previous_sha256": "5d951ba85acb200e436fcc91dc55eafd8da1d66293067cfed67094a9ca106621",
+          "previous_origin": {
+            "source": "D:\\Projects\\babel\\NIMBALYST-DEVELOPMENT-SPEC.md",
+            "kind": "local_copy",
+            "source_sha256": "5d951ba85acb200e436fcc91dc55eafd8da1d66293067cfed67094a9ca106621"
+          },
+          "reason": "GUI/TUI/CLI parity and application Hooks requirements"
+        }
+      }
+    },
+    {
+      "path": "NIMBALYST-IMPLEMENTER-PROMPT.md",
+      "bytes": 731,
+      "sha256": "a1f9a8841e3015cb5da0078324138461be4f6da9e1d526e69dbee58cf5621904",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "a1f9a8841e3015cb5da0078324138461be4f6da9e1d526e69dbee58cf5621904",
+        "previous_origin": {
+          "kind": "revised_for_v2.3",
+          "previous_sha256": "6dae04528b370dd9a191e2a8cf1806f176c4d726d393b5a72a05be6c51f8dc38",
+          "previous_origin": {
+            "source": "D:\\Projects\\babel\\NIMBALYST-IMPLEMENTER-PROMPT.md",
+            "kind": "local_copy",
+            "source_sha256": "6dae04528b370dd9a191e2a8cf1806f176c4d726d393b5a72a05be6c51f8dc38"
+          },
+          "reason": "GUI/TUI/CLI parity and application Hooks requirements"
+        }
+      }
+    },
+    {
+      "path": "NIMBALYST-SYSTEM-SPEC.md",
+      "bytes": 17874,
+      "sha256": "769f6d03f004430c31577eac1e6ab6e1a5e0cbdd80f2a04cd84cfd00752ed4ce",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "769f6d03f004430c31577eac1e6ab6e1a5e0cbdd80f2a04cd84cfd00752ed4ce",
+        "previous_origin": {
+          "kind": "revised_for_v2.3",
+          "previous_sha256": "0f2501d49650d38db334050edd0c556bd7dd10ed7b3209a430f849133f01f592",
+          "previous_origin": {
+            "source": "D:\\Projects\\babel\\NIMBALYST-SYSTEM-SPEC.md",
+            "kind": "local_copy",
+            "source_sha256": "0f2501d49650d38db334050edd0c556bd7dd10ed7b3209a430f849133f01f592"
+          },
+          "reason": "GUI/TUI/CLI parity and application Hooks requirements"
+        }
+      }
+    },
+    {
+      "path": "NIMBALYST-TRACKER-MAPPING.md",
+      "bytes": 26917,
+      "sha256": "7deb14b50895d258c265ce03d51d2750c6a13a6e7e88d83bf29e9af9fb3d62dc",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "7deb14b50895d258c265ce03d51d2750c6a13a6e7e88d83bf29e9af9fb3d62dc",
+        "previous_origin": {
+          "kind": "revised_for_v2.3",
+          "previous_sha256": "39fcf62578c3f0bf55db981646a6716bc718d794c3789d1ccdbdadb09b54d0c6",
+          "previous_origin": {
+            "source": "D:\\Projects\\babel\\NIMBALYST-TRACKER-MAPPING.md",
+            "kind": "local_copy",
+            "source_sha256": "39fcf62578c3f0bf55db981646a6716bc718d794c3789d1ccdbdadb09b54d0c6"
+          },
+          "reason": "GUI/TUI/CLI parity and application Hooks requirements"
+        }
+      }
+    },
+    {
+      "path": "NIMBALYST-TUI-HOOKS-SPEC.md",
+      "bytes": 13081,
+      "sha256": "77ca99c701ea99c17615910817aa17adf8202cda554e489f3500557735402357",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "77ca99c701ea99c17615910817aa17adf8202cda554e489f3500557735402357",
+        "previous_origin": {
+          "kind": "authored_for_v2.3"
+        }
+      }
+    },
+    {
+      "path": "PDF-AND-OPS.md",
+      "bytes": 426,
+      "sha256": "03a5329970e791f8e46759e0c8099633b24b7e670a83e47db05088a7369db857",
+      "origin": {
+        "kind": "publication_entry_or_configuration"
+      }
+    },
+    {
+      "path": "README.md",
+      "bytes": 6354,
+      "sha256": "7f84c120eba5025595f103255d0423a5a7e254fa5b0a7897181650611bb968a3",
+      "origin": {
+        "kind": "publication_adaptation",
+        "source_sha256": "58b7531abe5795affee8cd6cf3fc3b8f40eb6f40011c177879626b6c9a851ccd",
+        "previous_origin": {
+          "kind": "revised_for_v2.3",
+          "previous_sha256": "a8d02994cff8b9e127d80ea197e48dd408abfb7501fe1b32b081a41a902ed43b",
+          "previous_origin": {
+            "kind": "authored_for_handoff"
+          },
+          "reason": "GUI/TUI/CLI parity and application Hooks requirements"
+        }
+      }
+    },
+    {
+      "path": "SOURCE-MAP.md",
+      "bytes": 21627,
+      "sha256": "81f5fbcd253cff4898e09ddb338cc0890583be5da1a6caef5419ba2928a2f460",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "81f5fbcd253cff4898e09ddb338cc0890583be5da1a6caef5419ba2928a2f460",
+        "previous_origin": {
+          "kind": "revised_for_v2.3",
+          "previous_sha256": "267a4b0a640faa7f16fe66d0bc2d6c3c714c755c2045a7cd77c1451c1d107e15",
+          "previous_origin": {
+            "source": "D:\\Projects\\babel\\SOURCE-MAP.md",
+            "kind": "local_copy",
+            "source_sha256": "267a4b0a640faa7f16fe66d0bc2d6c3c714c755c2045a7cd77c1451c1d107e15"
+          },
+          "reason": "GUI/TUI/CLI parity and application Hooks requirements"
+        }
+      }
+    },
+    {
+      "path": "SPEC.md",
+      "bytes": 577,
+      "sha256": "91e8fedb268bd892ec60cf2d0957bb9c9b433a5171a5717f6ee05a6488fa3f36",
+      "origin": {
+        "kind": "publication_entry_or_configuration"
+      }
+    },
+    {
+      "path": "START-HERE-PROMPT.md",
+      "bytes": 4877,
+      "sha256": "ac441077a31489d722fc4168ff81ba9b83dfd776a3581aa1a0ff7fb0ed8324d1",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "ac441077a31489d722fc4168ff81ba9b83dfd776a3581aa1a0ff7fb0ed8324d1",
+        "previous_origin": {
+          "kind": "revised_for_v2.3",
+          "previous_sha256": "6ce2e624e59fc4df79957375fe0dacac0162a6ccd2e51a443a4b3c0a34d62e65",
+          "previous_origin": {
+            "kind": "authored_for_handoff"
+          },
+          "reason": "GUI/TUI/CLI parity and application Hooks requirements"
+        }
+      }
+    },
+    {
+      "path": "TASKS.md",
+      "bytes": 599,
+      "sha256": "aa9babf73c03506811f662f7ccd6356d956711a07b39dc9aa3449c88e1c079ed",
+      "origin": {
+        "kind": "publication_entry_or_configuration"
+      }
+    },
+    {
+      "path": "decisions/ADR-001.md",
+      "bytes": 2226,
+      "sha256": "788512e0f5d86535cb3380036be94d939cfc91fee7bca801fd3ee5b755d8b743",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "788512e0f5d86535cb3380036be94d939cfc91fee7bca801fd3ee5b755d8b743",
+        "previous_origin": {
+          "source": "D:\\Projects\\babel\\decisions\\ADR-001.md",
+          "kind": "local_copy",
+          "source_sha256": "788512e0f5d86535cb3380036be94d939cfc91fee7bca801fd3ee5b755d8b743"
+        }
+      }
+    },
+    {
+      "path": "decisions/ADR-002.md",
+      "bytes": 2207,
+      "sha256": "e0708aa792a4b0410e556430a3fc2d2779d3bf39e0491c22d237e36997e956ca",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "e0708aa792a4b0410e556430a3fc2d2779d3bf39e0491c22d237e36997e956ca",
+        "previous_origin": {
+          "source": "D:\\Projects\\babel\\decisions\\ADR-002.md",
+          "kind": "local_copy",
+          "source_sha256": "e0708aa792a4b0410e556430a3fc2d2779d3bf39e0491c22d237e36997e956ca"
+        }
+      }
+    },
+    {
+      "path": "decisions/ADR-003.md",
+      "bytes": 1624,
+      "sha256": "4297654f198cad62999cbe9e902d3220dd9d841d9398e8caffd27e405827311d",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "4297654f198cad62999cbe9e902d3220dd9d841d9398e8caffd27e405827311d",
+        "previous_origin": {
+          "source": "D:\\Projects\\babel\\decisions\\ADR-003.md",
+          "kind": "local_copy",
+          "source_sha256": "4297654f198cad62999cbe9e902d3220dd9d841d9398e8caffd27e405827311d"
+        }
+      }
+    },
+    {
+      "path": "decisions/ADR-004.md",
+      "bytes": 2660,
+      "sha256": "2ed0896c71b5f4be700dd05849ef75c13dcde287f6d9f0ea971d3eeea885ad2d",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "2ed0896c71b5f4be700dd05849ef75c13dcde287f6d9f0ea971d3eeea885ad2d",
+        "previous_origin": {
+          "kind": "revised_for_v2.3",
+          "previous_sha256": "ff2d427f915c5fced90de011b1d0b57b09428cdff8175b2c0c6eb32d93750a5b",
+          "previous_origin": {
+            "source": "D:\\Projects\\babel\\decisions\\ADR-004.md",
+            "kind": "local_copy",
+            "source_sha256": "ff2d427f915c5fced90de011b1d0b57b09428cdff8175b2c0c6eb32d93750a5b"
+          },
+          "reason": "GUI/TUI/CLI parity and application Hooks requirements"
+        }
+      }
+    },
+    {
+      "path": "decisions/ADR-005.md",
+      "bytes": 1824,
+      "sha256": "d09e4ce0915a3dc4099efb1748bb4a7aa61f7ebdb9b030c53eb95ebe5994731a",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "d09e4ce0915a3dc4099efb1748bb4a7aa61f7ebdb9b030c53eb95ebe5994731a",
+        "previous_origin": {
+          "kind": "authored_for_v2.3"
+        }
+      }
+    },
+    {
+      "path": "design/UI-IMAGE-PROMPTS.md",
+      "bytes": 11417,
+      "sha256": "b7aa9a7219925f145bd4455e27741bad99cb70b04a1397da8fae13fa291b3eaf",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "b7aa9a7219925f145bd4455e27741bad99cb70b04a1397da8fae13fa291b3eaf",
+        "previous_origin": {
+          "kind": "revised_for_v2.3",
+          "previous_sha256": "ff7f6d24d05c4e025cc6dea1e9e8685fd12147548588c72bfc9844aea16f1f3b",
+          "previous_origin": {
+            "kind": "authored_for_handoff"
+          },
+          "reason": "GUI/TUI/CLI parity and application Hooks requirements"
+        }
+      }
+    },
+    {
+      "path": "design/UI-VISUAL-PLAN.md",
+      "bytes": 10030,
+      "sha256": "28c42e6b524b4d7eafaab811cdcc9e5313ba7b0c714e604e84c4567d5b50b8ab",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "28c42e6b524b4d7eafaab811cdcc9e5313ba7b0c714e604e84c4567d5b50b8ab",
+        "previous_origin": {
+          "kind": "revised_for_v2.3",
+          "previous_sha256": "fc94e8f0c736a50f9a1bef70f4b0ae514cd353d7828449a3c660fae6aa21fba8",
+          "previous_origin": {
+            "kind": "authored_for_handoff"
+          },
+          "reason": "GUI/TUI/CLI parity and application Hooks requirements"
+        }
+      }
+    },
+    {
+      "path": "design/babel-dashboard-v2-prompt.md",
+      "bytes": 6087,
+      "sha256": "40cc52346d961bc9a8587c0369c0d7530c46f08d813ddfd80416b5a560dd5881",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "40cc52346d961bc9a8587c0369c0d7530c46f08d813ddfd80416b5a560dd5881",
+        "previous_origin": {
+          "source": "D:\\Projects\\babel\\design\\babel-dashboard-v2-prompt.md",
+          "kind": "local_copy",
+          "source_sha256": "40cc52346d961bc9a8587c0369c0d7530c46f08d813ddfd80416b5a560dd5881"
+        }
+      }
+    },
+    {
+      "path": "design/babel-dashboard-v2.png",
+      "bytes": 992162,
+      "sha256": "0b876d44a52897debd61131e1b315b7412d5151fca2aba23f8165e5c43d460b0",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "0b876d44a52897debd61131e1b315b7412d5151fca2aba23f8165e5c43d460b0",
+        "previous_origin": {
+          "source": "D:\\Projects\\babel\\design\\babel-dashboard-v2.png",
+          "kind": "local_copy",
+          "source_sha256": "0b876d44a52897debd61131e1b315b7412d5151fca2aba23f8165e5c43d460b0"
+        }
+      }
+    },
+    {
+      "path": "design/demo-fixtures.json",
+      "bytes": 9248,
+      "sha256": "a250fbac732376bdc9fa4058c76b12db152e892a229b0a150dab73785448fe2e",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "a250fbac732376bdc9fa4058c76b12db152e892a229b0a150dab73785448fe2e",
+        "previous_origin": {
+          "kind": "revised_for_v2.3",
+          "previous_sha256": "8a0a94a6d17b14ad584ab909314a6ce4ed0814717b6f7f8b47f800b63b1716ec",
+          "previous_origin": {
+            "kind": "authored_for_handoff"
+          },
+          "reason": "GUI/TUI/CLI parity and application Hooks requirements"
+        }
+      }
+    },
+    {
+      "path": "design/nimbalyst-source-evidence.json",
+      "bytes": 18093,
+      "sha256": "d19fdfbfbb7502d850d6b6afc3d1a6697b6a79c7bb639351a19fc47ea9da342f",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "d19fdfbfbb7502d850d6b6afc3d1a6697b6a79c7bb639351a19fc47ea9da342f",
+        "previous_origin": {
+          "source": "D:\\Projects\\babel\\design\\nimbalyst-source-evidence.json",
+          "kind": "local_copy",
+          "source_sha256": "d19fdfbfbb7502d850d6b6afc3d1a6697b6a79c7bb639351a19fc47ea9da342f"
+        }
+      }
+    },
+    {
+      "path": "design/reference/nimbalyst-trackers-user.png",
+      "bytes": 74552,
+      "sha256": "cba4758a2111f9992d10edad849289aab153726c37381f722ad8d58583371463",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "cba4758a2111f9992d10edad849289aab153726c37381f722ad8d58583371463",
+        "previous_origin": {
+          "source": "C:\\Users\\gengr\\AppData\\Local\\Temp\\codex-clipboard-8c3d615b-a458-4100-a952-5da6a69a38e9.png",
+          "kind": "user_attachment_copy",
+          "source_sha256": "cba4758a2111f9992d10edad849289aab153726c37381f722ad8d58583371463"
+        }
+      }
+    },
+    {
+      "path": "design/visual-contract.md",
+      "bytes": 11686,
+      "sha256": "8a73fdfd29b50c2646def272504e015fa18ef3ba5ec3a70ffe5e2bcde0463114",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "8a73fdfd29b50c2646def272504e015fa18ef3ba5ec3a70ffe5e2bcde0463114",
+        "previous_origin": {
+          "kind": "revised_for_v2.3",
+          "previous_sha256": "e53023db8ecc5282406cd4b260ba53466ffce4e365d3ac8db589ceed3cf4ba83",
+          "previous_origin": {
+            "kind": "authored_for_handoff"
+          },
+          "reason": "GUI/TUI/CLI parity and application Hooks requirements"
+        }
+      }
+    },
+    {
+      "path": "design/visual-manifest.json",
+      "bytes": 2257,
+      "sha256": "433d8f059de69c194952b266671c3b0ab26ece1324a5ce7a00d904fd321eb65a",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "433d8f059de69c194952b266671c3b0ab26ece1324a5ce7a00d904fd321eb65a",
+        "previous_origin": {
+          "kind": "revised_for_v2.3",
+          "previous_sha256": "b93cb48f0449e6b5f304ec2fc0233ca66179e87e2da96af462b61a932e2463b5",
+          "previous_origin": {
+            "kind": "authored_for_handoff"
+          },
+          "reason": "GUI/TUI/CLI parity and application Hooks requirements"
+        }
+      }
+    },
+    {
+      "path": "reference/pre-v2.3-repository/.gitignore",
+      "bytes": 98,
+      "sha256": "8ee6301fee5f6924bb74f269d2a23a16c7611abf0f628966eab6b6d92a418b16",
+      "origin": {
+        "kind": "original_repository_snapshot",
+        "source_path": ".gitignore",
+        "source_sha256": "8ee6301fee5f6924bb74f269d2a23a16c7611abf0f628966eab6b6d92a418b16"
+      }
+    },
+    {
+      "path": "reference/pre-v2.3-repository/ENTRY-AND-BOARD.md",
+      "bytes": 11348,
+      "sha256": "6f0da8a4ba2c27cd9c84d7577bd54c947c0853ba3d4f4829e76ccb3339d28f73",
+      "origin": {
+        "kind": "original_repository_snapshot",
+        "source_path": "ENTRY-AND-BOARD.md",
+        "source_sha256": "6f0da8a4ba2c27cd9c84d7577bd54c947c0853ba3d4f4829e76ccb3339d28f73"
+      }
+    },
+    {
+      "path": "reference/pre-v2.3-repository/IMPLEMENTER-PROMPT.md",
+      "bytes": 2707,
+      "sha256": "1f16768495496dc4ef194984f51be26d134ac5fd911fdddefbfa995caf07d403",
+      "origin": {
+        "kind": "original_repository_snapshot",
+        "source_path": "IMPLEMENTER-PROMPT.md",
+        "source_sha256": "1f16768495496dc4ef194984f51be26d134ac5fd911fdddefbfa995caf07d403"
+      }
+    },
+    {
+      "path": "reference/pre-v2.3-repository/NIMBALYST-DEVELOPMENT-SPEC.md",
+      "bytes": 34260,
+      "sha256": "5d951ba85acb200e436fcc91dc55eafd8da1d66293067cfed67094a9ca106621",
+      "origin": {
+        "kind": "original_repository_snapshot",
+        "source_path": "NIMBALYST-DEVELOPMENT-SPEC.md",
+        "source_sha256": "5d951ba85acb200e436fcc91dc55eafd8da1d66293067cfed67094a9ca106621"
+      }
+    },
+    {
+      "path": "reference/pre-v2.3-repository/NIMBALYST-IMPLEMENTER-PROMPT.md",
+      "bytes": 2972,
+      "sha256": "6dae04528b370dd9a191e2a8cf1806f176c4d726d393b5a72a05be6c51f8dc38",
+      "origin": {
+        "kind": "original_repository_snapshot",
+        "source_path": "NIMBALYST-IMPLEMENTER-PROMPT.md",
+        "source_sha256": "6dae04528b370dd9a191e2a8cf1806f176c4d726d393b5a72a05be6c51f8dc38"
+      }
+    },
+    {
+      "path": "reference/pre-v2.3-repository/NIMBALYST-SYSTEM-SPEC.md",
+      "bytes": 13218,
+      "sha256": "0f2501d49650d38db334050edd0c556bd7dd10ed7b3209a430f849133f01f592",
+      "origin": {
+        "kind": "original_repository_snapshot",
+        "source_path": "NIMBALYST-SYSTEM-SPEC.md",
+        "source_sha256": "0f2501d49650d38db334050edd0c556bd7dd10ed7b3209a430f849133f01f592"
+      }
+    },
+    {
+      "path": "reference/pre-v2.3-repository/NIMBALYST-TRACKER-MAPPING.md",
+      "bytes": 22254,
+      "sha256": "39fcf62578c3f0bf55db981646a6716bc718d794c3789d1ccdbdadb09b54d0c6",
+      "origin": {
+        "kind": "original_repository_snapshot",
+        "source_path": "NIMBALYST-TRACKER-MAPPING.md",
+        "source_sha256": "39fcf62578c3f0bf55db981646a6716bc718d794c3789d1ccdbdadb09b54d0c6"
+      }
+    },
+    {
+      "path": "reference/pre-v2.3-repository/PDF-AND-OPS.md",
+      "bytes": 36136,
+      "sha256": "121dd95d1e5dbe2a4ff57a73fba977ef29a7704432933b59336e00fa1d75c82d",
+      "origin": {
+        "kind": "original_repository_snapshot",
+        "source_path": "PDF-AND-OPS.md",
+        "source_sha256": "121dd95d1e5dbe2a4ff57a73fba977ef29a7704432933b59336e00fa1d75c82d"
+      }
+    },
+    {
+      "path": "reference/pre-v2.3-repository/README.md",
+      "bytes": 4342,
+      "sha256": "f65e277673bd99ce37b211a5013a0456cf654a2cbda1734206450033f5dde42c",
+      "origin": {
+        "kind": "original_repository_snapshot",
+        "source_path": "README.md",
+        "source_sha256": "f65e277673bd99ce37b211a5013a0456cf654a2cbda1734206450033f5dde42c"
+      }
+    },
+    {
+      "path": "reference/pre-v2.3-repository/SOURCE-MAP.md",
+      "bytes": 18638,
+      "sha256": "267a4b0a640faa7f16fe66d0bc2d6c3c714c755c2045a7cd77c1451c1d107e15",
+      "origin": {
+        "kind": "original_repository_snapshot",
+        "source_path": "SOURCE-MAP.md",
+        "source_sha256": "267a4b0a640faa7f16fe66d0bc2d6c3c714c755c2045a7cd77c1451c1d107e15"
+      }
+    },
+    {
+      "path": "reference/pre-v2.3-repository/SPEC.md",
+      "bytes": 29776,
+      "sha256": "293195d646135a7bc017ab7f0b068603453d4a06169d8e76ab245cfe276ca28b",
+      "origin": {
+        "kind": "original_repository_snapshot",
+        "source_path": "SPEC.md",
+        "source_sha256": "293195d646135a7bc017ab7f0b068603453d4a06169d8e76ab245cfe276ca28b"
+      }
+    },
+    {
+      "path": "reference/pre-v2.3-repository/TASKS.md",
+      "bytes": 12762,
+      "sha256": "3d42ade67e592ee5350e6b0092ebc7ff3572a35d314627e1e1ce4d2f87aef21e",
+      "origin": {
+        "kind": "original_repository_snapshot",
+        "source_path": "TASKS.md",
+        "source_sha256": "3d42ade67e592ee5350e6b0092ebc7ff3572a35d314627e1e1ce4d2f87aef21e"
+      }
+    },
+    {
+      "path": "reference/pre-v2.3-repository/contracts/events.schema.json",
+      "bytes": 17553,
+      "sha256": "af7b6d3c60b65fb41d2ee0e51a4cfb0ef256024f461fb7bc67dccf78c8d9c622",
+      "origin": {
+        "kind": "original_repository_snapshot",
+        "source_path": "contracts/events.schema.json",
+        "source_sha256": "af7b6d3c60b65fb41d2ee0e51a4cfb0ef256024f461fb7bc67dccf78c8d9c622"
+      }
+    },
+    {
+      "path": "reference/pre-v2.3-repository/contracts/openapi.json",
+      "bytes": 170978,
+      "sha256": "8cce61c84e3bb38d293be76da28f0199ba13d32b04f145e2f8ced457f76e266e",
+      "origin": {
+        "kind": "original_repository_snapshot",
+        "source_path": "contracts/openapi.json",
+        "source_sha256": "8cce61c84e3bb38d293be76da28f0199ba13d32b04f145e2f8ced457f76e266e"
+      }
+    },
+    {
+      "path": "reference/pre-v2.3-repository/decisions/ADR-001.md",
+      "bytes": 2226,
+      "sha256": "788512e0f5d86535cb3380036be94d939cfc91fee7bca801fd3ee5b755d8b743",
+      "origin": {
+        "kind": "original_repository_snapshot",
+        "source_path": "decisions/ADR-001.md",
+        "source_sha256": "788512e0f5d86535cb3380036be94d939cfc91fee7bca801fd3ee5b755d8b743"
+      }
+    },
+    {
+      "path": "reference/pre-v2.3-repository/decisions/ADR-002.md",
+      "bytes": 2207,
+      "sha256": "e0708aa792a4b0410e556430a3fc2d2779d3bf39e0491c22d237e36997e956ca",
+      "origin": {
+        "kind": "original_repository_snapshot",
+        "source_path": "decisions/ADR-002.md",
+        "source_sha256": "e0708aa792a4b0410e556430a3fc2d2779d3bf39e0491c22d237e36997e956ca"
+      }
+    },
+    {
+      "path": "reference/pre-v2.3-repository/decisions/ADR-003.md",
+      "bytes": 1624,
+      "sha256": "4297654f198cad62999cbe9e902d3220dd9d841d9398e8caffd27e405827311d",
+      "origin": {
+        "kind": "original_repository_snapshot",
+        "source_path": "decisions/ADR-003.md",
+        "source_sha256": "4297654f198cad62999cbe9e902d3220dd9d841d9398e8caffd27e405827311d"
+      }
+    },
+    {
+      "path": "reference/pre-v2.3-repository/decisions/ADR-004.md",
+      "bytes": 2477,
+      "sha256": "ff2d427f915c5fced90de011b1d0b57b09428cdff8175b2c0c6eb32d93750a5b",
+      "origin": {
+        "kind": "original_repository_snapshot",
+        "source_path": "decisions/ADR-004.md",
+        "source_sha256": "ff2d427f915c5fced90de011b1d0b57b09428cdff8175b2c0c6eb32d93750a5b"
+      }
+    },
+    {
+      "path": "reference/pre-v2.3-repository/design/babel-dashboard-v1-prompt.md",
+      "bytes": 8192,
+      "sha256": "3b17b8538fce8e8e4948c2a5f4906569bbcffcd1a086bf85a4875d25f4b899ff",
+      "origin": {
+        "kind": "original_repository_snapshot",
+        "source_path": "design/babel-dashboard-v1-prompt.md",
+        "source_sha256": "3b17b8538fce8e8e4948c2a5f4906569bbcffcd1a086bf85a4875d25f4b899ff"
+      }
+    },
+    {
+      "path": "reference/pre-v2.3-repository/design/babel-dashboard-v1.png",
+      "bytes": 1548241,
+      "sha256": "346fc150f2d98a872ee4c08c92516dcf87a1bb0fe4f5f1af221eca20b334e122",
+      "origin": {
+        "kind": "original_repository_snapshot",
+        "source_path": "design/babel-dashboard-v1.png",
+        "source_sha256": "346fc150f2d98a872ee4c08c92516dcf87a1bb0fe4f5f1af221eca20b334e122"
+      }
+    },
+    {
+      "path": "reference/pre-v2.3-repository/design/babel-dashboard-v2-prompt.md",
+      "bytes": 6087,
+      "sha256": "40cc52346d961bc9a8587c0369c0d7530c46f08d813ddfd80416b5a560dd5881",
+      "origin": {
+        "kind": "original_repository_snapshot",
+        "source_path": "design/babel-dashboard-v2-prompt.md",
+        "source_sha256": "40cc52346d961bc9a8587c0369c0d7530c46f08d813ddfd80416b5a560dd5881"
+      }
+    },
+    {
+      "path": "reference/pre-v2.3-repository/design/babel-dashboard-v2.png",
+      "bytes": 992162,
+      "sha256": "0b876d44a52897debd61131e1b315b7412d5151fca2aba23f8165e5c43d460b0",
+      "origin": {
+        "kind": "original_repository_snapshot",
+        "source_path": "design/babel-dashboard-v2.png",
+        "source_sha256": "0b876d44a52897debd61131e1b315b7412d5151fca2aba23f8165e5c43d460b0"
+      }
+    },
+    {
+      "path": "reference/pre-v2.3-repository/design/nimbalyst-source-evidence.json",
+      "bytes": 18093,
+      "sha256": "d19fdfbfbb7502d850d6b6afc3d1a6697b6a79c7bb639351a19fc47ea9da342f",
+      "origin": {
+        "kind": "original_repository_snapshot",
+        "source_path": "design/nimbalyst-source-evidence.json",
+        "source_sha256": "d19fdfbfbb7502d850d6b6afc3d1a6697b6a79c7bb639351a19fc47ea9da342f"
+      }
+    },
+    {
+      "path": "reference/pre-v2.3-repository/git-attributes.snapshot.txt",
+      "bytes": 19,
+      "sha256": "d60f352d0db1404c70afb4bb8b2ca3fd1c610572aa40720e8a0b7baa7885418c",
+      "origin": {
+        "kind": "original_repository_snapshot",
+        "source_path": ".gitattributes",
+        "source_sha256": "d60f352d0db1404c70afb4bb8b2ca3fd1c610572aa40720e8a0b7baa7885418c"
+      }
+    },
+    {
+      "path": "reference/pre-v2.3-repository/tasks.json",
+      "bytes": 24511,
+      "sha256": "b5eedd05e8ce17738aa8d6c19b48d0f339dfb9fc0414464eaf1c4e6bf4a7d9c7",
+      "origin": {
+        "kind": "original_repository_snapshot",
+        "source_path": "tasks.json",
+        "source_sha256": "b5eedd05e8ce17738aa8d6c19b48d0f339dfb9fc0414464eaf1c4e6bf4a7d9c7"
+      }
+    },
+    {
+      "path": "reference/pre-v2.3-repository/validate-spec.py",
+      "bytes": 11295,
+      "sha256": "b3369a01d69b74ff9181e8dfa148e1c691c3bb73977cc0ddf3e22eb6e3cf53e0",
+      "origin": {
+        "kind": "original_repository_snapshot",
+        "source_path": "validate-spec.py",
+        "source_sha256": "b3369a01d69b74ff9181e8dfa148e1c691c3bb73977cc0ddf3e22eb6e3cf53e0"
+      }
+    },
+    {
+      "path": "reference/pre-v2.3-repository/validation-report.json",
+      "bytes": 41925,
+      "sha256": "1b53730e05fe3c55d824df0d003f9d2cfb368105fed08de508bb437d1f7d7b04",
+      "origin": {
+        "kind": "original_repository_snapshot",
+        "source_path": "validation-report.json",
+        "source_sha256": "1b53730e05fe3c55d824df0d003f9d2cfb368105fed08de508bb437d1f7d7b04"
+      }
+    },
+    {
+      "path": "reference/v1/PDF-AND-OPS.md",
+      "bytes": 36136,
+      "sha256": "121dd95d1e5dbe2a4ff57a73fba977ef29a7704432933b59336e00fa1d75c82d",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "121dd95d1e5dbe2a4ff57a73fba977ef29a7704432933b59336e00fa1d75c82d",
+        "previous_origin": {
+          "source": "D:\\Projects\\babel\\PDF-AND-OPS.md",
+          "kind": "historical_reference_copy",
+          "source_sha256": "121dd95d1e5dbe2a4ff57a73fba977ef29a7704432933b59336e00fa1d75c82d"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/.gitignore",
+      "bytes": 39,
+      "sha256": "d6439973d8a506f44142877efa1b34b8f7d904803a04bf61a03ab338883a8e2c",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "d6439973d8a506f44142877efa1b34b8f7d904803a04bf61a03ab338883a8e2c",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": ".gitignore",
+          "sha256_at_archive": "d6439973d8a506f44142877efa1b34b8f7d904803a04bf61a03ab338883a8e2c"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/AGENTS.md",
+      "bytes": 6489,
+      "sha256": "a02ade155c9b552a84d6232d7359a362f59b7612fbd094c177755dfd965d7fe4",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "a02ade155c9b552a84d6232d7359a362f59b7612fbd094c177755dfd965d7fe4",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": "AGENTS.md",
+          "sha256_at_archive": "a02ade155c9b552a84d6232d7359a362f59b7612fbd094c177755dfd965d7fe4"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/ENTRY-AND-BOARD.md",
+      "bytes": 11348,
+      "sha256": "6f0da8a4ba2c27cd9c84d7577bd54c947c0853ba3d4f4829e76ccb3339d28f73",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "6f0da8a4ba2c27cd9c84d7577bd54c947c0853ba3d4f4829e76ccb3339d28f73",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": "ENTRY-AND-BOARD.md",
+          "sha256_at_archive": "6f0da8a4ba2c27cd9c84d7577bd54c947c0853ba3d4f4829e76ccb3339d28f73"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/NIMBALYST-DEVELOPMENT-SPEC.md",
+      "bytes": 34260,
+      "sha256": "5d951ba85acb200e436fcc91dc55eafd8da1d66293067cfed67094a9ca106621",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "5d951ba85acb200e436fcc91dc55eafd8da1d66293067cfed67094a9ca106621",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": "NIMBALYST-DEVELOPMENT-SPEC.md",
+          "sha256_at_archive": "5d951ba85acb200e436fcc91dc55eafd8da1d66293067cfed67094a9ca106621"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/NIMBALYST-IMPLEMENTER-PROMPT.md",
+      "bytes": 2972,
+      "sha256": "6dae04528b370dd9a191e2a8cf1806f176c4d726d393b5a72a05be6c51f8dc38",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "6dae04528b370dd9a191e2a8cf1806f176c4d726d393b5a72a05be6c51f8dc38",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": "NIMBALYST-IMPLEMENTER-PROMPT.md",
+          "sha256_at_archive": "6dae04528b370dd9a191e2a8cf1806f176c4d726d393b5a72a05be6c51f8dc38"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/NIMBALYST-SYSTEM-SPEC.md",
+      "bytes": 13218,
+      "sha256": "0f2501d49650d38db334050edd0c556bd7dd10ed7b3209a430f849133f01f592",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "0f2501d49650d38db334050edd0c556bd7dd10ed7b3209a430f849133f01f592",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": "NIMBALYST-SYSTEM-SPEC.md",
+          "sha256_at_archive": "0f2501d49650d38db334050edd0c556bd7dd10ed7b3209a430f849133f01f592"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/NIMBALYST-TRACKER-MAPPING.md",
+      "bytes": 22254,
+      "sha256": "39fcf62578c3f0bf55db981646a6716bc718d794c3789d1ccdbdadb09b54d0c6",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "39fcf62578c3f0bf55db981646a6716bc718d794c3789d1ccdbdadb09b54d0c6",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": "NIMBALYST-TRACKER-MAPPING.md",
+          "sha256_at_archive": "39fcf62578c3f0bf55db981646a6716bc718d794c3789d1ccdbdadb09b54d0c6"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/PACKAGE-MANIFEST.json",
+      "bytes": 19265,
+      "sha256": "033661983903a05e7cd51c591b18a6274ff39ad60a8848ba32551dfcef7de157",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "033661983903a05e7cd51c591b18a6274ff39ad60a8848ba32551dfcef7de157",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": "PACKAGE-MANIFEST.json",
+          "sha256_at_archive": "033661983903a05e7cd51c591b18a6274ff39ad60a8848ba32551dfcef7de157"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/README.md",
+      "bytes": 4982,
+      "sha256": "a8d02994cff8b9e127d80ea197e48dd408abfb7501fe1b32b081a41a902ed43b",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "a8d02994cff8b9e127d80ea197e48dd408abfb7501fe1b32b081a41a902ed43b",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": "README.md",
+          "sha256_at_archive": "a8d02994cff8b9e127d80ea197e48dd408abfb7501fe1b32b081a41a902ed43b"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/SOURCE-MAP.md",
+      "bytes": 18638,
+      "sha256": "267a4b0a640faa7f16fe66d0bc2d6c3c714c755c2045a7cd77c1451c1d107e15",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "267a4b0a640faa7f16fe66d0bc2d6c3c714c755c2045a7cd77c1451c1d107e15",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": "SOURCE-MAP.md",
+          "sha256_at_archive": "267a4b0a640faa7f16fe66d0bc2d6c3c714c755c2045a7cd77c1451c1d107e15"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/START-HERE-PROMPT.md",
+      "bytes": 2637,
+      "sha256": "6ce2e624e59fc4df79957375fe0dacac0162a6ccd2e51a443a4b3c0a34d62e65",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "6ce2e624e59fc4df79957375fe0dacac0162a6ccd2e51a443a4b3c0a34d62e65",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": "START-HERE-PROMPT.md",
+          "sha256_at_archive": "6ce2e624e59fc4df79957375fe0dacac0162a6ccd2e51a443a4b3c0a34d62e65"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/VERIFICATION.json",
+      "bytes": 431,
+      "sha256": "b4d309a9d998a4aa10425b162e53f2bed19fd033ce48aa92ef518d339038dadb",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "b4d309a9d998a4aa10425b162e53f2bed19fd033ce48aa92ef518d339038dadb",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": "VERIFICATION.json",
+          "sha256_at_archive": "b4d309a9d998a4aa10425b162e53f2bed19fd033ce48aa92ef518d339038dadb"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/decisions/ADR-001.md",
+      "bytes": 2226,
+      "sha256": "788512e0f5d86535cb3380036be94d939cfc91fee7bca801fd3ee5b755d8b743",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "788512e0f5d86535cb3380036be94d939cfc91fee7bca801fd3ee5b755d8b743",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": "decisions/ADR-001.md",
+          "sha256_at_archive": "788512e0f5d86535cb3380036be94d939cfc91fee7bca801fd3ee5b755d8b743"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/decisions/ADR-002.md",
+      "bytes": 2207,
+      "sha256": "e0708aa792a4b0410e556430a3fc2d2779d3bf39e0491c22d237e36997e956ca",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "e0708aa792a4b0410e556430a3fc2d2779d3bf39e0491c22d237e36997e956ca",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": "decisions/ADR-002.md",
+          "sha256_at_archive": "e0708aa792a4b0410e556430a3fc2d2779d3bf39e0491c22d237e36997e956ca"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/decisions/ADR-003.md",
+      "bytes": 1624,
+      "sha256": "4297654f198cad62999cbe9e902d3220dd9d841d9398e8caffd27e405827311d",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "4297654f198cad62999cbe9e902d3220dd9d841d9398e8caffd27e405827311d",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": "decisions/ADR-003.md",
+          "sha256_at_archive": "4297654f198cad62999cbe9e902d3220dd9d841d9398e8caffd27e405827311d"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/decisions/ADR-004.md",
+      "bytes": 2477,
+      "sha256": "ff2d427f915c5fced90de011b1d0b57b09428cdff8175b2c0c6eb32d93750a5b",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "ff2d427f915c5fced90de011b1d0b57b09428cdff8175b2c0c6eb32d93750a5b",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": "decisions/ADR-004.md",
+          "sha256_at_archive": "ff2d427f915c5fced90de011b1d0b57b09428cdff8175b2c0c6eb32d93750a5b"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/design/UI-IMAGE-PROMPTS.md",
+      "bytes": 10271,
+      "sha256": "ff7f6d24d05c4e025cc6dea1e9e8685fd12147548588c72bfc9844aea16f1f3b",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "ff7f6d24d05c4e025cc6dea1e9e8685fd12147548588c72bfc9844aea16f1f3b",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": "design/UI-IMAGE-PROMPTS.md",
+          "sha256_at_archive": "ff7f6d24d05c4e025cc6dea1e9e8685fd12147548588c72bfc9844aea16f1f3b"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/design/UI-VISUAL-PLAN.md",
+      "bytes": 7232,
+      "sha256": "fc94e8f0c736a50f9a1bef70f4b0ae514cd353d7828449a3c660fae6aa21fba8",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "fc94e8f0c736a50f9a1bef70f4b0ae514cd353d7828449a3c660fae6aa21fba8",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": "design/UI-VISUAL-PLAN.md",
+          "sha256_at_archive": "fc94e8f0c736a50f9a1bef70f4b0ae514cd353d7828449a3c660fae6aa21fba8"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/design/babel-dashboard-v2-prompt.md",
+      "bytes": 6087,
+      "sha256": "40cc52346d961bc9a8587c0369c0d7530c46f08d813ddfd80416b5a560dd5881",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "40cc52346d961bc9a8587c0369c0d7530c46f08d813ddfd80416b5a560dd5881",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": "design/babel-dashboard-v2-prompt.md",
+          "sha256_at_archive": "40cc52346d961bc9a8587c0369c0d7530c46f08d813ddfd80416b5a560dd5881"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/design/babel-dashboard-v2.png",
+      "bytes": 992162,
+      "sha256": "0b876d44a52897debd61131e1b315b7412d5151fca2aba23f8165e5c43d460b0",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "0b876d44a52897debd61131e1b315b7412d5151fca2aba23f8165e5c43d460b0",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": "design/babel-dashboard-v2.png",
+          "sha256_at_archive": "0b876d44a52897debd61131e1b315b7412d5151fca2aba23f8165e5c43d460b0"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/design/demo-fixtures.json",
+      "bytes": 7446,
+      "sha256": "8a0a94a6d17b14ad584ab909314a6ce4ed0814717b6f7f8b47f800b63b1716ec",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "8a0a94a6d17b14ad584ab909314a6ce4ed0814717b6f7f8b47f800b63b1716ec",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": "design/demo-fixtures.json",
+          "sha256_at_archive": "8a0a94a6d17b14ad584ab909314a6ce4ed0814717b6f7f8b47f800b63b1716ec"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/design/nimbalyst-source-evidence.json",
+      "bytes": 18093,
+      "sha256": "d19fdfbfbb7502d850d6b6afc3d1a6697b6a79c7bb639351a19fc47ea9da342f",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "d19fdfbfbb7502d850d6b6afc3d1a6697b6a79c7bb639351a19fc47ea9da342f",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": "design/nimbalyst-source-evidence.json",
+          "sha256_at_archive": "d19fdfbfbb7502d850d6b6afc3d1a6697b6a79c7bb639351a19fc47ea9da342f"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/design/reference/nimbalyst-trackers-user.png",
+      "bytes": 74552,
+      "sha256": "cba4758a2111f9992d10edad849289aab153726c37381f722ad8d58583371463",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "cba4758a2111f9992d10edad849289aab153726c37381f722ad8d58583371463",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": "design/reference/nimbalyst-trackers-user.png",
+          "sha256_at_archive": "cba4758a2111f9992d10edad849289aab153726c37381f722ad8d58583371463"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/design/visual-contract.md",
+      "bytes": 8357,
+      "sha256": "e53023db8ecc5282406cd4b260ba53466ffce4e365d3ac8db589ceed3cf4ba83",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "e53023db8ecc5282406cd4b260ba53466ffce4e365d3ac8db589ceed3cf4ba83",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": "design/visual-contract.md",
+          "sha256_at_archive": "e53023db8ecc5282406cd4b260ba53466ffce4e365d3ac8db589ceed3cf4ba83"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/design/visual-manifest.json",
+      "bytes": 1621,
+      "sha256": "b93cb48f0449e6b5f304ec2fc0233ca66179e87e2da96af462b61a932e2463b5",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "b93cb48f0449e6b5f304ec2fc0233ca66179e87e2da96af462b61a932e2463b5",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": "design/visual-manifest.json",
+          "sha256_at_archive": "b93cb48f0449e6b5f304ec2fc0233ca66179e87e2da96af462b61a932e2463b5"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/reference/v1/PDF-AND-OPS.md",
+      "bytes": 36136,
+      "sha256": "121dd95d1e5dbe2a4ff57a73fba977ef29a7704432933b59336e00fa1d75c82d",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "121dd95d1e5dbe2a4ff57a73fba977ef29a7704432933b59336e00fa1d75c82d",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": "reference/v1/PDF-AND-OPS.md",
+          "sha256_at_archive": "121dd95d1e5dbe2a4ff57a73fba977ef29a7704432933b59336e00fa1d75c82d"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/scripts/verify-package.py",
+      "bytes": 5932,
+      "sha256": "7d9ff85c2c4d20e6209f96d9c337a5b556dbd5b364eb0a4081b548875e1a591f",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "7d9ff85c2c4d20e6209f96d9c337a5b556dbd5b364eb0a4081b548875e1a591f",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": "scripts/verify-package.py",
+          "sha256_at_archive": "7d9ff85c2c4d20e6209f96d9c337a5b556dbd5b364eb0a4081b548875e1a591f"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/skills/SKILLS-GUIDE.md",
+      "bytes": 6377,
+      "sha256": "d914c664f65d6b53e278e15044875747bdfbdf2af35952f7f77e5af308aeaf6a",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "d914c664f65d6b53e278e15044875747bdfbdf2af35952f7f77e5af308aeaf6a",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": "skills/SKILLS-GUIDE.md",
+          "sha256_at_archive": "d914c664f65d6b53e278e15044875747bdfbdf2af35952f7f77e5af308aeaf6a"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/skills/SOURCE.json",
+      "bytes": 8104,
+      "sha256": "283dee82ab5a044e913d372ac5484c0372ad211d6e6517f6428e9d1df59a781d",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "283dee82ab5a044e913d372ac5484c0372ad211d6e6517f6428e9d1df59a781d",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": "skills/SOURCE.json",
+          "sha256_at_archive": "283dee82ab5a044e913d372ac5484c0372ad211d6e6517f6428e9d1df59a781d"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/skills/vendor/better-accessibility/LICENSE",
+      "bytes": 1090,
+      "sha256": "596f89eaa3780ea0451ab2870196427ee2d0b1b3d743507af0b2fbffd46e234c",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "596f89eaa3780ea0451ab2870196427ee2d0b1b3d743507af0b2fbffd46e234c",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": "skills/vendor/better-accessibility/LICENSE",
+          "sha256_at_archive": "596f89eaa3780ea0451ab2870196427ee2d0b1b3d743507af0b2fbffd46e234c"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/skills/vendor/better-accessibility/SKILL.md",
+      "bytes": 8365,
+      "sha256": "e6e2baec5655a9bc04961121caaa6bfeb19f3a12bcdde92479500ccc05a7fc43",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "e6e2baec5655a9bc04961121caaa6bfeb19f3a12bcdde92479500ccc05a7fc43",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": "skills/vendor/better-accessibility/SKILL.md",
+          "sha256_at_archive": "e6e2baec5655a9bc04961121caaa6bfeb19f3a12bcdde92479500ccc05a7fc43"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/skills/vendor/better-accessibility/agents/openai.yaml",
+      "bytes": 124,
+      "sha256": "f339cf4a6c29224f312c3cc563d4879d99c949f5f725fee1d38bf5bf9abae63d",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "f339cf4a6c29224f312c3cc563d4879d99c949f5f725fee1d38bf5bf9abae63d",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": "skills/vendor/better-accessibility/agents/openai.yaml",
+          "sha256_at_archive": "f339cf4a6c29224f312c3cc563d4879d99c949f5f725fee1d38bf5bf9abae63d"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/skills/vendor/better-accessibility/focus-and-keyboard.md",
+      "bytes": 6450,
+      "sha256": "c1d337ff7e6243a2806776aa27b490c43038ea9085a8dc6b5edab8939a96a9e2",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "c1d337ff7e6243a2806776aa27b490c43038ea9085a8dc6b5edab8939a96a9e2",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": "skills/vendor/better-accessibility/focus-and-keyboard.md",
+          "sha256_at_archive": "c1d337ff7e6243a2806776aa27b490c43038ea9085a8dc6b5edab8939a96a9e2"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/skills/vendor/better-accessibility/forms.md",
+      "bytes": 3802,
+      "sha256": "f8c1f128348e30945632185bcd2fe4c5c5a43fd2787899ffcc301df453103611",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "f8c1f128348e30945632185bcd2fe4c5c5a43fd2787899ffcc301df453103611",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": "skills/vendor/better-accessibility/forms.md",
+          "sha256_at_archive": "f8c1f128348e30945632185bcd2fe4c5c5a43fd2787899ffcc301df453103611"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/skills/vendor/better-accessibility/hit-areas.md",
+      "bytes": 4051,
+      "sha256": "f132dd959e7da274f24fa8db42751fd2154fb6829a784dc08551808fcbacc1eb",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "f132dd959e7da274f24fa8db42751fd2154fb6829a784dc08551808fcbacc1eb",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": "skills/vendor/better-accessibility/hit-areas.md",
+          "sha256_at_archive": "f132dd959e7da274f24fa8db42751fd2154fb6829a784dc08551808fcbacc1eb"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/skills/vendor/better-accessibility/motion-and-zoom.md",
+      "bytes": 4018,
+      "sha256": "44136fb4b5e44d924813beecc8fa256bd793e399ccd423af865f40a6e5e50e97",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "44136fb4b5e44d924813beecc8fa256bd793e399ccd423af865f40a6e5e50e97",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": "skills/vendor/better-accessibility/motion-and-zoom.md",
+          "sha256_at_archive": "44136fb4b5e44d924813beecc8fa256bd793e399ccd423af865f40a6e5e50e97"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/skills/vendor/better-accessibility/screen-readers.md",
+      "bytes": 5173,
+      "sha256": "7e12e76c8f395645b3857a87069005d72fbb40e23da65a9523e1e748de58a94a",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "7e12e76c8f395645b3857a87069005d72fbb40e23da65a9523e1e748de58a94a",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": "skills/vendor/better-accessibility/screen-readers.md",
+          "sha256_at_archive": "7e12e76c8f395645b3857a87069005d72fbb40e23da65a9523e1e748de58a94a"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/skills/vendor/better-accessibility/semantics-and-aria.md",
+      "bytes": 5452,
+      "sha256": "ff1f2e7b6465f90dad54147d3601be6673162269455e7a2d8534830321c760f5",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "ff1f2e7b6465f90dad54147d3601be6673162269455e7a2d8534830321c760f5",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": "skills/vendor/better-accessibility/semantics-and-aria.md",
+          "sha256_at_archive": "ff1f2e7b6465f90dad54147d3601be6673162269455e7a2d8534830321c760f5"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/skills/vendor/better-layout/LICENSE",
+      "bytes": 1090,
+      "sha256": "596f89eaa3780ea0451ab2870196427ee2d0b1b3d743507af0b2fbffd46e234c",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "596f89eaa3780ea0451ab2870196427ee2d0b1b3d743507af0b2fbffd46e234c",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": "skills/vendor/better-layout/LICENSE",
+          "sha256_at_archive": "596f89eaa3780ea0451ab2870196427ee2d0b1b3d743507af0b2fbffd46e234c"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/skills/vendor/better-layout/SKILL.md",
+      "bytes": 5725,
+      "sha256": "5d6c3db06a61e04b7920c03a6f7795532f19b1a5c71caeedd333e1186ddaa13a",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "5d6c3db06a61e04b7920c03a6f7795532f19b1a5c71caeedd333e1186ddaa13a",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": "skills/vendor/better-layout/SKILL.md",
+          "sha256_at_archive": "5d6c3db06a61e04b7920c03a6f7795532f19b1a5c71caeedd333e1186ddaa13a"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/skills/vendor/better-layout/agents/openai.yaml",
+      "bytes": 120,
+      "sha256": "d68a82db5a435b58f6ff9b42abbfdbae56920dbe5790073e894554a97290291e",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "d68a82db5a435b58f6ff9b42abbfdbae56920dbe5790073e894554a97290291e",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": "skills/vendor/better-layout/agents/openai.yaml",
+          "sha256_at_archive": "d68a82db5a435b58f6ff9b42abbfdbae56920dbe5790073e894554a97290291e"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/skills/vendor/better-layout/grouping-and-alignment.md",
+      "bytes": 5546,
+      "sha256": "f768bce6692f184422d0335d17dc8e6f0df01dbdc8fc57e57edb1ac747f7a672",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "f768bce6692f184422d0335d17dc8e6f0df01dbdc8fc57e57edb1ac747f7a672",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": "skills/vendor/better-layout/grouping-and-alignment.md",
+          "sha256_at_archive": "f768bce6692f184422d0335d17dc8e6f0df01dbdc8fc57e57edb1ac747f7a672"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/skills/vendor/better-layout/spacing-and-adaptivity.md",
+      "bytes": 6768,
+      "sha256": "bc6b92299d7f004311f485237cf44f5f61ffcf728d8546cab072aba670f82bc2",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "bc6b92299d7f004311f485237cf44f5f61ffcf728d8546cab072aba670f82bc2",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": "skills/vendor/better-layout/spacing-and-adaptivity.md",
+          "sha256_at_archive": "bc6b92299d7f004311f485237cf44f5f61ffcf728d8546cab072aba670f82bc2"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/skills/vendor/better-writing/LICENSE",
+      "bytes": 1090,
+      "sha256": "596f89eaa3780ea0451ab2870196427ee2d0b1b3d743507af0b2fbffd46e234c",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "596f89eaa3780ea0451ab2870196427ee2d0b1b3d743507af0b2fbffd46e234c",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": "skills/vendor/better-writing/LICENSE",
+          "sha256_at_archive": "596f89eaa3780ea0451ab2870196427ee2d0b1b3d743507af0b2fbffd46e234c"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/skills/vendor/better-writing/SKILL.md",
+      "bytes": 6534,
+      "sha256": "2f87a69b847d64f4f84778d880c483e3ad604c5e01052cf8cf1c0dd7e3c342a9",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "2f87a69b847d64f4f84778d880c483e3ad604c5e01052cf8cf1c0dd7e3c342a9",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": "skills/vendor/better-writing/SKILL.md",
+          "sha256_at_archive": "2f87a69b847d64f4f84778d880c483e3ad604c5e01052cf8cf1c0dd7e3c342a9"
+        }
+      }
+    },
+    {
+      "path": "reference/v2.2/skills/vendor/better-writing/agents/openai.yaml",
+      "bytes": 111,
+      "sha256": "2066a1f9677d1779858fee3c523d9a36fc12202bcd39b43f2003ec42c60d5d9c",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "2066a1f9677d1779858fee3c523d9a36fc12202bcd39b43f2003ec42c60d5d9c",
+        "previous_origin": {
+          "kind": "frozen_v2.2_package_snapshot",
+          "original_package_path": "skills/vendor/better-writing/agents/openai.yaml",
+          "sha256_at_archive": "2066a1f9677d1779858fee3c523d9a36fc12202bcd39b43f2003ec42c60d5d9c"
+        }
+      }
+    },
+    {
+      "path": "scripts/verify-package.py",
+      "bytes": 7656,
+      "sha256": "eace886f89786340ec69ffcc75f8dc24a467441d83316aa2083abf22a93565f2",
+      "origin": {
+        "kind": "publication_adaptation",
+        "source_sha256": "652486c94aed926963507a11f3238aadb6d44c2068ad9a0ed1fbfa3cdbc32e12",
+        "previous_origin": {
+          "kind": "revised_for_v2.3",
+          "previous_sha256": "7d9ff85c2c4d20e6209f96d9c337a5b556dbd5b364eb0a4081b548875e1a591f",
+          "previous_origin": {
+            "kind": "authored_for_handoff"
+          },
+          "reason": "GUI/TUI/CLI parity and application Hooks requirements"
+        }
+      }
+    },
+    {
+      "path": "skills/SKILLS-GUIDE.md",
+      "bytes": 7363,
+      "sha256": "f1456bed56baa4530cdbc193ae1e4068a89840a3338ef0ea764497dec2ad2199",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "f1456bed56baa4530cdbc193ae1e4068a89840a3338ef0ea764497dec2ad2199",
+        "previous_origin": {
+          "kind": "revised_for_v2.3",
+          "previous_sha256": "d914c664f65d6b53e278e15044875747bdfbdf2af35952f7f77e5af308aeaf6a",
+          "previous_origin": {
+            "kind": "authored_for_handoff"
+          },
+          "reason": "GUI/TUI/CLI parity and application Hooks requirements"
+        }
+      }
+    },
+    {
+      "path": "skills/SOURCE.json",
+      "bytes": 8104,
+      "sha256": "283dee82ab5a044e913d372ac5484c0372ad211d6e6517f6428e9d1df59a781d",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "283dee82ab5a044e913d372ac5484c0372ad211d6e6517f6428e9d1df59a781d",
+        "previous_origin": {
+          "kind": "authored_for_handoff"
+        }
+      }
+    },
+    {
+      "path": "skills/vendor/better-accessibility/LICENSE",
+      "bytes": 1090,
+      "sha256": "596f89eaa3780ea0451ab2870196427ee2d0b1b3d743507af0b2fbffd46e234c",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "596f89eaa3780ea0451ab2870196427ee2d0b1b3d743507af0b2fbffd46e234c",
+        "previous_origin": {
+          "source_sha256": "596f89eaa3780ea0451ab2870196427ee2d0b1b3d743507af0b2fbffd46e234c",
+          "source": "C:\\Users\\gengr\\Documents\\Codex-Design-Skills\\sources\\interfaces\\LICENSE",
+          "repository": "https://github.com/jakubkrehel/skills",
+          "kind": "upstream_skill_copy",
+          "commit": "267330e1adfc66a718fb65fa6918c1f06d0a689e"
+        }
+      }
+    },
+    {
+      "path": "skills/vendor/better-accessibility/SKILL.md",
+      "bytes": 8365,
+      "sha256": "e6e2baec5655a9bc04961121caaa6bfeb19f3a12bcdde92479500ccc05a7fc43",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "e6e2baec5655a9bc04961121caaa6bfeb19f3a12bcdde92479500ccc05a7fc43",
+        "previous_origin": {
+          "source_sha256": "e6e2baec5655a9bc04961121caaa6bfeb19f3a12bcdde92479500ccc05a7fc43",
+          "source": "C:\\Users\\gengr\\Documents\\Codex-Design-Skills\\sources\\interfaces\\skills\\better-accessibility\\SKILL.md",
+          "repository": "https://github.com/jakubkrehel/skills",
+          "kind": "upstream_skill_copy",
+          "commit": "267330e1adfc66a718fb65fa6918c1f06d0a689e"
+        }
+      }
+    },
+    {
+      "path": "skills/vendor/better-accessibility/agents/openai.yaml",
+      "bytes": 124,
+      "sha256": "f339cf4a6c29224f312c3cc563d4879d99c949f5f725fee1d38bf5bf9abae63d",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "f339cf4a6c29224f312c3cc563d4879d99c949f5f725fee1d38bf5bf9abae63d",
+        "previous_origin": {
+          "source_sha256": "f339cf4a6c29224f312c3cc563d4879d99c949f5f725fee1d38bf5bf9abae63d",
+          "source": "C:\\Users\\gengr\\Documents\\Codex-Design-Skills\\sources\\interfaces\\skills\\better-accessibility\\agents\\openai.yaml",
+          "repository": "https://github.com/jakubkrehel/skills",
+          "kind": "upstream_skill_copy",
+          "commit": "267330e1adfc66a718fb65fa6918c1f06d0a689e"
+        }
+      }
+    },
+    {
+      "path": "skills/vendor/better-accessibility/focus-and-keyboard.md",
+      "bytes": 6450,
+      "sha256": "c1d337ff7e6243a2806776aa27b490c43038ea9085a8dc6b5edab8939a96a9e2",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "c1d337ff7e6243a2806776aa27b490c43038ea9085a8dc6b5edab8939a96a9e2",
+        "previous_origin": {
+          "source_sha256": "c1d337ff7e6243a2806776aa27b490c43038ea9085a8dc6b5edab8939a96a9e2",
+          "source": "C:\\Users\\gengr\\Documents\\Codex-Design-Skills\\sources\\interfaces\\skills\\better-accessibility\\focus-and-keyboard.md",
+          "repository": "https://github.com/jakubkrehel/skills",
+          "kind": "upstream_skill_copy",
+          "commit": "267330e1adfc66a718fb65fa6918c1f06d0a689e"
+        }
+      }
+    },
+    {
+      "path": "skills/vendor/better-accessibility/forms.md",
+      "bytes": 3802,
+      "sha256": "f8c1f128348e30945632185bcd2fe4c5c5a43fd2787899ffcc301df453103611",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "f8c1f128348e30945632185bcd2fe4c5c5a43fd2787899ffcc301df453103611",
+        "previous_origin": {
+          "source_sha256": "f8c1f128348e30945632185bcd2fe4c5c5a43fd2787899ffcc301df453103611",
+          "source": "C:\\Users\\gengr\\Documents\\Codex-Design-Skills\\sources\\interfaces\\skills\\better-accessibility\\forms.md",
+          "repository": "https://github.com/jakubkrehel/skills",
+          "kind": "upstream_skill_copy",
+          "commit": "267330e1adfc66a718fb65fa6918c1f06d0a689e"
+        }
+      }
+    },
+    {
+      "path": "skills/vendor/better-accessibility/hit-areas.md",
+      "bytes": 4051,
+      "sha256": "f132dd959e7da274f24fa8db42751fd2154fb6829a784dc08551808fcbacc1eb",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "f132dd959e7da274f24fa8db42751fd2154fb6829a784dc08551808fcbacc1eb",
+        "previous_origin": {
+          "source_sha256": "f132dd959e7da274f24fa8db42751fd2154fb6829a784dc08551808fcbacc1eb",
+          "source": "C:\\Users\\gengr\\Documents\\Codex-Design-Skills\\sources\\interfaces\\skills\\better-accessibility\\hit-areas.md",
+          "repository": "https://github.com/jakubkrehel/skills",
+          "kind": "upstream_skill_copy",
+          "commit": "267330e1adfc66a718fb65fa6918c1f06d0a689e"
+        }
+      }
+    },
+    {
+      "path": "skills/vendor/better-accessibility/motion-and-zoom.md",
+      "bytes": 4018,
+      "sha256": "44136fb4b5e44d924813beecc8fa256bd793e399ccd423af865f40a6e5e50e97",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "44136fb4b5e44d924813beecc8fa256bd793e399ccd423af865f40a6e5e50e97",
+        "previous_origin": {
+          "source_sha256": "44136fb4b5e44d924813beecc8fa256bd793e399ccd423af865f40a6e5e50e97",
+          "source": "C:\\Users\\gengr\\Documents\\Codex-Design-Skills\\sources\\interfaces\\skills\\better-accessibility\\motion-and-zoom.md",
+          "repository": "https://github.com/jakubkrehel/skills",
+          "kind": "upstream_skill_copy",
+          "commit": "267330e1adfc66a718fb65fa6918c1f06d0a689e"
+        }
+      }
+    },
+    {
+      "path": "skills/vendor/better-accessibility/screen-readers.md",
+      "bytes": 5173,
+      "sha256": "7e12e76c8f395645b3857a87069005d72fbb40e23da65a9523e1e748de58a94a",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "7e12e76c8f395645b3857a87069005d72fbb40e23da65a9523e1e748de58a94a",
+        "previous_origin": {
+          "source_sha256": "7e12e76c8f395645b3857a87069005d72fbb40e23da65a9523e1e748de58a94a",
+          "source": "C:\\Users\\gengr\\Documents\\Codex-Design-Skills\\sources\\interfaces\\skills\\better-accessibility\\screen-readers.md",
+          "repository": "https://github.com/jakubkrehel/skills",
+          "kind": "upstream_skill_copy",
+          "commit": "267330e1adfc66a718fb65fa6918c1f06d0a689e"
+        }
+      }
+    },
+    {
+      "path": "skills/vendor/better-accessibility/semantics-and-aria.md",
+      "bytes": 5452,
+      "sha256": "ff1f2e7b6465f90dad54147d3601be6673162269455e7a2d8534830321c760f5",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "ff1f2e7b6465f90dad54147d3601be6673162269455e7a2d8534830321c760f5",
+        "previous_origin": {
+          "source_sha256": "ff1f2e7b6465f90dad54147d3601be6673162269455e7a2d8534830321c760f5",
+          "source": "C:\\Users\\gengr\\Documents\\Codex-Design-Skills\\sources\\interfaces\\skills\\better-accessibility\\semantics-and-aria.md",
+          "repository": "https://github.com/jakubkrehel/skills",
+          "kind": "upstream_skill_copy",
+          "commit": "267330e1adfc66a718fb65fa6918c1f06d0a689e"
+        }
+      }
+    },
+    {
+      "path": "skills/vendor/better-layout/LICENSE",
+      "bytes": 1090,
+      "sha256": "596f89eaa3780ea0451ab2870196427ee2d0b1b3d743507af0b2fbffd46e234c",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "596f89eaa3780ea0451ab2870196427ee2d0b1b3d743507af0b2fbffd46e234c",
+        "previous_origin": {
+          "source_sha256": "596f89eaa3780ea0451ab2870196427ee2d0b1b3d743507af0b2fbffd46e234c",
+          "source": "C:\\Users\\gengr\\Documents\\Codex-Design-Skills\\sources\\interfaces\\LICENSE",
+          "repository": "https://github.com/jakubkrehel/skills",
+          "kind": "upstream_skill_copy",
+          "commit": "267330e1adfc66a718fb65fa6918c1f06d0a689e"
+        }
+      }
+    },
+    {
+      "path": "skills/vendor/better-layout/SKILL.md",
+      "bytes": 5725,
+      "sha256": "5d6c3db06a61e04b7920c03a6f7795532f19b1a5c71caeedd333e1186ddaa13a",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "5d6c3db06a61e04b7920c03a6f7795532f19b1a5c71caeedd333e1186ddaa13a",
+        "previous_origin": {
+          "source_sha256": "5d6c3db06a61e04b7920c03a6f7795532f19b1a5c71caeedd333e1186ddaa13a",
+          "source": "C:\\Users\\gengr\\Documents\\Codex-Design-Skills\\sources\\interfaces\\skills\\better-layout\\SKILL.md",
+          "repository": "https://github.com/jakubkrehel/skills",
+          "kind": "upstream_skill_copy",
+          "commit": "267330e1adfc66a718fb65fa6918c1f06d0a689e"
+        }
+      }
+    },
+    {
+      "path": "skills/vendor/better-layout/agents/openai.yaml",
+      "bytes": 120,
+      "sha256": "d68a82db5a435b58f6ff9b42abbfdbae56920dbe5790073e894554a97290291e",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "d68a82db5a435b58f6ff9b42abbfdbae56920dbe5790073e894554a97290291e",
+        "previous_origin": {
+          "source_sha256": "d68a82db5a435b58f6ff9b42abbfdbae56920dbe5790073e894554a97290291e",
+          "source": "C:\\Users\\gengr\\Documents\\Codex-Design-Skills\\sources\\interfaces\\skills\\better-layout\\agents\\openai.yaml",
+          "repository": "https://github.com/jakubkrehel/skills",
+          "kind": "upstream_skill_copy",
+          "commit": "267330e1adfc66a718fb65fa6918c1f06d0a689e"
+        }
+      }
+    },
+    {
+      "path": "skills/vendor/better-layout/grouping-and-alignment.md",
+      "bytes": 5546,
+      "sha256": "f768bce6692f184422d0335d17dc8e6f0df01dbdc8fc57e57edb1ac747f7a672",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "f768bce6692f184422d0335d17dc8e6f0df01dbdc8fc57e57edb1ac747f7a672",
+        "previous_origin": {
+          "source_sha256": "f768bce6692f184422d0335d17dc8e6f0df01dbdc8fc57e57edb1ac747f7a672",
+          "source": "C:\\Users\\gengr\\Documents\\Codex-Design-Skills\\sources\\interfaces\\skills\\better-layout\\grouping-and-alignment.md",
+          "repository": "https://github.com/jakubkrehel/skills",
+          "kind": "upstream_skill_copy",
+          "commit": "267330e1adfc66a718fb65fa6918c1f06d0a689e"
+        }
+      }
+    },
+    {
+      "path": "skills/vendor/better-layout/spacing-and-adaptivity.md",
+      "bytes": 6768,
+      "sha256": "bc6b92299d7f004311f485237cf44f5f61ffcf728d8546cab072aba670f82bc2",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "bc6b92299d7f004311f485237cf44f5f61ffcf728d8546cab072aba670f82bc2",
+        "previous_origin": {
+          "source_sha256": "bc6b92299d7f004311f485237cf44f5f61ffcf728d8546cab072aba670f82bc2",
+          "source": "C:\\Users\\gengr\\Documents\\Codex-Design-Skills\\sources\\interfaces\\skills\\better-layout\\spacing-and-adaptivity.md",
+          "repository": "https://github.com/jakubkrehel/skills",
+          "kind": "upstream_skill_copy",
+          "commit": "267330e1adfc66a718fb65fa6918c1f06d0a689e"
+        }
+      }
+    },
+    {
+      "path": "skills/vendor/better-writing/LICENSE",
+      "bytes": 1090,
+      "sha256": "596f89eaa3780ea0451ab2870196427ee2d0b1b3d743507af0b2fbffd46e234c",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "596f89eaa3780ea0451ab2870196427ee2d0b1b3d743507af0b2fbffd46e234c",
+        "previous_origin": {
+          "source_sha256": "596f89eaa3780ea0451ab2870196427ee2d0b1b3d743507af0b2fbffd46e234c",
+          "source": "C:\\Users\\gengr\\Documents\\Codex-Design-Skills\\sources\\interfaces\\LICENSE",
+          "repository": "https://github.com/jakubkrehel/skills",
+          "kind": "upstream_skill_copy",
+          "commit": "267330e1adfc66a718fb65fa6918c1f06d0a689e"
+        }
+      }
+    },
+    {
+      "path": "skills/vendor/better-writing/SKILL.md",
+      "bytes": 6534,
+      "sha256": "2f87a69b847d64f4f84778d880c483e3ad604c5e01052cf8cf1c0dd7e3c342a9",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "2f87a69b847d64f4f84778d880c483e3ad604c5e01052cf8cf1c0dd7e3c342a9",
+        "previous_origin": {
+          "source_sha256": "2f87a69b847d64f4f84778d880c483e3ad604c5e01052cf8cf1c0dd7e3c342a9",
+          "source": "C:\\Users\\gengr\\Documents\\Codex-Design-Skills\\sources\\interfaces\\skills\\better-writing\\SKILL.md",
+          "repository": "https://github.com/jakubkrehel/skills",
+          "kind": "upstream_skill_copy",
+          "commit": "267330e1adfc66a718fb65fa6918c1f06d0a689e"
+        }
+      }
+    },
+    {
+      "path": "skills/vendor/better-writing/agents/openai.yaml",
+      "bytes": 111,
+      "sha256": "2066a1f9677d1779858fee3c523d9a36fc12202bcd39b43f2003ec42c60d5d9c",
+      "origin": {
+        "kind": "copied_from_development_kit",
+        "source_sha256": "2066a1f9677d1779858fee3c523d9a36fc12202bcd39b43f2003ec42c60d5d9c",
+        "previous_origin": {
+          "source_sha256": "2066a1f9677d1779858fee3c523d9a36fc12202bcd39b43f2003ec42c60d5d9c",
+          "source": "C:\\Users\\gengr\\Documents\\Codex-Design-Skills\\sources\\interfaces\\skills\\better-writing\\agents\\openai.yaml",
+          "repository": "https://github.com/jakubkrehel/skills",
+          "kind": "upstream_skill_copy",
+          "commit": "267330e1adfc66a718fb65fa6918c1f06d0a689e"
+        }
+      }
+    }
+  ]
+}
