@@ -86,5 +86,5 @@ it('uses authoritative local mode and displays Pi identity without claiming tool
   expect(screen.queryByText(/工具开始.*已完成/)).toBeNull();
   fireEvent.change(screen.getByLabelText('补充消息（发给当前执行，不是任务讨论）'), { target: { value: '继续检查' } });
   fireEvent.click(screen.getByRole('button', { name: '发送补充消息' }));
-  await waitFor(() => expect(postRaw).toHaveBeenCalledWith('run.message', { runId: 'run-a', text: '继续检查' }));
+  await waitFor(() => expect(postRaw).toHaveBeenCalledWith('run.message', { runId: 'run-a', text: '继续检查', clientMessageId: expect.any(String) }, undefined, expect.any(String)));
 });

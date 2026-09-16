@@ -34,7 +34,7 @@ function mockSource(identity: { endpoint?: string; projectId?: string } = {}) {
     acceptReview: vi.fn(async (_id: string) => undefined),
     cancelRun: vi.fn(async (_id: string) => undefined),
     getDiff: vi.fn(async (_id: string) => undefined),
-    postRaw: vi.fn(async (_name: string, _input: Record<string, unknown>): Promise<void> => undefined),
+    postRaw: vi.fn(async (_name: string, _input: Record<string, unknown>, _revision?: number, _idempotencyKey?: string): Promise<void> => undefined),
   };
   return { mock, source: mock as unknown as BabelDemoTrackerDataSource };
 }
@@ -264,4 +264,47 @@ it('keeps historical runs read-only even if a current-run action callback is inv
   expect(mock.startRun).not.toHaveBeenCalled(); expect(mock.cancelRun).not.toHaveBeenCalled();
   expect(mock.acceptReview).not.toHaveBeenCalled(); expect(mock.postRaw).not.toHaveBeenCalled();
   expect(mock.getDiff).toHaveBeenCalledWith('old-a');
+});
+
+
+it('reuses an uncertain message attempt across unmounts and draft switches, scoped to run and text', async () => {
+  const { mock, source } = mockSource();
+  const applied = new Set<string>();
+  let loseFirstResponse = true;
+  mock.postRaw.mockImplementation(async (_name, input, _revision, key) => {
+    expect(key).toBeTruthy();
+    expect(input.clientMessageId).toBe(key);
+    applied.add(key!);
+    if (loseFirstResponse) { loseFirstResponse = false; throw new Error('response lost after acceptance'); }
+  });
+  const first = renderHook(() => useBabelRunActions('message-a', source));
+  await waitFor(() => expect(first.result.current.busy).toBe(false));
+  act(() => first.result.current.updateDraft({ message: 'original message' }));
+  await act(async () => { await first.result.current.sendMessage(); });
+  expect(first.result.current.draft.message).toBe('original message');
+  const originalKey = mock.postRaw.mock.calls[0][3];
+  first.unmount();
+
+  const { result, rerender } = renderHook(({ id }) => useBabelRunActions(id, source), { initialProps: { id: 'message-b' } });
+  await waitFor(() => expect(result.current.busy).toBe(false));
+  act(() => result.current.updateDraft({ message: 'original message' }));
+  await act(async () => { await result.current.sendMessage(); });
+  expect(mock.postRaw.mock.calls[1][3]).not.toBe(originalKey);
+  rerender({ id: 'message-a' });
+  await waitFor(() => expect(result.current.busy).toBe(false));
+  expect(result.current.draft.message).toBe('original message');
+  act(() => result.current.updateDraft({ message: 'different message' }));
+  await act(async () => { await result.current.sendMessage(); });
+  expect(mock.postRaw.mock.calls[2][3]).not.toBe(originalKey);
+  act(() => result.current.updateDraft({ message: 'original message' }));
+  await act(async () => { await result.current.sendMessage(); });
+  expect(mock.postRaw.mock.calls[3][3]).toBe(originalKey);
+  expect(applied.size).toBe(3);
+  expect(result.current.draft.message).toBe('');
+
+  // A successful message does not prevent intentionally sending identical text again.
+  act(() => result.current.updateDraft({ message: 'original message' }));
+  await act(async () => { await result.current.sendMessage(); });
+  expect(mock.postRaw.mock.calls[4][3]).not.toBe(originalKey);
+  expect(applied.size).toBe(4);
 });

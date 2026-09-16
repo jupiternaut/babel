@@ -293,8 +293,8 @@ export class BabelDemoTrackerDataSource implements TrackerDataSource {
     return this.query<T>(name, input);
   }
 
-  async postRaw(name: string, input: Record<string, unknown>, expectedRevision?: number): Promise<Record<string, unknown>> {
-    return this.postCommand(name, input, undefined, expectedRevision);
+  async postRaw(name: string, input: Record<string, unknown>, expectedRevision?: number, idempotencyKey?: string): Promise<Record<string, unknown>> {
+    return this.postCommand(name, input, idempotencyKey, expectedRevision);
   }
 
   async getDiff(runId: string): Promise<Record<string, unknown>> {

@@ -14,6 +14,9 @@ type CapabilityMap = Record<string, { allowed: boolean; reason?: string; code?: 
 // A selection can unmount while its command is still in flight. Keep the lock
 // with the same service/project/task identity used by the session draft cache.
 const pendingActions = new Map<string, Promise<void>>();
+// Keep uncertain sends alongside session drafts across selection changes and
+// unmounts. A lost response must not turn a retry into another Pi instruction.
+const messageAttempts = new Map<string, string>();
 
 export interface BabelRunMessage {
   id: string;
@@ -291,7 +294,15 @@ export function useBabelRunActions(trackerId: string, dataSource: BabelDemoTrack
     const runId = detail?.bindingRunId;
     if (!runId || !draft.message.trim()) return Promise.resolve();
     return runAction(async (current) => {
-      await dataSource.postRaw('run.message', { runId, text: draft.message.trim() });
+      const text = draft.message.trim();
+      const attemptScope = JSON.stringify([cacheKey, runId, text]);
+      let key = messageAttempts.get(attemptScope);
+      if (!key) {
+        key = `host-message-${globalThis.crypto.randomUUID()}`;
+        messageAttempts.set(attemptScope, key);
+      }
+      await dataSource.postRaw('run.message', { runId, text, clientMessageId: key }, undefined, key);
+      if (messageAttempts.get(attemptScope) === key) messageAttempts.delete(attemptScope);
       if (getWorkbenchDraft(cacheKey).message === draft.message) {
         const next = patchWorkbenchDraft(cacheKey, { message: '' });
         if (current()) setDraft(next);

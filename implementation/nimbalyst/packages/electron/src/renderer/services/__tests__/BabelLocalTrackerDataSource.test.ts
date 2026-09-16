@@ -18,6 +18,10 @@ it('routes local commands through IPC with the confirmed target and revision, wi
   expect(invoke).toHaveBeenCalledWith('babel-local:command', '/tmp/pi-work', {
     name: 'run.start', projectId: 'local-project', input: { trackerId: 'a', executionTarget: target }, expectedRevision: 5, idempotencyKey: 'once',
   });
+  await source.postRaw('run.message', { runId: 'run-a', text: 'message', clientMessageId: 'message-attempt' }, undefined, 'message-attempt');
+  expect(invoke).toHaveBeenLastCalledWith('babel-local:command', '/tmp/pi-work', {
+    name: 'run.message', projectId: 'local-project', input: { runId: 'run-a', text: 'message', clientMessageId: 'message-attempt' }, expectedRevision: undefined, idempotencyKey: 'message-attempt',
+  });
   expect(fetchSpy).not.toHaveBeenCalled(); expect(eventSpy).not.toHaveBeenCalled(); source.dispose();
 });
 it('never falls back to unauthenticated HTTP if IPC is missing or rejects', async () => {
