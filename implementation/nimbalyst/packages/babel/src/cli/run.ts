@@ -345,6 +345,7 @@ async function dispatch(flags: CliFlags, io: CliIo): Promise<unknown> {
       if (flags.types === "all") input.includeSemantic = true;
       if (flags.view) input.viewId = flags.view;
       if (flags.device) input.deviceId = flags.device;
+      if (flags.attentionOnly) input.attentionOnly = true;
       return http.query({ name: "task.list", projectId, input });
     }
     if (verb === "get") {

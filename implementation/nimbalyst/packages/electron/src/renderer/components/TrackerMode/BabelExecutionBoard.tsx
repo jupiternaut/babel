@@ -1,6 +1,19 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  autoUpdate,
+  flip,
+  FloatingFocusManager,
+  FloatingPortal,
+  offset,
+  shift,
+  useDismiss,
+  useFloating,
+  useInteractions,
+  useRole,
+} from '@floating-ui/react';
 import type { TrackerIdentity } from '@nimbalyst/runtime';
 import type { TrackerRecord } from '@nimbalyst/runtime/core/TrackerRecord';
+import { windowControlsClearance } from '@nimbalyst/runtime/ui/floating/windowControlsClearance';
 import { TrackerBoardCard } from '@nimbalyst/collab-client/trackers-ui';
 import {
   BABEL_EXECUTION_STAGE_LABEL,
@@ -10,6 +23,7 @@ import {
   type BabelExecutionStage,
 } from './babelExecutionStage';
 import { boardLayoutMode } from './babelWorkbench/babelScope';
+import './babelWorkbench/BabelWorkbench.css';
 
 interface BabelExecutionBoardProps {
   items: TrackerRecord[];
@@ -25,8 +39,6 @@ interface BabelExecutionBoardProps {
 
 interface CardMenuState {
   item: TrackerRecord;
-  x: number;
-  y: number;
 }
 
 export const BabelExecutionBoard: React.FC<BabelExecutionBoardProps> = ({
@@ -43,10 +55,39 @@ export const BabelExecutionBoard: React.FC<BabelExecutionBoardProps> = ({
   const [menu, setMenu] = useState<CardMenuState | null>(null);
   const [layout, setLayout] = useState<'columns' | 'stage-list'>('columns');
   const [activeStage, setActiveStage] = useState<BabelExecutionStage>('TODO');
-  const menuRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
-  const cardRefs = useRef<Map<string, HTMLElement>>(new Map());
+  const locatedItemRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!selectedItemId) { locatedItemRef.current = null; return; }
+    if (locatedItemRef.current === selectedItemId) return;
+    const selected = items.find((item) => item.id === selectedItemId);
+    if (selected) {
+      setActiveStage(deriveHostExecutionStage(selected));
+      locatedItemRef.current = selectedItemId;
+    }
+  }, [items, selectedItemId]);
+
+  const closeMenu = React.useCallback((restoreFocus = true) => {
+    const trigger = triggerRef.current;
+    setMenu(null);
+    triggerRef.current = null;
+    if (restoreFocus) trigger?.focus();
+  }, []);
+
+  const floating = useFloating({
+    open: Boolean(menu),
+    onOpenChange: (open, _event, reason) => {
+      if (!open) closeMenu(reason !== 'outside-press' && reason !== 'focus-out');
+    },
+    placement: 'bottom-start',
+    whileElementsMounted: autoUpdate,
+    middleware: [offset(4), flip({ padding: 8 }), shift({ padding: 8 }), windowControlsClearance()],
+  });
+  const dismiss = useDismiss(floating.context);
+  const role = useRole(floating.context, { role: 'menu' });
+  const { getFloatingProps } = useInteractions([dismiss, role]);
 
   const grouped = useMemo(() => {
     const next: Record<BabelExecutionStage, TrackerRecord[]> = {
@@ -73,50 +114,23 @@ export const BabelExecutionBoard: React.FC<BabelExecutionBoardProps> = ({
     return () => observer.disconnect();
   }, []);
 
-  const closeMenu = (restoreFocus = true) => {
-    const trigger = triggerRef.current;
-    setMenu(null);
-    triggerRef.current = null;
-    if (restoreFocus) trigger?.focus();
-  };
-
-  useEffect(() => {
-    if (!menu) return;
-    const onPointerDown = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        closeMenu(false);
-      }
-    };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        closeMenu(true);
-      }
-    };
-    document.addEventListener('mousedown', onPointerDown);
-    document.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.removeEventListener('mousedown', onPointerDown);
-      document.removeEventListener('keydown', onKeyDown);
-    };
-  }, [menu]);
-
-  useEffect(() => {
-    if (menu) menuRef.current?.querySelector('button')?.focus();
-  }, [menu]);
-
   const openMenu = (event: React.MouseEvent | React.KeyboardEvent, item: TrackerRecord) => {
     event.preventDefault();
     event.stopPropagation();
-    const target = event.currentTarget as HTMLElement;
+    const target = (event.target as HTMLElement).closest<HTMLElement>('button, [tabindex="0"]')
+      ?? event.currentTarget as HTMLElement;
     triggerRef.current = target;
-    const point = 'clientX' in event
-      ? { x: event.clientX, y: event.clientY }
-      : (() => {
-        const box = target.getBoundingClientRect();
-        return { x: box.left + 8, y: box.bottom };
-      })();
-    setMenu({ item, ...point });
+    floating.refs.setReference(target);
+    if (event.type === 'contextmenu' && 'clientX' in event) {
+      const { clientX: x, clientY: y } = event;
+      floating.refs.setPositionReference({
+        getBoundingClientRect: () => DOMRect.fromRect({ x, y, width: 0, height: 0 }),
+        contextElement: target,
+      });
+    } else {
+      floating.refs.setPositionReference(target);
+    }
+    setMenu({ item });
   };
 
   const archiveGuard = menu ? hostArchiveGuard(menu.item) : { allowed: true };
@@ -126,12 +140,8 @@ export const BabelExecutionBoard: React.FC<BabelExecutionBoardProps> = ({
   const renderCard = (item: TrackerRecord, stage: BabelExecutionStage, index: number) => (
     <div
       key={item.id}
-      className="mb-1.5 flex items-start gap-1"
+      className={`babel-execution-card ${item.id === selectedItemId ? 'is-selected' : ''}`}
       data-tracker-id={item.id}
-      ref={(node) => {
-        if (node) cardRefs.current.set(item.id, node);
-        else cardRefs.current.delete(item.id);
-      }}
       onKeyDown={(event) => {
         if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
           openMenu(event, item);
@@ -155,9 +165,10 @@ export const BabelExecutionBoard: React.FC<BabelExecutionBoardProps> = ({
       </div>
       <button
         type="button"
-        className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded border border-nim text-nim-muted hover:bg-nim-tertiary"
+        className="babel-card-menu-trigger inline-flex h-8 w-8 items-center justify-center rounded"
         aria-label={`打开 ${item.fields.title ?? item.id} 的菜单`}
         aria-haspopup="menu"
+        aria-expanded={menu?.item.id === item.id}
         data-testid={`babel-card-menu-${item.id}`}
         onClick={(event) => openMenu(event, item)}
       >
@@ -169,18 +180,20 @@ export const BabelExecutionBoard: React.FC<BabelExecutionBoardProps> = ({
   const renderColumn = (stage: BabelExecutionStage) => (
     <section
       key={stage}
-      className="flex min-h-0 min-w-[220px] flex-1 flex-col overflow-hidden rounded-md border border-nim bg-nim-secondary"
+      className="babel-execution-column flex min-h-0 min-w-[220px] flex-1 flex-col overflow-hidden"
+      data-stage={stage}
       data-testid={`babel-execution-column-${stage}`}
     >
-      <header className="flex shrink-0 items-center justify-between gap-2 px-2 py-1.5">
-        <h2 className="text-[12px] font-medium text-nim">
+      <header className="babel-column-header flex shrink-0 items-center justify-between gap-2">
+        <h2 className="babel-column-heading text-nim">
+          <span className="babel-stage-mark" aria-hidden="true" />
           {BABEL_EXECUTION_STAGE_LABEL[stage]}
-          <span className="ml-1 text-nim-faint">{grouped[stage].length}</span>
+          <span className="babel-stage-count">{grouped[stage].length}</span>
         </h2>
         {stage === 'TODO' && canCreateInTodo ? (
           <button
             type="button"
-            className="inline-flex h-8 items-center rounded bg-[var(--nim-primary)] px-2 text-[11px] text-white"
+            className="babel-primary-button inline-flex h-8 items-center rounded-md px-2 text-[12px]"
             aria-label="在待办列新建"
             data-testid="babel-execution-create-todo"
             onClick={onCreateInTodo}
@@ -189,7 +202,7 @@ export const BabelExecutionBoard: React.FC<BabelExecutionBoardProps> = ({
           </button>
         ) : null}
       </header>
-      <div className="min-h-0 flex-1 overflow-auto px-1.5 pb-2">
+      <div className="babel-column-cards min-h-0 flex-1 overflow-auto">
         {grouped[stage].map((item, index) => renderCard(item, stage, index))}
       </div>
     </section>
@@ -198,11 +211,11 @@ export const BabelExecutionBoard: React.FC<BabelExecutionBoardProps> = ({
   return (
     <div
       ref={rootRef}
-      className="flex h-full min-h-0 flex-col bg-nim"
+      className="babel-workbench babel-execution-board flex h-full min-h-0 flex-col"
       data-testid="babel-execution-board"
       data-layout={layout}
       onKeyDown={(event) => {
-        if (!canCreateInTodo || !onCreateInTodo) return;
+        if (menu || !canCreateInTodo || !onCreateInTodo) return;
         if (event.key !== 'n' && event.key !== 'N') return;
         if (event.ctrlKey || event.metaKey || event.altKey) return;
         const target = event.target as HTMLElement | null;
@@ -211,13 +224,15 @@ export const BabelExecutionBoard: React.FC<BabelExecutionBoardProps> = ({
         onCreateInTodo();
       }}
     >
-      <div className="shrink-0 border-b border-nim px-3 py-1.5 text-[11px] text-nim-muted">
-        演示数据 · 执行视图与原生 Trackers 共用同一条 TrackerRecord。没有拖拽时请用卡片菜单归档或恢复。
-        {scopeNote ? <span className="block text-nim-faint" role="status">{scopeNote}</span> : null}
+      <div className="babel-board-context shrink-0">
+        <span className="babel-demo-badge">演示数据</span>
+        <span>{items.length} 条记录</span>
+        <span className="babel-board-hint">卡片菜单可归档或恢复</span>
+        {scopeNote ? <span className="babel-board-scope-note" role="status">{scopeNote}</span> : null}
       </div>
       {layout === 'stage-list' ? (
-        <div className="flex min-h-0 flex-1 flex-col" data-testid="babel-execution-stage-list">
-          <div className="flex shrink-0 gap-1 overflow-x-auto border-b border-nim px-2 py-1" role="tablist" aria-label="执行阶段">
+        <div className="babel-stage-list flex min-h-0 flex-1 flex-col" data-testid="babel-execution-stage-list">
+          <div className="babel-stage-tabs flex shrink-0 overflow-x-auto" role="tablist" aria-label="执行阶段">
             {BABEL_EXECUTION_STAGES.map((stage) => (
               <button
                 key={stage}
@@ -238,39 +253,49 @@ export const BabelExecutionBoard: React.FC<BabelExecutionBoardProps> = ({
           {renderColumn(activeStage)}
         </div>
       ) : (
-        <div className="grid min-h-0 flex-1 grid-cols-4 gap-2 overflow-auto p-2">
+        <div className="babel-board-columns grid min-h-0 flex-1 overflow-auto">
           {BABEL_EXECUTION_STAGES.map((stage) => renderColumn(stage))}
         </div>
       )}
       {menu ? (
-        <div
-          ref={menuRef}
-          role="menu"
-          aria-label="卡片操作"
-          className="fixed z-50 min-w-[180px] rounded-md border border-nim bg-nim-secondary py-1 shadow-lg"
-          style={{ left: menu.x, top: menu.y }}
-          data-testid="babel-execution-card-menu"
-        >
-          <button
-            type="button"
-            role="menuitem"
-            className="flex min-h-8 w-full items-center px-3 text-left text-[12px] text-nim hover:bg-nim-tertiary focus-visible:bg-nim-tertiary disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={archiveDisabled}
-            title={archiveDisabled ? archiveGuard.reason : undefined}
-            onClick={() => {
-              if (archiveDisabled) return;
-              onArchiveItems?.([menu.item.id], !menu.item.archived);
-              closeMenu(true);
-            }}
+        <FloatingPortal>
+          <FloatingFocusManager
+            context={floating.context}
+            modal={false}
+            initialFocus={archiveDisabled ? floating.refs.floating : 0}
+            returnFocus={false}
           >
-            {archiveLabel}
-          </button>
-          {archiveDisabled && archiveGuard.reason ? (
-            <div role="status" className="px-3 py-1 text-[11px] text-nim-muted">
-              {archiveGuard.reason}
+            <div
+              ref={floating.refs.setFloating}
+              {...getFloatingProps()}
+              tabIndex={-1}
+              aria-label="卡片操作"
+              className="babel-workbench babel-card-menu"
+              style={floating.floatingStyles}
+              data-testid="babel-execution-card-menu"
+            >
+              <button
+                type="button"
+                role="menuitem"
+                className="flex min-h-8 w-full items-center px-3 text-left text-[12px] text-nim hover:bg-nim-tertiary focus-visible:bg-nim-tertiary disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={archiveDisabled}
+                title={archiveDisabled ? archiveGuard.reason : undefined}
+                onClick={() => {
+                  if (archiveDisabled) return;
+                  onArchiveItems?.([menu.item.id], !menu.item.archived);
+                  closeMenu(true);
+                }}
+              >
+                {archiveLabel}
+              </button>
+              {archiveDisabled && archiveGuard.reason ? (
+                <div role="status" className="px-3 py-1 text-[11px] text-nim-muted">
+                  {archiveGuard.reason}
+                </div>
+              ) : null}
             </div>
-          ) : null}
-        </div>
+          </FloatingFocusManager>
+        </FloatingPortal>
       ) : null}
     </div>
   );

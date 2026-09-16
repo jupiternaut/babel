@@ -14,6 +14,17 @@ const reply = (value: unknown) => ({ stdout: JSON.stringify({ ok: true, value })
 const payload = (args: string[]) => JSON.parse(Buffer.from(args.at(-1)!, 'base64').toString());
 
 describe('native system adapter boundaries', () => {
+  it('validates paths using the target platform before invoking a native command', async () => {
+    const run = vi.fn(async () => reply(null));
+    for (const platform of ['darwin', 'linux'] as const) {
+      const adapter = createSystemAdapter(os.tmpdir(), { platform, run });
+      await expect(adapter.inspect({ ...wsl, shortcutPath: 'C:\\source.lnk' })).rejects.toMatchObject({ code: 'INVALID_ARGUMENT' });
+    }
+    const windows = createSystemAdapter(os.tmpdir(), { platform: 'win32', run });
+    await expect(windows.inspect({ ...wsl, shortcutPath: 'C:source.lnk' })).rejects.toMatchObject({ code: 'INVALID_ARGUMENT' });
+    expect(run).not.toHaveBeenCalled();
+  });
+
   it('rejects command targets, paths, malformed identities and unsupported autostart before execution', async () => {
     const run = vi.fn(async () => reply(null));
     const adapter = createSystemAdapter(os.tmpdir(), { platform: 'win32', run });

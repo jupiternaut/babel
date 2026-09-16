@@ -116,7 +116,7 @@ import { BabelExecutionBoard } from './BabelExecutionBoard';
 import { BabelExecutionShell } from './babelWorkbench/BabelExecutionShell';
 import { isBabelDemoDataSource } from '../../services/createWorkspaceTrackerDataSource';
 import { isBabelDemoWorkspace } from '../../services/babelDemoWorkspace';
-import { projectExecutionBoardItems } from './babelExecutionStage';
+import { filterBabelExecutionItems } from './babelExecutionFilters';
 import { formatBabelHostError, unimplementedCommandError } from '../../services/babelDemoErrors';
 import { orgPresenceAtomFamily } from '../../store/atoms/teamInbox';
 import { gitStatusAtom } from '../../store/atoms/gitOperations';
@@ -228,32 +228,8 @@ export const TrackerMainView: React.FC<TrackerMainViewProps> = ({
   // See nimbalyst#176.
   const hostDataSource = useAtomValue(trackerHostDataSourceAtom);
   const babelDemoSource = isBabelDemoDataSource(hostDataSource) ? hostDataSource : null;
-  const [liveListedIds, setLiveListedIds] = useState<Set<string>>(() => new Set());
-
-  useEffect(() => {
-    if (!babelDemoSource) {
-      setLiveListedIds(new Set());
-      return;
-    }
-    return babelDemoSource.subscribe((change) => {
-      if (change.type !== 'items-upserted' && change.type !== 'items-replaced') return;
-      const rows = change.items;
-      if (!rows?.length) return;
-      setLiveListedIds((prev) => {
-        const next = new Set(prev);
-        for (const item of rows) next.add(item.id);
-        return next;
-      });
-    });
-  }, [babelDemoSource]);
-
-  const scopedListedIds = useMemo(() => {
-    if (!babelListedIds) return babelListedIds;
-    if (liveListedIds.size === 0) return babelListedIds;
-    const next = new Set(babelListedIds);
-    for (const id of liveListedIds) next.add(id);
-    return next;
-  }, [babelListedIds, liveListedIds]);
+  // The live task.list snapshot owns scope; event IDs must not bypass its filters.
+  const scopedListedIds = babelListedIds;
   const defaultModel = useAtomValue(defaultAgentModelAtom);
   const isWorktreesFeatureAvailable = useAtomValue(worktreesFeatureAvailableAtom);
   // Branch from the repo the worktree will actually be created in -- in a
@@ -743,14 +719,18 @@ export const TrackerMainView: React.FC<TrackerMainViewProps> = ({
     return viewFilteredItems.filter((item) => scopedListedIds.has(item.id));
   }, [scopedListedIds, viewFilteredItems]);
 
-  const executionItems = useMemo(() => {
-    const projected = projectExecutionBoardItems(
-      [...allActiveItems, ...allArchivedItems],
-      { selectedType: filterType, search: searchQuery },
-    );
-    if (!scopedListedIds) return projected;
-    return projected.filter((item) => scopedListedIds.has(item.id));
-  }, [allActiveItems, allArchivedItems, filterType, searchQuery, scopedListedIds]);
+  const { executionItems, unscopedExecutionItemCount } = useMemo(() => {
+    const items = [...allActiveItems, ...allArchivedItems];
+    const definition = { ...effectiveViewDefinition, selectedType: filterType };
+    const options = { ...filterContext, searchTerm: searchQuery, sourceFilter, listedIds: scopedListedIds };
+    const rows = filterBabelExecutionItems(items, definition, options);
+    return {
+      executionItems: rows,
+      unscopedExecutionItemCount: definition.statusScope === 'all'
+        ? rows.length
+        : filterBabelExecutionItems(items, { ...definition, statusScope: 'all' }, options).length,
+    };
+  }, [allActiveItems, allArchivedItems, effectiveViewDefinition, filterContext, filterType, searchQuery, sourceFilter, scopedListedIds]);
 
   const personalStateRequired = activeFilters.includes('favorites')
     || activeFilters.includes('recently-viewed')
@@ -1092,11 +1072,6 @@ export const TrackerMainView: React.FC<TrackerMainViewProps> = ({
           errorNotificationService.showError('无法新建', '演示服务未返回新建记录的 ID。');
           return;
         }
-        setLiveListedIds((prev) => {
-          const next = new Set(prev);
-          next.add(createdId);
-          return next;
-        });
         setQuickAddType(null);
         setModeLayout({ selectedItemId: createdId });
         return;
@@ -1214,12 +1189,16 @@ export const TrackerMainView: React.FC<TrackerMainViewProps> = ({
     return `${parts.join(' ')} ${typeName}`;
   }, [filterType, activeFilters, trackerTypes]);
 
-  const displayedItemCount = viewMode === 'inbox'
-    ? inboxFilteredItems.length
-    : scopedViewFilteredItems.length;
-  const unscopedDisplayedItemCount = viewMode === 'inbox' && inboxScope === 'global'
-    ? unscopedGlobalViewFilteredItems.length
-    : unscopedViewFilteredItems.length;
+  const displayedItemCount = displaySurface === 'execution'
+    ? executionItems.length
+    : viewMode === 'inbox'
+      ? inboxFilteredItems.length
+      : scopedViewFilteredItems.length;
+  const unscopedDisplayedItemCount = displaySurface === 'execution'
+    ? unscopedExecutionItemCount
+    : viewMode === 'inbox' && inboxScope === 'global'
+      ? unscopedGlobalViewFilteredItems.length
+      : unscopedViewFilteredItems.length;
   const hiddenByScopeCount = statusScope === 'all'
     ? 0
     : Math.max(0, unscopedDisplayedItemCount - displayedItemCount);
@@ -1738,7 +1717,7 @@ export const TrackerMainView: React.FC<TrackerMainViewProps> = ({
               data-testid="tracker-hidden-by-scope"
             >
               <span>
-                {hiddenByScopeCount} closed item{hiddenByScopeCount === 1 ? '' : 's'} hidden
+                {hiddenByScopeCount} {statusScope === 'closed' ? 'open' : 'closed'} item{hiddenByScopeCount === 1 ? '' : 's'} hidden
               </span>
               <button
                 type="button"

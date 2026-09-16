@@ -1,5 +1,7 @@
-import { afterEach, describe, expect, it } from "vitest";
-import { DEFAULT_PROJECT_ID, DEMO_ACTOR } from "../src/contracts.ts";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { DEFAULT_PROJECT_ID, DEMO_ACTOR, type BabelEvent } from "../src/contracts.ts";
+import type { TaskCard } from "../src/core/domain.ts";
+import { executeCli } from "../src/cli/run.ts";
 import { createDemoServer } from "../src/server/http.ts";
 import { BabelTui } from "../src/tui/app.ts";
 import { TuiHttp } from "../src/tui/http.ts";
@@ -67,6 +69,66 @@ function stripAnsi(text: string): string {
 }
 
 describe("TUI LR-03 discoverable entries", () => {
+  it("filters attention through the shared projection, preserves four stages and replays events without duplicate cards", async () => {
+    const { tui, http, domain, endpoint } = await startHeadless();
+    for (const scenario of ["waiting_input", "verification_failed", "lost", "review_required"]) {
+      const created = await command(domain, "task.create", { title: `WD02 ${scenario}` });
+      const started = await command(domain, "run.start", { trackerId: created.trackerId });
+      for (let step = 0; step < (scenario === "verification_failed" || scenario === "review_required" ? 3 : 1); step++) {
+        await command(domain, "demo.inject", { runId: started.runId, scenario });
+      }
+    }
+    let deliver: (event: BabelEvent) => void = () => { throw new Error("subscription not started"); };
+    vi.spyOn(http, "watchEvents").mockImplementation((_project, _cursor, onEvent) => {
+      deliver = onEvent;
+      return { close() {} };
+    });
+    await tui.reconnectNow();
+    const initialRunCount = domain.store.data.runs.length;
+    tui.feed("!s");
+    await waitUntil(() => tui.inspect().items.length === 4);
+    expect(domain.store.data.runs.length).toBe(initialRunCount);
+    expect(tui.inspect().items.every((card) => card.attention)).toBe(true);
+    expect(tui.inspect().hits.filter((hit) => hit.action === "stage").map((hit) => hit.id)).toEqual(["TODO", "RUNNING", "DONE", "ARCHIVED"]);
+    const cli = await executeCli(["task", "list", "--project", PROJECT, "--endpoint", endpoint, "--attention-only"]);
+    expect(cli.exitCode).toBe(0);
+    const authoritative = JSON.parse(cli.stdout) as { items: TaskCard[] };
+    expect(tui.inspect().items).toEqual(authoritative.items);
+    const selected = authoritative.items.find((card) => card.trackerId === tui.inspect().selectedId)!;
+    tui.resize(80, 40);
+    expect(stripAnsi(tui.inspect().frame)).toContain(`最后更新 ${selected.lastUpdatedAt}`);
+    expect(stripAnsi(tui.inspect().frame)).toContain("需要关注");
+
+    const extra = await command(domain, "task.create", { title: "WD02 重复投递" });
+    const started = await command(domain, "run.start", { trackerId: extra.trackerId });
+    await command(domain, "demo.inject", { runId: started.runId, scenario: "waiting_input" });
+    const event = domain.store.data.events.at(-1)!;
+    deliver(event);
+    deliver(event);
+    await waitUntil(() => tui.inspect().items.length === 5);
+    expect(tui.inspect().items.filter((card) => card.trackerId === extra.trackerId)).toHaveLength(1);
+    expect(new Set(tui.inspect().items.map((card) => card.trackerId)).size).toBe(5);
+    tui.feed("/WD02 waiting_input\r");
+    await waitUntil(() => tui.inspect().items.length === 1);
+    expect(tui.inspect().items[0]?.title).toBe("WD02 waiting_input");
+    tui.feed("/不存在\r");
+    await waitUntil(() => tui.inspect().items.length === 0);
+    expect(tui.inspect().selectedId).toBeNull();
+  });
+
+  it("offers an attention mouse entry and restores the full board when toggled off", async () => {
+    const { tui } = await startHeadless();
+    const count = tui.inspect().items.length;
+    const hit = tui.inspect().hits.find((row) => row.action === "attention");
+    expect(hit).toBeTruthy();
+    tui.feedEvent({ type: "mouse", kind: "down", button: 0, x: hit!.x + 1, y: hit!.y + 1, wheel: 0 });
+    await waitUntil(() => tui.inspect().items.length === 0);
+    expect(tui.inspect().menuItems.find((item) => item.id === "attention")?.label).toContain("显示全部任务");
+    tui.feed("!");
+    await waitUntil(() => tui.inspect().items.length === count);
+    expect(tui.inspect().menuItems.find((item) => item.id === "attention")?.label).toContain("只看需要关注");
+  });
+
   it("cannot start the old selection while a new search is loading", async () => {
     const { tui, domain } = await startHeadless();
     const before = domain.store.data.runs.length;

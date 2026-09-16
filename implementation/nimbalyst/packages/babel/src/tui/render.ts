@@ -12,6 +12,7 @@ export interface TuiCard {
   revision: number;
   latestRunId: string | null;
   runStatus: string | null;
+  lastUpdatedAt: string | null;
   attention: boolean;
   archived?: boolean;
   readOnly?: boolean;
@@ -120,6 +121,7 @@ export function detailLines(card: TuiCard | undefined, extra: string[], width: n
     card.title,
     `${typeText(card.primaryType)} · ${card.status} · ${STAGE_LABEL[card.stage]} · rev ${card.revision}`,
     runStatusText(card.runStatus as never),
+    `最后更新 ${card.lastUpdatedAt ?? "暂无记录"}`,
     card.description,
     ...extra,
   ];
@@ -201,6 +203,7 @@ export function helpLines(): string[] {
     "y 就绪  w 视图  l 关系  u/i 排序  g Hook",
     "x Google Tasks  z 合成节点  b 运维说明  f 本地 PDF（未接入/演示）",
     "d 差异  h 历史  / 搜索  1-4 阶段  p 项目  t 类型",
+    "! 只看需要关注/全部任务（保留项目、类型、设备和搜索）",
     "鼠标单击选中，滚轮滚动。拖拽请改用菜单。",
     "状态用文字：等待输入、取消待确认、失联未核对。",
     "Ctrl+S 保存编辑。q 退出（恢复终端，不取消 run）。",
@@ -209,8 +212,8 @@ export function helpLines(): string[] {
 
 export function footerLine(cols: number, status: string, error: string | null, narrow: boolean): string {
   const keys = narrow
-    ? "j/k 移动  Enter 菜单  y 就绪  w 视图  g Hook  ? 帮助  q 退出"
-    : "j/k 移动  Enter 菜单  y 就绪  w 视图  g Hook  x/z/b/f 后续  ? 帮助  q 退出";
+    ? "j/k 移动  Enter 菜单  ! 关注  y 就绪  w 视图  g Hook  ? 帮助  q 退出"
+    : "j/k 移动  Enter 菜单  ! 关注  y 就绪  w 视图  g Hook  x/z/b/f 后续  ? 帮助  q 退出";
   const note = error ? ` ${error}` : status ? ` ${status}` : "";
   return padWidth(sliceByWidth(keys + note, cols), cols);
 }

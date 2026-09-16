@@ -1,0 +1,3 @@
+scripts/build-extension.sh text eol=lf
+scripts/generate-registry.sh text eol=lf
+scripts/marketplace-status.mjs text eol=lf

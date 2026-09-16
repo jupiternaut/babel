@@ -1,8 +1,11 @@
 import React from 'react';
 import type { TrackerStatusScope } from '../../../store/atoms/trackers';
 import type { BabelDeviceRow, BabelNavQuery, BabelProjectRow } from './useBabelNavQuery';
+import { BabelGlassSurface } from './BabelGlassSurface';
+import { BabelAttention, type BabelAttentionProps } from './BabelAttention';
+import './BabelWorkbench.css';
 
-export interface BabelWorkbenchNavProps {
+export interface BabelWorkbenchNavProps extends BabelAttentionProps {
   workspaceLabel: string;
   query: BabelNavQuery;
   projectId: string;
@@ -15,8 +18,8 @@ export interface BabelWorkbenchNavProps {
 }
 
 const btn = (active: boolean) =>
-  `flex min-h-8 w-full items-center justify-between gap-2 rounded-md px-2 text-left text-[12px] ${
-    active ? 'bg-nim-active text-nim' : 'text-nim-muted hover:bg-nim-tertiary hover:text-nim'
+  `babel-nav-button flex w-full items-center justify-between gap-2 text-left text-[12px] ${
+    active ? 'is-active' : ''
   }`;
 
 export const BabelWorkbenchNav: React.FC<BabelWorkbenchNavProps> = ({
@@ -29,16 +32,22 @@ export const BabelWorkbenchNav: React.FC<BabelWorkbenchNavProps> = ({
   onDeviceSelect,
   onStatusScopeChange,
   onOpenFiles,
+  attentionOnly,
+  onAttentionChange,
+  selectedItemId,
+  onAttentionSelect,
 }) => {
   const unavailable = query.connection === 'unavailable';
 
   return (
-    <div className="flex min-h-0 flex-col" data-testid="babel-workbench-nav">
+    <nav className="babel-workbench-nav flex min-h-0 flex-col" aria-label="执行工作区" data-testid="babel-workbench-nav">
       <NavGroup title="工作区">
-        <button type="button" className={btn(true)} aria-current="page">
-          <span>任务看板</span>
-          <span className="text-[10px] text-nim-faint">当前</span>
-        </button>
+        <BabelGlassSurface className="babel-nav-glass">
+          <button type="button" className={btn(!attentionOnly)} aria-current={!attentionOnly ? 'page' : undefined} onClick={() => onAttentionChange?.(false)}>
+            <span>任务看板</span>
+            {!attentionOnly ? <span className="text-[10px] text-nim-faint">当前</span> : null}
+          </button>
+        </BabelGlassSurface>
         <button
           type="button"
           className={btn(false)}
@@ -51,8 +60,11 @@ export const BabelWorkbenchNav: React.FC<BabelWorkbenchNavProps> = ({
         </button>
         <DisabledRow label="Agent 会话" reason="从宿主顶栏打开，不在此侧栏启动" />
         <DisabledRow label="知识与 PDF" reason="未接入（M0）" />
-        <p className="px-2 pt-1 text-[11px] text-nim-faint">{workspaceLabel}</p>
+        <p className="babel-workspace-label px-2 pt-1">{workspaceLabel}</p>
       </NavGroup>
+
+      <BabelAttention listed={query.listed} stale={unavailable} attentionOnly={attentionOnly}
+        onAttentionChange={onAttentionChange} selectedItemId={selectedItemId} onAttentionSelect={onAttentionSelect} />
 
       <NavGroup title="项目">
         {unavailable ? (
@@ -63,12 +75,14 @@ export const BabelWorkbenchNav: React.FC<BabelWorkbenchNavProps> = ({
             key={project.id}
             type="button"
             className={btn(project.id === projectId)}
+            disabled={Boolean(query.boundProjectId && project.id !== query.boundProjectId)}
+            title={query.boundProjectId && project.id !== query.boundProjectId ? '请在此项目对应的工作区打开；当前工作区尚未绑定此项目。' : undefined}
             aria-current={project.id === projectId ? 'true' : undefined}
             onClick={() => onProjectSelect(project.id)}
             data-testid={`babel-nav-project-${project.id}`}
           >
             <span className="min-w-0 truncate">{project.name}</span>
-            <span className="shrink-0 text-[10px] text-nim-faint">演示</span>
+            <span className="shrink-0 text-[10px] text-nim-faint">{query.boundProjectId && project.id !== query.boundProjectId ? '未绑定工作区' : '演示'}</span>
           </button>
         ))}
         {!unavailable && query.projects.length === 0 ? (
@@ -106,7 +120,7 @@ export const BabelWorkbenchNav: React.FC<BabelWorkbenchNavProps> = ({
             </span>
           </button>
         ))}
-        <p className="px-2 pt-1 text-[11px] text-nim-faint">数字是当前项目上未终止的 run，不是 CPU 或在线探测。</p>
+        <p className="babel-nav-note px-2 pt-1">数字为当前项目的未终止执行数。</p>
       </NavGroup>
 
       <NavGroup title="Open / Closed">
@@ -127,14 +141,14 @@ export const BabelWorkbenchNav: React.FC<BabelWorkbenchNavProps> = ({
           </button>
         ))}
       </NavGroup>
-    </div>
+    </nav>
   );
 };
 
 export const BabelWorkbenchFooter: React.FC<{
   query: BabelNavQuery;
 }> = ({ query }) => (
-  <div className="shrink-0 border-t border-nim px-2 py-2 text-[11px] text-nim-muted" data-testid="babel-workbench-footer">
+  <div className="babel-workbench-footer shrink-0 text-[11px] text-nim-muted" data-testid="babel-workbench-footer">
     <p className="font-medium text-nim">{query.demoLabel || '演示数据'}</p>
     <p>{query.connection === 'demo' ? '演示服务已连接' : query.connection === 'unavailable' ? '演示服务未接入' : '未连接演示服务'}</p>
     {query.connectionNote ? <p className="text-nim-faint">{query.connectionNote}</p> : null}
@@ -157,16 +171,16 @@ export const BabelWorkbenchExtras: React.FC = () => (
 
 function NavGroup({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="border-b border-nim px-1.5 py-2">
-      <h3 className="mb-1 px-2 text-[10px] font-semibold uppercase tracking-wider text-nim-faint">{title}</h3>
-      <div className="flex flex-col gap-0.5">{children}</div>
+    <section className="babel-nav-group">
+      <h3 className="babel-nav-group-title">{title}</h3>
+      <div className="babel-nav-items">{children}</div>
     </section>
   );
 }
 
 function DisabledRow({ label, reason }: { label: string; reason: string }) {
   return (
-    <div className="flex min-h-8 items-center justify-between gap-2 px-2 text-[12px] text-nim-muted">
+    <div className="babel-nav-disabled flex min-h-8 text-[12px] text-nim-muted">
       <span>{label}</span>
       <span className="text-[10px] text-nim-faint">{reason}</span>
     </div>

@@ -58,6 +58,9 @@ import { TrackerCommentsSection } from './TrackerCommentsSection';
 import { resolveTrackerContentFocus } from './trackerContentFocus';
 import { TrackerCollabAvatars, TrackerCollabSyncDot } from './trackerCollabChrome';
 import { formatTrackerActivity } from './trackerActivityPresentation';
+import { trackerHostDataSourceAtom } from '../../store/atoms/trackers';
+import { resolveBabelDemoWriteSource } from '../../services/createWorkspaceTrackerDataSource';
+import { useBabelTitleDraft } from './babelWorkbench/useBabelTitleDraft';
 import { createCollectionItem } from './createCollectionItem';
 import { TabEditor } from '../TabEditor/TabEditor';
 import { FeedbackBacklinkSection } from '../FeedbackRequest/FeedbackBacklinks';
@@ -471,8 +474,11 @@ export const TrackerItemDetail: React.FC<TrackerItemDetailProps> = ({
 
   // Local state for text fields (debounced save)
   const [localTitle, setLocalTitle] = useState(item ? getRecordTitle(item) : '');
+  const babelTitleSource = resolveBabelDemoWriteSource(useAtomValue(trackerHostDataSourceAtom));
+  const babelTitle = useBabelTitleDraft(item, babelTitleSource);
+  const displayedTitle = babelTitleSource ? babelTitle.value : localTitle;
   // Title is a textarea so long titles wrap; it grows with its content (NIM-1615).
-  const titleRef = useAutoSizedTitle(localTitle);
+  const titleRef = useAutoSizedTitle(displayedTitle);
   const [localCustomFields, setLocalCustomFields] = useState<Record<string, any>>({});
   // Per-field debounce timers (not one shared timer) so editing one field never
   // drops another field's pending save, and so reconciliation can tell which
@@ -1268,13 +1274,19 @@ export const TrackerItemDetail: React.FC<TrackerItemDetailProps> = ({
             <textarea
               ref={titleRef}
               rows={1}
-              value={localTitle}
-              onChange={(e) => handleTextFieldChange('title', sanitizeTitleInput(e.target.value))}
+              value={displayedTitle}
+              readOnly={Boolean(babelTitleSource && babelTitle.saving)}
+              onChange={(e) => {
+                const value = sanitizeTitleInput(e.target.value);
+                if (babelTitleSource) babelTitle.change(value);
+                else handleTextFieldChange('title', value);
+              }}
               onKeyDown={(e) => {
                 e.stopPropagation();
                 // Titles stay single-line: Enter commits instead of adding a row.
                 if (e.key === 'Enter') {
                   e.preventDefault();
+                  if (babelTitleSource) void babelTitle.save();
                   e.currentTarget.blur();
                 }
               }}
@@ -1284,6 +1296,27 @@ export const TrackerItemDetail: React.FC<TrackerItemDetailProps> = ({
             />
           ) : (
             <h3 className="text-base font-semibold text-nim m-0 leading-snug break-words">{getRecordTitle(item)}</h3>
+          )}
+          {babelTitleSource && editable && babelTitle.dirty && (
+            <div className="mt-2 space-y-2 text-xs text-nim-muted">
+              {babelTitle.conflict && (
+                <div role="alert" data-testid="babel-title-conflict" className="rounded border border-nim p-2 space-y-2">
+                  <p className="m-0 font-medium text-nim">标题版本已更新，草稿已保留。</p>
+                  <p className="m-0 break-words">当前远端标题：{babelTitle.remoteTitle}</p>
+                  {babelTitle.error && <p className="m-0">{babelTitle.error.code}: {babelTitle.error.message}</p>}
+                  <p className="m-0">继续编辑会以当前远端版本为基线，之后仍需手动保存。</p>
+                  <div className="flex flex-wrap gap-2">
+                    <button type="button" className="rounded border border-nim px-2 py-1 hover:bg-nim-tertiary" onClick={babelTitle.continueEditing}>继续编辑草稿</button>
+                    <button type="button" data-testid="babel-title-use-remote" className="rounded border border-nim px-2 py-1 hover:bg-nim-tertiary" onClick={babelTitle.useRemote}>采用远端标题</button>
+                  </div>
+                </div>
+              )}
+              {babelTitle.error && !babelTitle.conflict && <p role="alert" className="m-0 text-nim-warning">{babelTitle.error.code}: {babelTitle.error.message}</p>}
+              <div className="flex gap-2">
+                <button type="button" data-testid="babel-title-save" className="rounded border border-nim px-2 py-1 text-nim hover:bg-nim-tertiary disabled:opacity-50" disabled={!babelTitle.canSave} onClick={() => void babelTitle.save()}>{babelTitle.saving ? '保存中…' : '保存标题'}</button>
+                {!babelTitle.conflict && <button type="button" className="rounded px-2 py-1 hover:bg-nim-tertiary disabled:opacity-50" disabled={babelTitle.saving} onClick={babelTitle.useRemote}>撤销修改</button>}
+              </div>
+            </div>
           )}
           <div className="flex items-center gap-2 mt-1 flex-wrap">
             <span

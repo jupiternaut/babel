@@ -1,0 +1,111 @@
+# macOS UI/UX 首轮实施证据
+
+日期：2026-09-16。下文“首轮”保留历史测试失败；最新修复与门禁结果见文末“持续迭代”。首轮交付为可运行的 Mac 开发入口与原生工作台视觉候选，不代表 M0 全部能力或发布验收完成。
+
+## 环境与边界
+
+- 工作目录：`/Users/gengrf/Projects/babel`；分支：`ui/macos-glass`。
+- 基线：`6568dc00f4fb6a20d828542b4a6694be854aa3e0`；新检出时工作树干净。此段记录首轮提交前快照，后续交付状态见文末。
+- 宿主：`implementation/nimbalyst`，沿用 Electron / React / TypeScript / Vite 和原生 TrackerRecord。
+- 本机：Apple M3 / arm64 / macOS 27.0 (26A428)，Xcode 已选中。
+- 工具链：`/opt/homebrew/opt/node@24/bin`，Node 24.15.0 / npm 11.12.1；Electron 43.2.0 / electron-vite 4.0.1。未修改全局 shell 配置。
+- 日志根：`/Users/gengrf/Library/Logs/Babel-Dev/macos-ui-20260916/`，下文证据文件名均相对此目录。
+- 最终改动文件与截图的 SHA-256 清单：日志根下 `source-manifest.json`，用于识别这次未提交工作树快照。
+- 手工基线 profile：`~/Library/Application Support/Babel-Dev/macos-ui`；脚本实测 profile：`~/Library/Application Support/Babel/mac-glass-script-20260916`。
+- 两个 profile 均独立保存 demo / Electron / system 数据；宿主仍会检测本机已有 CLI 账号，不等于整个宿主与账户环境完全隔离。
+- 未执行真实 Agent 任务、OAuth 授权、SSH 或生产服务写入；业务验收使用演示数据。未修改 Open Design 或全局技能配置。
+
+## 首轮变化
+
+1. 新增 `scripts/dev-macos.mjs start|status|stop` 与行为测试：固定 Node 24，验证进程身份及回环监听，隔离数据，保留 profile。纠正首次构建顺序：workspace-deps → runtime → memory engine → workers。
+2. 视觉合同更新为候选 v3：浅色磨砂优先、深色继承宿主主题、正文清晰，侧栏/详情/菜单具有玻璃层次。旧 v2 仍只是历史参考。
+3. 改造现有 Babel 导航、看板和详情。Floating UI Portal 菜单修复裁切、Escape 焦点恢复与菜单内 N 误触发，不改变共享业务模型。
+4. 精确锁定 `simple-liquid-glass@5.3.0`，仅在当前导航项提供可选 SVG 装饰层；默认 CSS 磨砂。实验开关 `VITE_BABEL_GLASS_REFRACTION=true`。正文与交互位于独立稳定层，偏好变化实时回退。
+5. 原生 E2E 修正 Windows 快捷键/ConPTY 假设，新增材质与输入保持检查，只附着显式指定的隔离实例。
+
+## 首轮已验证结果
+
+| 检查 | 实测结果 | 日志/证据 |
+|---|---|---|
+| 全新依赖安装 | 根与 Babel 包 npm ci 成功 | `npm-ci.log`、`babel-npm-ci.log` |
+| 共享模块与 worker 构建 | workspace-deps / runtime / memory engine / workers 均成功；第一次 runtime 构建顺序错误已纠正 | `workspace-deps-build.log`、`runtime-build-retry.log`、`memory-engine-build.log`、`worker-build.log` |
+| 原生 UI 改前基线 | 真实 Electron 窗口已观察、留图 | `screenshots/baseline-light.png` |
+| Mac 启动器 | start、status、正常退出后 stop 成功，状态回报 not-running；4 项行为测试通过 | `launcher-start.log`、`launcher-status.json`、`launcher-stop.json`、`launcher-tests.log` |
+| 窄/宽与浅/深主题 | 原生窗口 zoom、窄窗口及实际宿主主题菜单检查完成 | `screenshots/light-detail.png`、`screenshots/dark-detail.png`、`e2e-archive-v3/` |
+| 菜单交互 | 新增 4 项针对性测试通过，保留改前失败 | `menu-tests-before.log`、`menu-tests-after.log` |
+| 玻璃组件 | 新增 5 项通过：偏好变化、输入/选区/焦点、监听清理、iOS 回退 | 全量单测包含这些用例，无新增用例失败 |
+| CSS 材质原生检查 | 20 次菜单开关、中文输入、运行中 reduced-motion / reduced-transparency / forced-colors 回退通过；菜单无残留 | `e2e-glass-css.log`、`e2e-glass-css/**/materials.json` |
+| SVG 小样及最终整合 | 最终同轮归档/恢复、材质回退、三端生命周期 3/3 通过；同样完成 20 次菜单开关 | `e2e-final-svg.log`、`e2e-final-svg/**/materials.json` |
+| 恢复默认材质 | 默认 CSS 重启后材质用例再次通过，20 次菜单开关无残留；原生浅色窗口保持开启 | `e2e-final-css.log`、`launcher-final-status.json`、`screenshots/final-light.png` |
+| 归档/恢复 | 保持 record 与 run 绑定，原生菜单和响应式检查通过 | `e2e-archive-v3.log` |
+| GUI / CLI / TUI | 同一中文任务与 trackerId/runId，真实 Mac POSIX PTY；关闭 GUI 后服务继续，可由 TUI 验收 | `e2e-three-surfaces.log`、该输出目录下 `identity.json` / `pty.txt` |
+| 类型检查 | 26 个工作区全部通过，Babel 单独 typecheck 通过 | `typecheck-all.log`、`babel-typecheck.log` |
+| 整仓单测 | 14055 通过 / 19 失败 / 26 跳过，1674 文件；仅运行一次全套 | `test-prepush.log`、`test-prepush-failures.log` |
+| Babel 单测 | 243 通过 / 9 失败 / 4 跳过 | `babel-tests.log` |
+
+CSS 测量的实际主题为 light、viewport 1710×1010；导航 backdrop 为 `blur(12px) saturate(1.1)`，没有 SVG filter 或 canvas。20 次菜单开/关往返中位数约 102ms、p95 约 145ms，含自动化等待且当时并行运行全量单测，不能用作 GPU 帧时延或性能达标结论。
+
+SVG 小样实测 `svg / native-svg`，186×32 CSS px，位移图已生成，浏览器 computed backdrop-filter 包含实际 SVG filter URL；没有 canvas，20 次菜单开/关后仍只有 1 个 filter、0 个菜单。相同导航项的两张 `surface.png` 已目视对照：主要差异是高光与边缘，纯色背景上的折射收益不明显，因此保持默认 CSS。SVG 轮菜单往返中位数约 50ms、p95 约 63ms，但其时全量单测已结束，且 viewport 为 1400×900，不能据此声称比 CSS 更快。未做 GPU/功耗/持续帧率定量验收。
+
+最终实例保持运行，`experiments.glassRefraction=false`。监听核验：Babel `127.0.0.1:7780`、Vite `[::1]:5273`、CDP `127.0.0.1:9223`。最终画面为 7 条演示记录：5 条固定 fixture 加上三端验收创建并完成的 2 条，保留证据，不假装仍是初始五条快照。
+
+## 首轮未通过项与后续门槛
+
+- Babel 的 9 失败：8 项依赖基线未包含的 Windows `implementation/verification/lr-20260914-1107/install-restore/dry-run-check.mjs`；1 项在 Mac 模拟 Windows 时使用宿主 `path.isAbsolute`。相关源码与固定基线一致，未跳过测试掩盖问题。
+- 整仓 19 失败分类：宿主路径假设 1、tutorial CRLF 1、marketplace 脚本可执行位 3、marketplace 导入 4、RevoGrid 配置解析 CRLF 2、animation 样本 CRLF 3、canvas 文档 CRLF 2、大文档 Diff 格式规范化 3。9 个失败测试和 26 项关键源码/fixture 均逐字节等于 HEAD；既有依赖版本未变。marketplace 导入 4 项的 CRLF shebang/SSR 原因尚属高可信推断，未定向重跑证实。文件未改不等于复跑干净基线，不宣称全仓无回归。全量完成后仅 E2E 测试与文档继续更新，此结果是当次快照。
+- SVG 候选路径已验证，可见折射收益尚不足以进入默认界面；功耗与帧率需进一步测量。
+- 中途 macOS 锁屏及首次引导遮罩造成一次 SVG 测试超时；用户手动解锁后补全引导前置步骤，最终整合 3/3 通过。没有接受服务条款或调整工作区信任。
+- 没有签名、打包、公证、发布、Windows/Ubuntu 回归或真实远端 Agent 验收。减少透明度现有证据为 Chromium media emulation 和组件事件测试，未人工切换真实 macOS 系统设置。
+- 当前为视觉候选，用户尚未对真实界面给出最终美术批准。
+
+## 复现
+
+```sh
+cd /Users/gengrf/Projects/babel
+/opt/homebrew/opt/node@24/bin/node scripts/dev-macos.mjs start --profile "$HOME/Library/Application Support/Babel/mac-glass-script-20260916"
+/opt/homebrew/opt/node@24/bin/node scripts/dev-macos.mjs status --profile "$HOME/Library/Application Support/Babel/mac-glass-script-20260916"
+```
+
+正常结束先在开发宿主 Cmd+Q，再运行同入口 `stop`。脚本 stop 是受管进程清理，不等同于正常保存/checkpoint。详见 [Mac 交接](MACOS-DEVELOPMENT-HANDOFF.md)。
+
+原生测试从 `implementation/nimbalyst` 执行，显式设置 `BABEL_ACCEPTANCE_CDP=http://127.0.0.1:9223`、`BABEL_ENDPOINT=http://127.0.0.1:7780` 及对应 demo 的 `BABEL_PROFILE`，每次单 worker。`three-surfaces.spec.ts` 会关闭工作窗口，应最后运行。
+
+
+## 持续迭代：M0 关注、编辑与恢复
+
+本节记录同一基线上的后续增量。开发分支仍为 `ui/macos-glass`，提交目标为 GitHub `acceptance/m0-native-20260916` / Draft PR #1；不合并 main 或发布安装包。最新分项状态见 [CAP-01～20](implementation/M0-CAP-STATUS.md)。
+
+日志根：`/Users/gengrf/Library/Logs/Babel-Dev/m0-iteration-20260916/`。可移植性修复及运行草稿 red/green 日志保存在上一节日志根；原生标题定向 red/green 为本机 `/tmp/babel-title-*.log`，已复制至本节日志根。
+
+### 行为变化与证据范围
+
+- GUI、TUI 和 CLI 共用需要关注的判定：waiting_input、failed、lost、review_required，排除归档且保留四阶段。GUI 由原 ID 定位任务，在窄布局同步切到所在阶段；卡片采用权威事件最后更新时间。设备/项目查询切换期间不泄漏上个范围，断线保留最后快照并说明过期。
+- demo 服务恢复依照已持久化的接受事件和检查点，恢复 accepted/executing/verifying；fixture、等待回答、失联和取消待确认不擅自推进。真实 Node 子进程在执行/验证时被 SIGKILL 后由新 PID 读取原 profile，run/session/fence 和事件保持，最终停在待人工验收而非自动完成。此处不是 Pi 真实任务恢复。
+- 原生 Babel 标题显式保存，固定草稿开始时 revision；干净标题随跨端更新，冲突保留中文草稿并显示远端值。允许采用远端或显式选择新基线后继续编辑。非 Babel 原有自动保存行为保留。标题、消息和旧 run 选择缓存按 endpoint/project/tracker 隔离，草稿跨条目切换与详情重挂保留。
+- 修复 Mac 上旧测试的宿主安装路径假设、CRLF 文本/可执行脚本和样本、Windows 路径模拟；补回缺失的只读安装路径检查器。保留 Windows 专项跳过，不放宽业务断言或跳过失败测试。
+- 执行看板复用宿主 Open/Closed、Saved View、字段/标签/来源及搜索过滤，工具栏与看板使用同一计数；原生状态/搜索交叉查询已经通过。补同任务在途请求跨切换防重与项目全量设备统计，22 项定向红绿验证通过。
+
+### 当前阶段边界
+
+本轮均使用明确指定的隔离 demo profile 和原生开发窗口。未读取其他项目 API Key，未消费 Pi 模型额度、连接 OAuth/SSH 或改变 GitLab、DUFS、代理状态。Pi 0.84.1 已在本机找到并核对版本；命令存在不等于 Babel 真实执行接入完成。
+
+完整 M0 仍有正文/字段及关联编辑、TUI 缺失操作、Hook 原生管理、产物导出和断线真实输入验收等缺口。M1 真实 Pi、M2 远端设备/Google、M3 PDF 与移动端尚未交付；Windows/Ubuntu 新回归、Mac launchd 自启动、签名/公证/安装包及最终美术签收也未完成。
+
+### 最终集成验证
+
+- 类型检查：最终源文件下 26 个工作区通过，`typecheck-integrated.log`；Babel 独立 typecheck 通过（`babel-typecheck.log`）。
+- Babel 全量：61 文件，271 通过 / 4 跳过 / 0 失败（`babel-full.log`）。包含真实子进程 SIGKILL 恢复 2 项。
+- 新增及修改路径的行为测试：标题 12 项、在途请求/导航 22 项、执行筛选及既有投影 25 项均通过；各失败 red 记录与修复 green 记录保留。启动器 4 项通过。
+- 原生 6 类验收已通过：归档恢复、关注视图、筛选及计数、玻璃/无障碍回退、标题/冲突/切任务保草稿、GUI/CLI/真实 POSIX PTY 同源生命周期。最终结果分别见 `e2e-integrated-final.log`（前 4 类）、`e2e-title-integrated.log`（1 项）及 `e2e-three-surfaces-final.log`（1 项）。结构化 JSON 与截图在 [Mac 证据目录](implementation/evidence/macos-20260916/README.md)。
+- 原生标题整合时曾发生测试检查按钮 enabled 后按钮被正确禁用的竞态；改为等待冲突提示并断言按钮禁用后通过，未绕过禁用或放松数据不覆盖断言。archive/three-surfaces 的窗口匹配排除了 menu-bar-island 等辅助页。HMR 重新显示引导造成的超时保留，测试明确暂缓信任设置后完成，没有确认服务条款。
+- 30 次关注标题更新最终 p95 请求至 DOM 观测上界约 228ms，含并发类型检查/单测负载；此前约 121/207ms。不能由不同负载样本推导材质更快、GPU 帧率达标或生产延迟结论。
+- 第一轮整仓集成：1676 文件，14111 通过 / 7 失败 / 26 跳过（`test-prepush.log`），7 项都是 20 秒超时，位于 4 文件。类型检查和 E2E 同时运行。结束并行负载后，原规则下这 4 文件 248/248 通过（`timeout-targeted.log`），未改测试超时或跳过规则；随后独立全量通过：**1669 文件通过 / 7 文件跳过；14118 项通过 / 26 项跳过 / 0 失败**，耗时 348.73 秒（`test-prepush-final.log`）。没有为此修改代码、提高超时或新增跳过。
+- 三端测试关闭了原生项目窗口，独立 Babel 演示服务继续运行；测试确认原 run 继续到待验收，并由 PTY 显式验收。未声称最后仍显示某个固定界面或初始五条记录。
+
+### 下一次接续
+
+1. 按 CAP 表补可达的 `run.reconcile` GUI/TUI、TUI 重试/修改说明/历史讨论和 Hook 管理，再验正文/字段/关系编辑、断线后的草稿与选择。
+2. 完整 M0 收口后再接真实 Pi。只读核对显示现有 Worker 拒绝真实 Pi 协议且路径固定 Windows；厂商合成信封也不是 Pi 原生 RPC。首片应为明确 provider/model、隔离 profile 与单个文本任务，将唯一 runId、Pi session、原始事件及产物 SHA-256 接回共享核心；接受请求、执行结束、验证和人工验收分别保留。真实账号和额度授权仍待用户回答，不读取其他项目凭据。
+3. 延续 Mac 主开发、UI/UX 与可读性优先、Windows/Ubuntu 回归职责，保持 Draft PR，未验条件不标完成。
+
+最终文档完整性检查通过；本批候选提交仍保留完整产品未验项。PR：[jupiternaut/babel #1](https://github.com/jupiternaut/babel/pull/1)。提交内容含可移植的原生截图与验证 JSON；本机原始日志不入库。

@@ -1,0 +1,151 @@
+{
+  "projectId": "fixture-project-babel",
+  "mode": "demo",
+  "created": [
+    {
+      "trackerId": "trk-eb6ca53a-4082-4b9d-873a-a377ab906c19",
+      "runId": "run-4a707fd1-d457-4b6a-9cd7-d0ab77f7be70",
+      "title": "关注验收-waiting_input-1789551272143"
+    },
+    {
+      "trackerId": "trk-184fdc9e-bfb5-4f57-9d4e-e139da41c1fb",
+      "runId": "run-9be47eb3-4cbe-4134-8c61-8f6c8ac40d71",
+      "title": "关注验收-review_required-1789551272583"
+    },
+    {
+      "trackerId": "trk-b0db8185-f6ac-418c-a96d-97859489acd4",
+      "runId": "run-451a67f5-79aa-428d-ad60-e23f1adb7faa",
+      "title": "关注验收-verification_failed-1789551278788"
+    },
+    {
+      "trackerId": "trk-ec2f80c1-db99-4012-87f6-faaeaf1e9485",
+      "runId": "run-b73ea7cd-aae5-4c6e-98da-43348a6c0e95",
+      "title": "关注验收-lost-1789551285825"
+    }
+  ],
+  "quietId": "trk-c7f7b019-3e0b-4036-8571-ec2d4763b60f",
+  "samples": [
+    {
+      "correlationId": "corr-0aa1cdec-e040-4a1e-9724-ec333758f30b",
+      "requestToVisibleUpperBoundMs": 152.40258299999914
+    },
+    {
+      "correlationId": "corr-ea401618-7d1a-4d17-acc4-d677ee48a9ce",
+      "requestToVisibleUpperBoundMs": 67.57562499999767
+    },
+    {
+      "correlationId": "corr-55d91959-07bf-4f4e-8c63-da6e473133b4",
+      "requestToVisibleUpperBoundMs": 89.73945800000001
+    },
+    {
+      "correlationId": "corr-5056cb80-6203-4913-83f9-47fcb84a3ee7",
+      "requestToVisibleUpperBoundMs": 149.63341700000092
+    },
+    {
+      "correlationId": "corr-2c893903-71ce-48b5-a713-73f148cda986",
+      "requestToVisibleUpperBoundMs": 112.05766600000061
+    },
+    {
+      "correlationId": "corr-cbc1ecff-7f5e-42ae-9e39-45b6c56459da",
+      "requestToVisibleUpperBoundMs": 193.78908299999966
+    },
+    {
+      "correlationId": "corr-1fdfdaa2-844a-49ec-9335-2b4e3ca0824a",
+      "requestToVisibleUpperBoundMs": 165.71366599999965
+    },
+    {
+      "correlationId": "corr-785b0537-86b5-4596-b919-104792a13caa",
+      "requestToVisibleUpperBoundMs": 65.99645800000144
+    },
+    {
+      "correlationId": "corr-e9b8adc2-856c-4c25-a7eb-4923f81f2da9",
+      "requestToVisibleUpperBoundMs": 148.09620899999936
+    },
+    {
+      "correlationId": "corr-81a39e7a-3352-4536-b9cf-9480cabc4fac",
+      "requestToVisibleUpperBoundMs": 61.09758399999919
+    },
+    {
+      "correlationId": "corr-cbe54b2c-00c0-4818-9c77-27e1a9e3010f",
+      "requestToVisibleUpperBoundMs": 62.44904099999985
+    },
+    {
+      "correlationId": "corr-fc795a0b-41ed-4f38-8a9c-1e1e986263d4",
+      "requestToVisibleUpperBoundMs": 153.98799999999756
+    },
+    {
+      "correlationId": "corr-a59748e6-1aa6-487d-9658-c6ad6898dbfb",
+      "requestToVisibleUpperBoundMs": 62.303916000000754
+    },
+    {
+      "correlationId": "corr-aaecce75-059b-4949-ad7c-76cc6fed3d55",
+      "requestToVisibleUpperBoundMs": 157.25345800000287
+    },
+    {
+      "correlationId": "corr-e926d70a-0bcb-4b63-b53f-620807a0814a",
+      "requestToVisibleUpperBoundMs": 178.34895900000265
+    },
+    {
+      "correlationId": "corr-218e48ee-672b-46d0-b085-246a0840cb8c",
+      "requestToVisibleUpperBoundMs": 245.95249999999942
+    },
+    {
+      "correlationId": "corr-1d9211ad-dbb1-488d-8cf8-ccaba7a58609",
+      "requestToVisibleUpperBoundMs": 57.66866700000173
+    },
+    {
+      "correlationId": "corr-9b1291ee-eebe-48f4-b78d-1705b31c806e",
+      "requestToVisibleUpperBoundMs": 186.476375000002
+    },
+    {
+      "correlationId": "corr-d2459355-962e-4be9-a0c0-87d5e6e41000",
+      "requestToVisibleUpperBoundMs": 79.88408300000083
+    },
+    {
+      "correlationId": "corr-2c3c1039-5ec3-404a-aa63-5a13ae2503c4",
+      "requestToVisibleUpperBoundMs": 81.42766599999959
+    },
+    {
+      "correlationId": "corr-4017f380-af17-4762-a907-03e560871d15",
+      "requestToVisibleUpperBoundMs": 204.37437499999942
+    },
+    {
+      "correlationId": "corr-ed0c24b1-fbe5-4a9e-ab28-265335ec722e",
+      "requestToVisibleUpperBoundMs": 197.67991699999766
+    },
+    {
+      "correlationId": "corr-da34e019-b16b-4ee4-acbc-a4150befebc7",
+      "requestToVisibleUpperBoundMs": 227.5262920000023
+    },
+    {
+      "correlationId": "corr-3dfccd63-9d2b-4ce3-b416-479a43297013",
+      "requestToVisibleUpperBoundMs": 82.90491700000348
+    },
+    {
+      "correlationId": "corr-61db1599-f850-4324-8379-21ab2f5ae6d2",
+      "requestToVisibleUpperBoundMs": 56.165084000000206
+    },
+    {
+      "correlationId": "corr-367f088f-7d44-49f3-9ead-9e896f65ec9a",
+      "requestToVisibleUpperBoundMs": 172.62937500000044
+    },
+    {
+      "correlationId": "corr-547b162f-2525-4814-b846-c785aed3184d",
+      "requestToVisibleUpperBoundMs": 63.27312499999971
+    },
+    {
+      "correlationId": "corr-83221d0b-94d4-4093-a76c-a2c3047dab46",
+      "requestToVisibleUpperBoundMs": 92.55141699999876
+    },
+    {
+      "correlationId": "corr-32f842a4-c4f2-4e13-96a5-fc8418a19f02",
+      "requestToVisibleUpperBoundMs": 58.089625000000524
+    },
+    {
+      "correlationId": "corr-8bf44d8a-612c-4d29-804b-e7b041a3d42b",
+      "requestToVisibleUpperBoundMs": 67.64779199999975
+    }
+  ],
+  "p95UpperBoundMs": 227.5262920000023,
+  "method": "HTTP command issuance before durable commit to matching native DOM; conservative upper bound including request transport and locator observation."
+}

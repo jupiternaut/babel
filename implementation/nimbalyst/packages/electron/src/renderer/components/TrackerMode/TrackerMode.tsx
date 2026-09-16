@@ -25,6 +25,7 @@ import {
 } from '../../store/atoms/trackers';
 import { isBabelDemoDataSource } from '../../services/createWorkspaceTrackerDataSource';
 import { useBabelNavQuery } from './babelWorkbench';
+import { attentionCards } from './babelWorkbench/babelScope';
 import {
   legacyFilterChipsToClauses,
   hasSavableViewState,
@@ -121,8 +122,12 @@ export const TrackerMode: React.FC<TrackerModeProps> = ({
   const babelDemoSource = isBabelDemoDataSource(hostDataSource) ? hostDataSource : null;
   const [babelProjectId, setBabelProjectId] = useState<string | undefined>(undefined);
   const [babelDeviceId, setBabelDeviceId] = useState<string | null>(null);
+  const [babelAttentionOnly, setBabelAttentionOnly] = useState(false);
   const effectiveBabelProjectId = babelProjectId ?? babelDemoSource?.projectId;
   const babelNavQuery = useBabelNavQuery(babelDemoSource, effectiveBabelProjectId, babelDeviceId);
+  const babelVisibleIds = useMemo(() => babelAttentionOnly
+    ? new Set(attentionCards(babelNavQuery.listed ?? []).map((card) => card.trackerId))
+    : babelNavQuery.listedIds, [babelAttentionOnly, babelNavQuery.listed, babelNavQuery.listedIds]);
   const favoriteItemIds = useAtomValue(favoriteTrackerItemIdsAtom);
   const viewedAtByItemId = useAtomValue(trackerViewedAtByItemIdAtom);
   const trackerItems = useAtomValue(trackerItemsArrayAtom);
@@ -331,6 +336,16 @@ export const TrackerMode: React.FC<TrackerModeProps> = ({
         query: babelNavQuery,
         projectId: effectiveBabelProjectId,
         deviceId: babelDeviceId,
+        attentionOnly: babelAttentionOnly,
+        onAttentionChange: (enabled) => {
+          setBabelAttentionOnly(enabled);
+          if (enabled) {
+            handleSelectType('all');
+            setModeLayout({ statusScope: 'all', displaySurface: 'execution' });
+          }
+        },
+        selectedItemId: modeLayout.selectedItemId,
+        onAttentionSelect: (id) => setModeLayout({ selectedItemId: id, displaySurface: 'execution' }),
         onProjectSelect: setBabelProjectId,
         onDeviceSelect: setBabelDeviceId,
         onStatusScopeChange: (scope) => setModeLayout({ statusScope: scope }),
@@ -373,7 +388,7 @@ export const TrackerMode: React.FC<TrackerModeProps> = ({
       onExitSavedView={handleExitSavedView}
       displaySurface={modeLayout.displaySurface === 'execution' ? 'execution' : 'native'}
       onDisplaySurfaceChange={(surface) => setModeLayout({ displaySurface: surface })}
-      babelListedIds={babelNavQuery.listedIds}
+      babelListedIds={babelVisibleIds}
       babelScopeUnavailable={babelNavQuery.connection === 'unavailable'}
     />
   );

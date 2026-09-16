@@ -1,5 +1,7 @@
 # Windows 原生 M0 复验 · 2026-09-16
 
+> 本文为 Windows 历史快照。后续 Mac M3 UI、标题冲突、demo 崩溃恢复和全仓库门禁修复见 [TASK_EVIDENCE](../TASK_EVIDENCE.md)，当前逐项缺口见 [M0-CAP-STATUS](M0-CAP-STATUS.md)。不要用下文旧失败数量或未验项覆盖新证据。
+
 这是一份有边界的验收记录。原生 Nimbalyst 任务闭环已取得实际窗口与 ConPTY 证据；**完整巴别塔产品和全仓库发布门禁仍未通过**，本分支按候选实现提交，不合并为正式完成版本。
 
 ## 源码与形态

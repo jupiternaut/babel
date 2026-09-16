@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import type { BabelDemoTrackerDataSource } from '../../../services/BabelDemoTrackerDataSource';
 import { formatBabelHostError } from '../../../services/babelDemoErrors';
 import {
@@ -10,6 +10,10 @@ import {
 } from './babelDrafts';
 
 type CapabilityMap = Record<string, { allowed: boolean; reason?: string; code?: string }>;
+
+// A selection can unmount while its command is still in flight. Keep the lock
+// with the same service/project/task identity used by the session draft cache.
+const pendingActions = new Map<string, Promise<void>>();
 
 export interface BabelRunMessage {
   id: string;
@@ -70,6 +74,9 @@ export interface BabelTaskDetail {
 }
 
 export function useBabelRunActions(trackerId: string, dataSource: BabelDemoTrackerDataSource) {
+  const cacheKey = JSON.stringify([dataSource.endpoint, dataSource.projectId, trackerId]);
+  const scope = useMemo(() => ({ active: false, generation: 0, detail: null as BabelTaskDetail | null }), [dataSource, trackerId]);
+  const [loadedScope, setLoadedScope] = useState<object | null>(null);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const [detail, setDetail] = useState<BabelTaskDetail | null>(null);
@@ -80,22 +87,25 @@ export function useBabelRunActions(trackerId: string, dataSource: BabelDemoTrack
     activity: Array<{ id: string; at?: string; actorId?: string; detail?: string }>;
     runs: BabelRunView[];
   } | null>(null);
-  const [draft, setDraft] = useState<BabelWorkbenchDraft>(() => getWorkbenchDraft(trackerId));
-  const [viewingRunId, setViewing] = useState<string | null>(() => getViewingRunId(trackerId));
+  const [draft, setDraft] = useState<BabelWorkbenchDraft>(() => getWorkbenchDraft(cacheKey));
+  const [viewingRunId, setViewing] = useState<string | null>(() => getViewingRunId(cacheKey));
   const [viewingRun, setViewingRun] = useState<BabelRunView | null>(null);
 
-  useEffect(() => {
-    setDraft(getWorkbenchDraft(trackerId));
-    setViewing(getViewingRunId(trackerId));
-    setNote(null);
-  }, [trackerId]);
+  useLayoutEffect(() => {
+    scope.active = true;
+    return () => { scope.active = false; scope.generation += 1; };
+  }, [scope]);
 
   const refresh = useCallback(async () => {
+    if (!scope.active) return;
+    const generation = ++scope.generation;
+    const current = () => scope.active && generation === scope.generation;
     try {
       const [task, capabilities] = await Promise.all([
         dataSource.getTask(trackerId),
         dataSource.getCapabilities(trackerId),
       ]);
+      if (!current()) return;
       const record = task.record as {
         revision?: number;
         archived?: boolean;
@@ -114,37 +124,60 @@ export function useBabelRunActions(trackerId: string, dataSource: BabelDemoTrack
         runs,
         bindingRunId: task.binding?.latestRunId ?? latest?.id ?? null,
       };
-      setDetail(next);
-      setCaps(capabilities.actions ?? {});
+      let nextArtifacts: BabelArtifact[] = [];
       const runId = next.bindingRunId;
       if (runId) {
         try {
           const listed = await dataSource.queryRaw<{ artifacts?: BabelArtifact[] }>('artifact.list', { runId });
-          setArtifacts(listed.artifacts ?? []);
+          nextArtifacts = listed.artifacts ?? [];
         } catch {
-          setArtifacts([]);
+          // A missing artifact list does not invalidate the task itself.
         }
-      } else {
-        setArtifacts([]);
       }
+      if (!current()) return;
+      let nextHistory = { comments: [] as NonNullable<typeof history>['comments'], activity: [] as NonNullable<typeof history>['activity'], runs };
       try {
         const hist = await dataSource.queryRaw<{
           comments?: Array<{ id: string; authorId?: string; createdAt?: string; body: string }>;
           activity?: Array<{ id: string; at?: string; actorId?: string; detail?: string }>;
           runs?: BabelRunView[];
         }>('history.get', { trackerId });
-        setHistory({
+        nextHistory = {
           comments: hist.comments ?? [],
           activity: hist.activity ?? [],
           runs: hist.runs ?? runs,
-        });
+        };
       } catch {
-        setHistory({ comments: [], activity: [], runs });
+        // Keep the run history supplied by the authoritative task query.
       }
+      if (!current()) return;
+      scope.detail = next;
+      setDetail(next);
+      setCaps(capabilities.actions ?? {});
+      setArtifacts(nextArtifacts);
+      setHistory(nextHistory);
+      setLoadedScope(scope);
     } catch (error) {
-      setNote(formatBabelHostError(error).message);
+      if (current()) setNote(formatBabelHostError(error).message);
     }
-  }, [dataSource, trackerId]);
+  }, [dataSource, trackerId, scope]);
+
+  useEffect(() => {
+    const pending = pendingActions.get(cacheKey);
+    let cancelled = false;
+    setDraft(getWorkbenchDraft(cacheKey));
+    setViewing(getViewingRunId(cacheKey));
+    setNote(null);
+    setBusy(Boolean(pending));
+    setViewingRun(null);
+    if (pending) void pending.then(() => {
+      if (cancelled || !scope.active) return;
+      setDraft(getWorkbenchDraft(cacheKey));
+      setBusy(false);
+      void refresh();
+    });
+    return () => { cancelled = true; };
+  }, [scope, cacheKey, refresh]);
 
   useEffect(() => {
     void refresh();
@@ -152,48 +185,57 @@ export function useBabelRunActions(trackerId: string, dataSource: BabelDemoTrack
   }, [dataSource, refresh]);
 
   useEffect(() => {
-    if (!viewingRunId) {
-      setViewingRun(null);
-      return;
-    }
+    setViewingRun(null);
+    if (loadedScope !== scope || !viewingRunId || !detail?.runs.some(run => run.id === viewingRunId)) return;
     let cancelled = false;
     void dataSource.queryRaw<{ run?: BabelRunView }>('run.show', { runId: viewingRunId })
       .then((body) => {
-        if (!cancelled) setViewingRun(body.run ?? null);
+        if (!cancelled && scope.active) setViewingRun(body.run ?? null);
       })
       .catch((error) => {
-        if (!cancelled) setNote(formatBabelHostError(error).message);
+        if (!cancelled && scope.active) setNote(formatBabelHostError(error).message);
       });
     return () => {
       cancelled = true;
     };
-  }, [dataSource, viewingRunId]);
+  }, [dataSource, viewingRunId, scope, loadedScope, detail?.runs]);
 
   const updateDraft = useCallback((patch: Partial<BabelWorkbenchDraft>) => {
-    setDraft(patchWorkbenchDraft(trackerId, patch));
-  }, [trackerId]);
+    if (!scope.active) return;
+    setDraft(patchWorkbenchDraft(cacheKey, patch));
+  }, [cacheKey, scope]);
 
   const viewRun = useCallback((runId: string | null) => {
-    setViewingRunId(trackerId, runId);
+    if (!scope.active || loadedScope !== scope || (runId && !detail?.runs.some(run => run.id === runId))) return;
+    setViewingRunId(cacheKey, runId);
     setViewing(runId);
-  }, [trackerId]);
+  }, [cacheKey, scope, loadedScope, detail?.runs]);
 
-  const runAction = useCallback(async (work: () => Promise<void>) => {
+  const runAction = useCallback(async (work: (current: () => boolean) => Promise<void>) => {
+    // Reject callbacks captured for a previous selection or run snapshot, even
+    // if an old button handler is invoked after the new selection renders.
+    if (!scope.active || loadedScope !== scope || !detail || scope.detail !== detail || pendingActions.has(cacheKey)) return;
+    let finish!: () => void;
+    const pending = new Promise<void>((resolve) => { finish = resolve; });
+    pendingActions.set(cacheKey, pending);
+    const current = () => scope.active;
     setBusy(true);
     setNote(null);
     try {
-      await work();
-      await refresh();
+      await work(current);
+      if (current()) await refresh();
     } catch (error) {
-      setNote(formatBabelHostError(error).message);
+      if (current()) setNote(formatBabelHostError(error).message);
     } finally {
-      setBusy(false);
+      if (pendingActions.get(cacheKey) === pending) pendingActions.delete(cacheKey);
+      finish();
+      if (current()) setBusy(false);
     }
-  }, [refresh]);
+  }, [refresh, scope, loadedScope, detail, cacheKey]);
 
-  const start = useCallback(() => runAction(async () => {
+  const start = useCallback(() => runAction(async (current) => {
     await dataSource.startRun(trackerId, `host-start-${trackerId}-${Date.now()}`);
-    setNote('已接受模拟执行。创建会话不等于已经开始；这是 demo run，不是真实 Agent。');
+    if (current()) setNote('已接受模拟执行。创建会话不等于已经开始；这是 demo run，不是真实 Agent。');
   }), [dataSource, runAction, trackerId]);
 
   const cancel = useCallback(() => {
@@ -215,33 +257,39 @@ export function useBabelRunActions(trackerId: string, dataSource: BabelDemoTrack
   const accept = useCallback(() => {
     const runId = detail?.bindingRunId;
     if (!runId) return Promise.resolve();
-    return runAction(async () => {
+    return runAction(async (current) => {
       await dataSource.acceptReview(runId, detail?.revision);
-      setNote('已验收完成。这是演示结果，不是真实 Agent 成功。');
+      if (current()) setNote('已验收完成。这是演示结果，不是真实 Agent 成功。');
     });
   }, [dataSource, detail?.bindingRunId, detail?.revision, runAction]);
 
   const sendMessage = useCallback(() => {
     const runId = detail?.bindingRunId;
     if (!runId || !draft.message.trim()) return Promise.resolve();
-    return runAction(async () => {
+    return runAction(async (current) => {
       await dataSource.postRaw('run.message', { runId, text: draft.message.trim() });
-      updateDraft({ message: '' });
+      if (getWorkbenchDraft(cacheKey).message === draft.message) {
+        const next = patchWorkbenchDraft(cacheKey, { message: '' });
+        if (current()) setDraft(next);
+      }
     });
-  }, [dataSource, detail?.bindingRunId, draft.message, runAction, updateDraft]);
+  }, [dataSource, detail?.bindingRunId, draft.message, runAction, updateDraft, cacheKey]);
 
   const respond = useCallback((requestId: string) => {
     const runId = detail?.bindingRunId;
     if (!runId || !draft.respondText.trim()) return Promise.resolve();
-    return runAction(async () => {
+    return runAction(async (current) => {
       await dataSource.postRaw('run.respond', {
         runId,
         requestId,
         text: draft.respondText.trim(),
       });
-      updateDraft({ respondText: '' });
+      if (getWorkbenchDraft(cacheKey).respondText === draft.respondText) {
+        const next = patchWorkbenchDraft(cacheKey, { respondText: '' });
+        if (current()) setDraft(next);
+      }
     });
-  }, [dataSource, detail?.bindingRunId, draft.respondText, runAction, updateDraft]);
+  }, [dataSource, detail?.bindingRunId, draft.respondText, runAction, updateDraft, cacheKey]);
 
   const requestChanges = useCallback(() => {
     const runId = detail?.bindingRunId;
@@ -257,23 +305,23 @@ export function useBabelRunActions(trackerId: string, dataSource: BabelDemoTrack
   const retry = useCallback(() => {
     const runId = detail?.bindingRunId;
     if (!runId) return Promise.resolve();
-    return runAction(async () => {
+    return runAction(async (current) => {
       await dataSource.postRaw('run.retry', { runId });
-      setNote('已接受重试。这是演示执行，不是真实 Agent。');
+      if (current()) setNote('已接受重试。这是演示执行，不是真实 Agent。');
     });
   }, [dataSource, detail?.bindingRunId, runAction]);
 
   return {
-    busy,
+    busy: loadedScope !== scope || busy || pendingActions.has(cacheKey),
     note,
-    detail,
-    caps,
-    artifacts,
-    history,
+    detail: loadedScope === scope ? detail : null,
+    caps: loadedScope === scope ? caps : {},
+    artifacts: loadedScope === scope ? artifacts : [],
+    history: loadedScope === scope ? history : null,
     draft,
     updateDraft,
     viewingRunId,
-    viewingRun,
+    viewingRun: loadedScope === scope ? viewingRun : null,
     viewRun,
     refresh,
     start,

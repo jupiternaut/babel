@@ -51,7 +51,7 @@ function readStringArray(source: string, key: string, searchFrom: number): strin
   // literals are real entries, so strip line comments before matching.
   const body = source
     .slice(open, close)
-    .split('\n')
+    .split(/\r?\n/)
     .map(line => line.replace(/\/\/.*$/, ''))
     .join('\n');
   return [...body.matchAll(/'([^']+)'/g)].map(match => match[1]);

@@ -105,6 +105,10 @@ interface TrackerSidebarProps {
     query: BabelNavQuery;
     projectId: string;
     deviceId: string | null;
+    attentionOnly?: boolean;
+    onAttentionChange?: (enabled: boolean) => void;
+    selectedItemId?: string | null;
+    onAttentionSelect?: (id: string) => void;
     onProjectSelect: (projectId: string) => void;
     onDeviceSelect: (deviceId: string | null) => void;
     onStatusScopeChange: (scope: TrackerStatusScope) => void;
@@ -477,7 +481,7 @@ export const TrackerSidebar: React.FC<TrackerSidebarProps> = ({
   );
 
   return (
-    <div className="tracker-sidebar w-full h-full flex flex-col bg-nim-secondary overflow-hidden" data-testid="tracker-sidebar">
+    <div className={`tracker-sidebar w-full h-full flex flex-col overflow-hidden ${babelNav ? 'babel-workbench babel-sidebar' : 'bg-nim-secondary'}`} data-testid="tracker-sidebar">
       {workspacePath && (
         <WorkspaceSummaryHeader
           workspacePath={workspacePath}
@@ -560,6 +564,10 @@ export const TrackerSidebar: React.FC<TrackerSidebarProps> = ({
           query={babelNav.query}
           projectId={babelNav.projectId}
           deviceId={babelNav.deviceId}
+          attentionOnly={babelNav.attentionOnly}
+          onAttentionChange={babelNav.onAttentionChange}
+          selectedItemId={babelNav.selectedItemId}
+          onAttentionSelect={babelNav.onAttentionSelect}
           statusScope={statusScope}
           onProjectSelect={babelNav.onProjectSelect}
           onDeviceSelect={babelNav.onDeviceSelect}

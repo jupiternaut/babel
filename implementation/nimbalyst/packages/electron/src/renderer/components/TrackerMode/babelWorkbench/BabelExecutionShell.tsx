@@ -7,6 +7,7 @@ import {
 } from './babelDrafts';
 import { runStatusLabel, toolStateLabel, verificationLabel } from './babelRunLabels';
 import { capabilityOf, useBabelRunActions } from './useBabelRunActions';
+import './BabelWorkbench.css';
 
 type TabId = 'detail' | 'session' | 'review' | 'history' | 'archive';
 
@@ -76,18 +77,18 @@ const BabelExecutionShellInner: React.FC<{
 
   return (
     <aside
-      className="flex h-full min-h-0 flex-col bg-nim"
+      className={`flex h-full min-h-0 flex-col ${enabled ? 'babel-workbench babel-execution-detail' : 'bg-nim'}`}
       data-testid={enabled ? 'babel-execution-detail' : 'babel-execution-detail-idle'}
       aria-label="条目详情"
     >
       {enabled ? (
       <>
-      <header className="shrink-0 border-b border-nim px-3 py-2">
+      <header className="babel-detail-header shrink-0">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <h2 className="truncate text-[14px] font-medium text-nim">{actions.detail?.title || trackerId}</h2>
-            <p className="text-[11px] text-nim-muted">
-              演示数据
+            <h2 className="line-clamp-2 text-[14px] font-medium text-nim">{actions.detail?.title || trackerId}</h2>
+            <p className="babel-detail-meta text-[12px] text-nim-muted">
+              <span className="babel-demo-badge">演示数据</span>
               {actions.detail?.stage ? ` · ${actions.detail.stage}` : ''}
               {latest ? ` · ${runStatusLabel(latest.status)}` : ''}
               {latest?.deviceId ? ` · ${latest.deviceId}` : ''}
@@ -108,14 +109,14 @@ const BabelExecutionShellInner: React.FC<{
             当前项目或设备筛选下，看板不显示此条目。选中和已保存字段仍保留。
           </p>
         ) : null}
-        <p className="mt-1 text-[11px] text-nim-faint">单击只选中。开始模拟不会在切卡片或切视图时自动重跑。</p>
+        <p className="mt-2 text-[11px] text-nim-muted">切换条目会保留草稿。执行需手动开始。</p>
       </header>
 
-      <div className="shrink-0 border-b border-nim px-2 py-1">
+      <div className="babel-detail-actions shrink-0">
         <BabelRunActionBar actions={actions} trackerId={trackerId} layout="panel" />
       </div>
 
-      <div className="flex shrink-0 gap-1 overflow-x-auto border-b border-nim px-2 py-1" role="tablist" aria-label="任务工作流">
+      <div className="babel-detail-tabs flex shrink-0 overflow-x-auto" role="tablist" aria-label="任务工作流">
         {tabs.map((row) => (
           <button
             key={row.id}
@@ -135,7 +136,7 @@ const BabelExecutionShellInner: React.FC<{
       </>
       ) : null}
 
-      <div className="min-h-0 flex-1 overflow-auto">
+      <div className={`min-h-0 flex-1 overflow-auto ${enabled ? 'babel-detail-content' : ''}`}>
         <div hidden={enabled && current !== 'detail'} className="h-full min-h-0">
           {children}
         </div>

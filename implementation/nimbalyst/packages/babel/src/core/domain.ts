@@ -61,6 +61,7 @@ export interface TaskCard {
   orderKey: string;
   latestRunId: string | null;
   runStatus: RunStatus | null;
+  lastUpdatedAt: string | null;
   deviceId: string | null;
   attention: boolean;
   originKind?: string;
@@ -310,9 +311,15 @@ export class DomainService {
 
   private resumeSimulations(): void {
     if (this.simulate === "off") return;
+    const accepted = new Map(this.store.data.events
+      .filter((event) => event.type === "run.accepted" && event.runId)
+      .map((event) => [event.runId, event]));
     for (const run of this.store.data.runs) {
-      // Only continue runs this process accepted. Seeded fixture "executing" cards stay put.
-      if (run.status === "requested" || run.status === "accepted") {
+      // The accepted event and progress are persisted with the run. Presentation
+      // fixtures have no accepted event and must not start moving on reload.
+      const event = accepted.get(run.id);
+      if (event?.projectId === run.projectId && event.trackerId === run.taskId
+        && (run.status === "accepted" || run.status === "executing" || run.status === "verifying")) {
         this.scheduleSimulation(run.id, "default");
       }
     }
@@ -803,7 +810,13 @@ export class DomainService {
       at: this.now(data),
       inputRequestId: requestId,
     });
-    if (run.status === "waiting_input") run.status = "executing";
+    if (run.status === "waiting_input") {
+      // A prompt can interrupt before session creation or after the tools finish.
+      // Continue from committed progress instead of replaying a completed step.
+      const toolsFinished = data.events.some((event) => event.runId === run.id
+        && event.projectId === run.projectId && event.trackerId === run.taskId && event.type === "tool.finished");
+      run.status = toolsFinished ? "verifying" : run.sessionId ? "executing" : "accepted";
+    }
     this.emit(data, {
       type: "message.delta",
       projectId: request.projectId,
@@ -1118,12 +1131,14 @@ export class DomainService {
     const deviceId = input.deviceId != null ? (input.deviceId === "" ? null : String(input.deviceId)) : def.deviceId;
     const q = String(input.q ?? def.q ?? "").trim().toLowerCase();
     const stageFilter = input.stage ? String(input.stage) as Stage : undefined;
+    const latestEvents = this.latestRunEvents(data);
     const items = data.records
       .filter((record) => record.projectId === projectId)
       .filter((record) => includeSemantic || record.fields.demoScene !== "semantic")
-      .map((record) => this.cardOf(data, record))
+      .map((record) => this.cardOf(data, record, latestEvents))
       .filter((card) => {
         if (!includeArchived && card.archived) return false;
+        if (input.attentionOnly === true && (card.archived || !card.attention)) return false;
         if (types === "executable" && !isExecutableType(card.primaryType, card.executionEnabled)) return false;
         if (Array.isArray(types) && !types.includes(card.primaryType)) return false;
         if (statusScope !== "all") {
@@ -1215,9 +1230,10 @@ export class DomainService {
   }
 
   private readyItems(data: Snapshot, projectId: string): TaskCard[] {
+    const latestEvents = this.latestRunEvents(data);
     return data.records
       .filter((record) => record.projectId === projectId && !record.archived)
-      .map((record) => this.cardOf(data, record))
+      .map((record) => this.cardOf(data, record, latestEvents))
       .filter((card) => {
         const cat = categoryOfStatus(card.status);
         if (cat === "done" || cat === "cancelled") return false;
@@ -1232,7 +1248,18 @@ export class DomainService {
       });
   }
 
-  private cardOf(data: Snapshot, record: TrackerRecord): TaskCard {
+  private latestRunEvents(data: Snapshot): Map<string, BabelEvent> {
+    const latest = new Map<string, BabelEvent>();
+    for (const event of data.events) {
+      if (!event.runId) continue;
+      const key = JSON.stringify([event.projectId, event.trackerId, event.runId]);
+      const previous = latest.get(key);
+      if (!previous || event.seq > previous.seq) latest.set(key, event);
+    }
+    return latest;
+  }
+
+  private cardOf(data: Snapshot, record: TrackerRecord, latestEvents = this.latestRunEvents(data)): TaskCard {
     const binding = data.bindings.find((row) => row.projectId === record.projectId && row.trackerId === record.id);
     const run = binding?.latestRunId ? data.runs.find((row) => row.id === binding.latestRunId) : undefined;
     const stage = deriveStage(record, binding);
@@ -1250,8 +1277,11 @@ export class DomainService {
       orderKey: record.orderKey,
       latestRunId: binding?.latestRunId ?? null,
       runStatus: run?.status ?? null,
+      lastUpdatedAt: run
+        ? latestEvents.get(JSON.stringify([run.projectId, run.taskId, run.id]))?.occurredAt ?? run.endedAt ?? run.startedAt
+        : record.system.updatedAt ?? null,
       deviceId: binding?.targetDeviceId ?? run?.deviceId ?? null,
-      attention: run ? runNeedsAttention(run.status) : false,
+      attention: !record.archived && run ? runNeedsAttention(run.status) : false,
       originKind: record.system.origin?.kind,
       executionEnabled: Boolean(binding?.executionEnabled),
       readOnly: Boolean(record.system.readOnly),

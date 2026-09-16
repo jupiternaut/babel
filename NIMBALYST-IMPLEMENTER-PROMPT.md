@@ -6,6 +6,8 @@
 
 使用 [START-HERE-PROMPT.md](START-HERE-PROMPT.md) 中的完整提示词。这里保持单一入口，避免两个提示词各自漂移。
 
+当前切片由 UI/UX 主导：先精修浅色磨砂主稿与深色适配，在现有 Electron 宿主完成 V01/V03 的可操作界面，按 [视觉合同](design/visual-contract.md) 检查材质、减少动效/透明度回退和真实窗口证据。CSS 磨砂是基础；simple 局部折射只作待小样验证的增强候选。旧 v2 仍是结构参考，不代表新效果已获批准。
+
 当前开发要求是 **共享非图形业务核心 + Nimbalyst GUI + 交互式 TUI + JSON CLI + 应用 Hooks**，M0 就交付三端同源演示与自动化测试，不能只做桌面看板。
 
 必读：[AGENTS](AGENTS.md)、[主 SPEC](NIMBALYST-DEVELOPMENT-SPEC.md)、[Trackers 映射](NIMBALYST-TRACKER-MAPPING.md)、[TUI/Hooks 契约](NIMBALYST-TUI-HOOKS-SPEC.md)、[功能对照表](CAPABILITY-MATRIX.md)。

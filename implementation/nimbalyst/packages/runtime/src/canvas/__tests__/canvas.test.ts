@@ -505,7 +505,7 @@ describe('canvas authoring skill', () => {
   );
 
   const blocks = [
-    ...readFileSync(SKILL_PATH, 'utf-8').matchAll(/```json\n([\s\S]*?)```/g),
+    ...readFileSync(SKILL_PATH, 'utf-8').matchAll(/```json\r?\n([\s\S]*?)```/g),
   ].map((match) => match[1]);
 
   it('every documented snippet is valid JSON', () => {

@@ -15,7 +15,7 @@ import {
 } from "../contracts.ts";
 import { TuiHttp } from "./http.ts";
 import { InputDecoder, type KeyEvent } from "./input.ts";
-import { STAGE_LABEL, STAGE_ORDER, runStatusText, typeText } from "./labels.ts";
+import { STAGE_LABEL, STAGE_ORDER, attentionFilterText, runStatusText, typeText } from "./labels.ts";
 import {
   CYAN,
   DIM,
@@ -156,6 +156,7 @@ export class BabelTui {
   private devices: DeviceRecord[] = [];
   private deviceFilter: string | null = null;
   private typeFilter = "executable";
+  private attentionOnly = false;
   private stage: Stage = "TODO";
   private selectedId: string | null = null;
   private selectedRunId: string | null = null;
@@ -364,6 +365,7 @@ export class BabelTui {
       input.includeSemantic = true;
     }
     if (this.deviceFilter) input.deviceId = this.deviceFilter;
+    if (this.attentionOnly) input.attentionOnly = true;
     return input;
   }
 
@@ -450,12 +452,15 @@ export class BabelTui {
   }
 
   private async refreshQuiet(): Promise<void> {
+    const projectId = this.projectId;
+    const input = this.listInput();
     try {
       const list = await this.http.query<{ items: TaskCard[]; counts: Record<Stage, number>; cursor: string }>({
         name: "task.list",
-        projectId: this.projectId,
-        input: this.listInput(),
+        projectId,
+        input,
       });
+      if (projectId !== this.projectId || JSON.stringify(input) !== JSON.stringify(this.listInput())) return;
       this.items = list.items;
       this.counts = list.counts;
       if (list.cursor) this.cursor = String(list.cursor);
@@ -487,6 +492,7 @@ export class BabelTui {
     if (ev.type === "key") this.handleBoardKey(ev.name);
     if (ev.type === "text") {
       if (ev.text === "?") this.overlay = { kind: "help" };
+      else if (ev.text === "!") void this.toggleAttention();
       else if (ev.text === "/") this.overlay = { kind: "search" };
       else if (ev.text === "j") this.move(1);
       else if (ev.text === "k") this.move(-1);
@@ -781,6 +787,7 @@ export class BabelTui {
     if (hit.action === "stage" && hit.id) this.setStage(hit.id as Stage);
     if (hit.action === "project") void this.cycleProject();
     if (hit.action === "type") void this.cycleType();
+    if (hit.action === "attention") void this.toggleAttention();
     if (hit.action === "device") this.cycleDevice();
     this.dirty = true;
   }
@@ -840,6 +847,20 @@ export class BabelTui {
     void this.refreshQuiet();
   }
 
+  private async toggleAttention(): Promise<void> {
+    this.attentionOnly = !this.attentionOnly;
+    this.selectedId = null;
+    this.selectedRunId = null;
+    this.detail = null;
+    this.caps = {};
+    this.items = [];
+    this.counts = { TODO: 0, RUNNING: 0, DONE: 0, ARCHIVED: 0 };
+    await this.refreshQuiet();
+    const selected = this.items.find((card) => card.trackerId === this.selectedId);
+    if (selected) this.stage = selected.stage;
+    this.dirty = true;
+  }
+
   private beginCreate(): void {
     this.overlay = { kind: "create", title: "", body: "", field: "title" };
     this.setCursorVisible(true);
@@ -882,6 +903,7 @@ export class BabelTui {
       { id: "changes", label: "   要求修改" },
       { id: "diff", label: "d  查看差异" },
       { id: "history", label: "h  查看历史" },
+      { id: "attention", label: this.attentionOnly ? "!  显示全部任务" : "!  只看需要关注" },
       { id: "ready", label: "y  查看就绪" },
       { id: "views", label: "w  已保存视图" },
       { id: "viewsave", label: "   保存当前筛选为视图" },
@@ -908,6 +930,7 @@ export class BabelTui {
     else if (id === "changes") this.overlay = { kind: "confirm", action: "changes" };
     else if (id === "diff") await this.showDiff();
     else if (id === "history") await this.showHistory();
+    else if (id === "attention") await this.toggleAttention();
     else if (id === "ready") await this.showReady();
     else if (id === "views") await this.showViews();
     else if (id === "viewsave") this.beginViewSave();
@@ -1283,6 +1306,7 @@ export class BabelTui {
       { action: "demo", label: "演示数据" },
       { action: "project", label: `项目:${projectName}` },
       { action: "type", label: `类型:${typeText(this.typeFilter)}` },
+      { action: "attention", label: attentionFilterText(this.attentionOnly) },
       { action: "device", label: `设备:${deviceLabel}` },
       { action: "views", label: `视图:${viewLabel}` },
       { action: "ready", label: "就绪" },
@@ -1383,6 +1407,7 @@ export class BabelTui {
       rec.fields.title,
       `${typeText(rec.primaryType)} · ${this.detail?.stage} · rev ${rec.revision}`,
       `状态 ${rec.fields.status}${rec.system.readOnly ? " · 只读" : ""}`,
+      `最后更新 ${this.detail?.card.lastUpdatedAt ?? "暂无记录"}`,
       run ? `执行 ${runStatusText(run.status)} ${run.id}` : "执行 尚未执行",
       pending ? `待答 ${pending.prompt}` : "",
       `依赖 ${(rec.fields.dependsOn ?? []).join(", ") || "无"}`,

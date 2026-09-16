@@ -1,12 +1,12 @@
+// @vitest-environment node
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { describe, expect, it } from "vitest";
 
 const SCRIPT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
-  "../../../../verification/lr-20260914-1107/install-restore/dry-run-check.mjs",
+  "../scripts/isolated-install-dry-run.mjs",
 );
 
 const NEW_ROOT = "D:\\Projects\\babel-nimbalyst-data\\install-restore";
@@ -36,9 +36,10 @@ function runCli(args: string[]) {
 }
 
 describe("LR-18 isolated install dry-run", () => {
-  it("keeps the guard script in the allowed verification folder", () => {
-    expect(existsSync(SCRIPT)).toBe(true);
-    expect(SCRIPT.replaceAll("\\", "/")).toContain("verification/lr-20260914-1107/install-restore/dry-run-check.mjs");
+  it("rejects missing CLI input without treating an empty dry-run as success", () => {
+    const ran = runCli([]);
+    expect(ran.status).toBe(2);
+    expect(ran.body).toMatchObject({ ok: false, checks: [] });
   });
 
   it("allows only new isolation directories under babel-nimbalyst-data/install-restore", async () => {
@@ -125,6 +126,14 @@ describe("LR-18 isolated install dry-run", () => {
       "D:\\Projects\\babel-nimbalyst-data\\install-restore-other",
       NEW_ROOT,
     )).toBe(false);
+  });
+
+  it("normalizes Windows paths independently of the host and denies ambiguous or escaped paths", async () => {
+    const guard = await loadGuard();
+    expect(guard.checkIsolatedInstallPath("d:/PROJECTS/babel-nimbalyst-data/install-restore/demo-profile").allowed).toBe(true);
+    for (const candidate of ["", "demo-profile", "D:demo-profile", `${NEW_ROOT}\\demo-profile\\..\\..\\demo-profile`, `${NEW_ROOT}\\demo-profile:stream`, NEW_ROOT]) {
+      expect(guard.checkIsolatedInstallPath(candidate).allowed, candidate).toBe(false);
+    }
   });
 
   it("CLI --defaults accepts the five new isolation roles and backups", () => {

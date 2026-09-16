@@ -75,7 +75,7 @@ export function normalizeMarkdown(markdown: string): string {
   // Lexical exports thematic breaks as --- regardless of the imported spelling.
   // Preserve literal *** / ___ lines inside fenced code; they are content there.
   let fence: string | null = null;
-  const canonical = markdown.split('\n').map(line => {
+  const canonical = markdown.replace(/\r\n/g, '\n').split('\n').map(line => {
     const marker = line.match(/^ {0,3}(`{3,}|~{3,})/);
     if (marker) {
       if (!fence) fence = marker[1];
@@ -87,7 +87,6 @@ export function normalizeMarkdown(markdown: string): string {
   }).join('\n');
   return canonical
     .trim()
-    .replace(/\r\n/g, '\n')
     .replace(/\n{3,}/g, '\n\n')
     .replace(/^(\s*)[\*\+](\s)/gm, '$1-$2');
 }

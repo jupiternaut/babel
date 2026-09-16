@@ -4,7 +4,7 @@
 
 后续主开发与原生桌面验收平台为 **MacBook M3 / macOS**，执行 [macOS 开发交接](MACOS-DEVELOPMENT-HANDOFF.md)。Windows 历史路径/阶段顺序不覆盖此决定；保留 Windows/Ubuntu 的适配与回归要求。Wayland 指 getwayland.com 的 AI 工作台，对标以 [Wayland / Devin 指标](WAYLAND-DEVIN-BENCHMARK.md) 为准。已有实现继续收口，不重新制作另一套独立看板；历史测试通过不代表 macOS 已验收。
 
-版本：v2.3。当前所有条目为**待实现、待验证**，下表是交付要求，不是已支持能力清单。依据：[主 SPEC](NIMBALYST-DEVELOPMENT-SPEC.md)、[TUI/Hooks 契约](NIMBALYST-TUI-HOOKS-SPEC.md)。
+版本：v2.3。下表是交付要求；当前逐项实现、证据与剩余缺口见 [M0 能力状态](implementation/M0-CAP-STATUS.md)，本轮 Mac 验证见 [TASK_EVIDENCE](TASK_EVIDENCE.md)。部分 demo 子路径已通过，完整 M0 尚未签收。依据：[主 SPEC](NIMBALYST-DEVELOPMENT-SPEC.md)、[TUI/Hooks 契约](NIMBALYST-TUI-HOOKS-SPEC.md)。
 
 表中命令/事件是语义角色，NB-01 固定精确名称、Schema、错误码与权限。读取动作不必伪造业务变更事件：使用查询结果及 correlationId/可选 trace 进行断言。变更动作在权威事务提交后产生真实事件。界面选择/滚动属于客户端状态，不复制成任务业务字段。
 

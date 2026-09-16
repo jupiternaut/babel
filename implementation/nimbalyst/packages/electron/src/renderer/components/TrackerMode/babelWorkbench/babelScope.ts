@@ -5,6 +5,15 @@ export interface TaskListCard {
   runStatus?: string | null;
   stage?: string;
   title?: string;
+  attention?: boolean;
+  archived?: boolean;
+  lastUpdatedAt?: string | null;
+}
+
+/** Consume the service's projection; never infer success/failure from a lost connection. */
+export function attentionCards(listed: readonly TaskListCard[]): TaskListCard[] {
+  const byId = new Map(listed.map((card) => [card.trackerId, card]));
+  return [...byId.values()].filter((card) => card.attention && !card.archived);
 }
 
 const TERMINAL_RUN = new Set(['succeeded', 'failed', 'cancelled']);

@@ -18,6 +18,7 @@ export interface CliFlags {
   format?: string;
   scenario?: string;
   wait: boolean;
+  attentionOnly: boolean;
   timeoutMs?: number;
   device?: string;
   comment?: string;
@@ -55,6 +56,7 @@ export function parseArgv(argv: string[]): CliFlags {
     json: false,
     help: false,
     wait: false,
+    attentionOnly: false,
     rest: [],
   };
   for (let i = 0; i < argv.length; i++) {
@@ -73,6 +75,10 @@ export function parseArgv(argv: string[]): CliFlags {
     }
     if (token === "--wait") {
       flags.wait = true;
+      continue;
+    }
+    if (token === "--attention-only") {
+      flags.attentionOnly = true;
       continue;
     }
     if (!token.startsWith("-")) {

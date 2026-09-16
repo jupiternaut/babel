@@ -27,7 +27,7 @@ const commandRunner: Runner = (file, args, timeout = 30_000) => new Promise((res
 function requireText(value: unknown, name: string, pattern?: RegExp): asserts value is string {
   if (typeof value !== 'string' || !value.trim() || value.length > 8192 || /[\0\r\n]/.test(value) || (pattern && !pattern.test(value))) throw new SystemError('INVALID_ARGUMENT', `Invalid ${name}`);
 }
-function validate(service: ServiceDefinition): void {
+function validate(service: ServiceDefinition, platform: NodeJS.Platform): void {
   requireText(service.id, 'service id', /^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,95}$/);
   requireText(service.target, 'service target');
   if (!['windows-service', 'scheduled-task', 'startup-shortcut', 'wsl-systemd', 'systemd', 'launchd', 'managed-process'].includes(service.kind)) throw new SystemError('INVALID_ARGUMENT', 'Unsupported service kind');
@@ -38,7 +38,7 @@ function validate(service: ServiceDefinition): void {
   }
   if (service.kind === 'wsl-systemd') requireText(service.distribution, 'WSL distribution', /^[a-zA-Z0-9_][a-zA-Z0-9_. -]*$/);
   for (const field of ['executable', 'cwd', 'shortcutPath', 'startupPath', 'logPath'] as const) {
-    if (service[field] !== undefined) { requireText(service[field], field); if (!path.isAbsolute(service[field]!)) throw new SystemError('INVALID_ARGUMENT', `${field} must be an absolute path`); }
+    if (service[field] !== undefined) { requireText(service[field], field); if (!(platform === 'win32' ? path.win32 : path.posix).isAbsolute(service[field]!)) throw new SystemError('INVALID_ARGUMENT', `${field} must be an absolute path`); }
   }
   if (service.args !== undefined && (!Array.isArray(service.args) || service.args.length > 256 || service.args.some(x => typeof x !== 'string' || x.length > 32_768 || /[\0\r\n]/.test(x)))) throw new SystemError('INVALID_ARGUMENT', 'Invalid executable arguments');
   if (service.processName !== undefined) requireText(service.processName, 'process name', /^[a-zA-Z0-9_. -]+$/);
@@ -186,7 +186,7 @@ class NativeSystemAdapter implements SystemAdapter {
   }
 
   async inspect(service: ServiceDefinition): Promise<ServiceSnapshot> {
-    validate(service);
+    validate(service, this.platform);
     let result: ServiceSnapshot;
     if (service.kind === 'managed-process') result = await this.inspectManaged(service);
     else if (service.kind === 'wsl-systemd' && this.platform === 'win32' || service.kind === 'systemd' && this.platform === 'linux') result = await this.inspectSystemd(service);
@@ -211,7 +211,7 @@ class NativeSystemAdapter implements SystemAdapter {
   }
 
   async control(service: ServiceDefinition, action: SystemAction): Promise<void> {
-    validate(service);
+    validate(service, this.platform);
     if (!['start', 'stop', 'restart'].includes(action)) throw new SystemError('INVALID_ARGUMENT', 'Invalid service action');
     await this.serial(service.id, async () => {
       if (service.kind === 'managed-process') { await this.controlManaged(service, action); return; }
@@ -273,7 +273,7 @@ class NativeSystemAdapter implements SystemAdapter {
   }
 
   async setAutostart(service: ServiceDefinition, enabled: boolean): Promise<void> {
-    validate(service);
+    validate(service, this.platform);
     if (typeof enabled !== 'boolean') throw new SystemError('INVALID_ARGUMENT', 'Autostart enabled must be boolean');
     if (service.kind === 'managed-process') throw new SystemError('UNSUPPORTED', 'Managed process autostart is unsupported. Register an OS service, scheduled task or Startup shortcut.');
     await this.serial(service.id, async () => {
@@ -286,7 +286,7 @@ class NativeSystemAdapter implements SystemAdapter {
   }
 
   async logs(service: ServiceDefinition, limit: number): Promise<string> {
-    validate(service); boundedLimit(limit);
+    validate(service, this.platform); boundedLimit(limit);
     if (service.logPath || service.kind === 'managed-process') {
       try {
         // Bound reads, including a single giant log line, without loading an entire service log.

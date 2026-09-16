@@ -22,11 +22,11 @@ async function query(name: string, input: Record<string, unknown> = {}) {
   return response.json();
 }
 
-test('native host, CLI and real ConPTY share task identity and lifecycle', async ({}, info) => {
+test('native host, CLI and real platform PTY share task identity and lifecycle', async ({}, info) => {
   test.setTimeout(180_000);
   test.skip(!process.env.BABEL_ACCEPTANCE_CDP, 'Requires an explicitly isolated running Electron instance and demo service');
   const browser = await chromium.connectOverCDP(process.env.BABEL_ACCEPTANCE_CDP!);
-  const page = browser.contexts()[0].pages().find(p => p.url().includes('5273'))!;
+  const page = browser.contexts()[0].pages().find(p => p.url().startsWith('http://localhost:') && !p.url().includes('mode='))!;
   expect(page).toBeTruthy();
   page.setDefaultTimeout(15_000);
   const pty = loadModule('node-pty');
@@ -36,6 +36,10 @@ test('native host, CLI and real ConPTY share task identity and lifecycle', async
   const title = `验收中文任务-${suffix}`;
   try {
     await page.keyboard.press('Escape');
+    const dismiss = page.getByRole('button', { name: 'Not now', exact: true });
+    if (await dismiss.isVisible()) await dismiss.click();
+    const tracker = page.getByRole('button', { name: /Tracker \(/ });
+    if (await tracker.getAttribute('aria-pressed') !== 'true') await tracker.click();
     await page.getByRole('button', { name: '执行视图', exact: true }).click();
     if (await page.getByTestId('babel-stage-tab-TODO').count()) await page.getByTestId('babel-stage-tab-TODO').click();
     await page.getByTestId('babel-execution-create-todo').click();
@@ -52,7 +56,7 @@ test('native host, CLI and real ConPTY share task identity and lifecycle', async
     expect(detail.record.fields.title).toBe(title);
 
     terminal = pty.spawn(process.execPath, ['--import', 'tsx', 'src/tui/main.ts', '--project', project, '--endpoint', endpoint],
-      { cwd, cols: 220, rows: 48, name: 'xterm-256color', env: { ...process.env }, useConpty: true });
+      { cwd, cols: 220, rows: 48, name: 'xterm-256color', env: { ...process.env }, ...(process.platform === 'win32' ? { useConpty: true } : {}) });
     terminal.onData((data: string) => { output += data; });
     await expect.poll(() => output, { timeout: 15000 }).toContain('演示');
     terminal.write('/');
@@ -70,6 +74,15 @@ test('native host, CLI and real ConPTY share task identity and lifecycle', async
     }).not.toBe('');
     await expect.poll(() => output).toContain(runId);
     await expect.poll(async () => (await query('run.show', { runId })).run.status, { timeout: 30000 }).toBe('review_required');
+    output = '';
+    terminal.write('!');
+    await expect.poll(() => output).toContain('需要关注');
+    await expect.poll(() => output).toContain(title);
+    const attention = await cli('task', 'list', '--attention-only');
+    expect(attention.items.map((item: { trackerId: string }) => item.trackerId)).toContain(id);
+    output = '';
+    terminal.write('!');
+    await expect.poll(() => output).toContain('全部任务');
     const narrow = page.getByTestId('babel-stage-tab-RUNNING');
     if (await narrow.count()) await narrow.click();
     await page.locator(`[data-tracker-id="${id}"]`).getByText(title, { exact: true }).click();
@@ -103,9 +116,9 @@ test('native host, CLI and real ConPTY share task identity and lifecycle', async
     terminal.write('\r');
     await expect.poll(async () => (await cli('task', 'get', '--id', created.trackerId)).stage).toBe('DONE');
     terminal.write('q');
-    writeFileSync(info.outputPath('identity.json'), JSON.stringify({ project, trackerId: id, runId, survivesWindowCloseRun: started.runId }, null, 2));
+    writeFileSync(info.outputPath('identity.json'), JSON.stringify({ platform: process.platform, terminal: process.platform === 'win32' ? 'ConPTY' : 'POSIX PTY', project, trackerId: id, runId, attentionKeyboardAndCliVerified: true, survivesWindowCloseRun: started.runId }, null, 2));
   } finally {
-    writeFileSync(info.outputPath('conpty.txt'), output);
+    writeFileSync(info.outputPath('pty.txt'), output);
     terminal?.kill();
     await browser.close();
   }

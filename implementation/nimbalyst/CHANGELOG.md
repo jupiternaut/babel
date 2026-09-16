@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 <!-- New features go here -->
-- Preview an isolated Babel task board in Trackers with shared terminal controls and simulated execution history.
+- Preview Babel on macOS with a frosted task board, shared attention filters, conflict-safe titles, and recoverable simulated runs.
 - Run sessions in your own Cloudflare sandbox with machine navigation, the shared composer, attachments and Actions, and profile/account selections remembered per project.
 
 ### Changed

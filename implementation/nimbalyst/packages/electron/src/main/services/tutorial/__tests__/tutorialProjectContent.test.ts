@@ -80,7 +80,7 @@ describe("tutorial project content", () => {
     }
 
     const shortcutSection = readme.match(
-      /## Keyboard shortcuts\n([\s\S]*?)(?:\n## |\s*$)/
+      /## Keyboard shortcuts\r?\n([\s\S]*?)(?:\r?\n## |\s*$)/
     )?.[1];
     expect(shortcutSection).toBeDefined();
 

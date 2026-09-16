@@ -444,5 +444,5 @@ export function deriveStage(record: TrackerRecord, binding: ExecutionBinding | u
 }
 
 export function runNeedsAttention(status: RunStatus): boolean {
-  return status === "failed" || status === "cancelled" || status === "lost" || status === "cancel_requested";
+  return status === "waiting_input" || status === "failed" || status === "lost" || status === "review_required";
 }

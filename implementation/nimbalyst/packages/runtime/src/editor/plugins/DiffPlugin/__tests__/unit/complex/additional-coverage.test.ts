@@ -320,7 +320,7 @@ $$`;
 
 // Only serializer-equivalent thematic breaks are normalized; fenced contents
 // must remain byte-sensitive so this helper cannot hide a code edit.
-test('markdown comparison preserves thematic-break spellings inside code fences', () => {
-  expect(normalizeMarkdown('***')).toBe(normalizeMarkdown('---'));
-  expect(normalizeMarkdown('```md\n***\n```')).not.toBe(normalizeMarkdown('```md\n---\n```'));
+test.each(['\n', '\r\n'])('markdown comparison preserves thematic-break spellings inside code fences with %j line endings', newline => {
+  expect(normalizeMarkdown(`before${newline}***${newline}after`)).toBe(normalizeMarkdown('before\n---\nafter'));
+  expect(normalizeMarkdown(['```md', '***', '```'].join(newline))).not.toBe(normalizeMarkdown('```md\n---\n```'));
 });

@@ -28,7 +28,7 @@ export const HELP_TEXT = `babel — 巴别塔 M0 非交互 CLI（演示数据，
   babel hook list --project <id> --json
   babel hook register --project <id> --input hook.json --json
   babel hook retry --project <id> --delivery <deliveryId> --json
-  babel task list --project <id> --json
+  babel task list --project <id> [--attention-only] --json
   babel task get --project <id> --id <trackerId> --json
   babel task create --project <id> --input request.json --json
   babel task update --project <id> --id <trackerId> --input patch.json --expected-revision N --json
@@ -62,6 +62,7 @@ export const HELP_TEXT = `babel — 巴别塔 M0 非交互 CLI（演示数据，
   标准输出只含 JSON 或 JSONL，不含 ANSI。诊断写 stderr。
   启动成功只表示 command accepted；settled=false 时 run 尚未完成。
   events watch 的 Ctrl-C 只断开订阅，不会取消 run。
+  task list --attention-only 只看等待输入、失败、失联、待验收，保留四阶段并排除归档。
   交互界面请运行: npx tsx src/tui/main.ts
   后续入口 google-tasks / node / ops / pdf 走同一合成查询。没有真账号时标明未接入或演示，不打开外部图形窗口，也不把试拉写成同步成功。
 `;

@@ -18,6 +18,8 @@ esm/build/
 split/build/
 out/
 out2/
+/packages/electron/out-macos/
+/packages/electron/out-macos-*/
 release/
 packages/electron/release/
 # Not a build output: the Android release source set holds the inert

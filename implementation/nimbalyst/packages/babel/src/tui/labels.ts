@@ -9,6 +9,10 @@ export const STAGE_LABEL: Record<Stage, string> = {
   ARCHIVED: "归档",
 };
 
+export function attentionFilterText(enabled: boolean): string {
+  return enabled ? "需要关注" : "全部任务";
+}
+
 export const TYPE_LABEL: Record<string, string> = {
   executable: "可执行",
   all: "全部类型",
