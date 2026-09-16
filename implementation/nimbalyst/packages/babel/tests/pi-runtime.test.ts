@@ -120,4 +120,30 @@ describe.skipIf(process.platform === "win32")("LocalPiRuntime (protocol subproce
     expect(() => process.kill(descendant, 0)).toThrow();
     expect(s.events.at(-1)).toEqual({ type: "stopped" });
   });
+
+  it.each([false, true])("requires absence after EPERM during cancellation (persistent=%s)", async (persistent) => {
+    const s = setup(); await s.start("busy");
+    const group = -s.fixture().pid;
+    const kill = process.kill.bind(process);
+    let probes = 0;
+    const denied = vi.spyOn(process, "kill").mockImplementation((pid, signal) => {
+      if (pid === group && signal === 0 && (persistent || probes++ < 2)) {
+        throw Object.assign(new Error("exit race EPERM"), { code: "EPERM" });
+      }
+      return kill(pid, signal);
+    });
+    try {
+      if (persistent) {
+        await expect(s.runtime.cancel("run-1")).rejects.toThrow("could not be confirmed");
+        expect(s.events.some(event => event.type === "stopped")).toBe(false);
+        expect(s.runtime.isActive("run-1")).toBe(true);
+      } else await s.runtime.cancel("run-1");
+    } finally { denied.mockRestore(); }
+    // A prior abort acknowledgement remains valid; an explicit retry may now
+    // confirm absence, without replaying a prompt or claiming EPERM was exit.
+    if (persistent) await s.runtime.cancel("run-1");
+    expect(s.events.at(-1)).toEqual({ type: "stopped" });
+    expect(s.commands().filter(command => command.type === "prompt")).toHaveLength(1);
+    expect(s.commands().filter(command => command.type === "abort")).toHaveLength(1);
+  });
 });

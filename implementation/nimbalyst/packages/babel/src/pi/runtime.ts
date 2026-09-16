@@ -36,6 +36,7 @@ interface RunningPi {
   lost: boolean;
   busy: boolean;
   promptSent: boolean;
+  abortConfirmed: boolean;
   activity: number;
   messageSequence: number;
   messageId?: string;
@@ -107,7 +108,7 @@ export class LocalPiRuntime {
     child.stdout.on("error", () => {});
     const run: RunningPi = {
       child, observe, hasClosed: false, groupGone: false, stoppingRequested: false,
-      stopped: false, failed: false, lost: false, busy: false, promptSent: false, activity: 0, messageSequence: 0, sessionFile,
+      stopped: false, failed: false, lost: false, busy: false, promptSent: false, abortConfirmed: false, activity: 0, messageSequence: 0, sessionFile,
       client: new PiRpcClient({ input: child.stdin, output: child.stdout,
         onEvent: event => this.onEvent(input.runId, event),
         onDisconnect: error => this.failure(input.runId, error),
@@ -153,7 +154,9 @@ export class LocalPiRuntime {
 
   isActive(runId: string): boolean {
     const run = this.runs.get(runId);
-    return !!run && !run.stopped && this.groupExists(run);
+    // Ownership persists until cleanup is confirmed, even if Pi exited before
+    // its tools could be reconciled. This permits explicit cancellation retry.
+    return !!run && !run.stopped;
   }
 
   async cancel(runId: string): Promise<void> {
@@ -270,6 +273,9 @@ export class LocalPiRuntime {
     try { process.kill(-run.child.pid, 0); return true; }
     catch (error) {
       if ((error as NodeJS.ErrnoException).code === "ESRCH") { run.groupGone = true; return false; }
+      // macOS can briefly deny a signal while the owned group is exiting.
+      // Treat it as unconfirmed presence; only ESRCH proves absence.
+      if ((error as NodeJS.ErrnoException).code === "EPERM") return true;
       throw error;
     }
   }
@@ -277,14 +283,13 @@ export class LocalPiRuntime {
   private signal(run: RunningPi, signal: NodeJS.Signals): void {
     if (!this.groupExists(run) || !run.child.pid) return;
     try { process.kill(-run.child.pid, signal); }
-    catch (error) { if ((error as NodeJS.ErrnoException).code !== "ESRCH") throw error; }
+    catch (error) { if (!["ESRCH", "EPERM"].includes((error as NodeJS.ErrnoException).code ?? "")) throw error; }
   }
 
   private async stop(run: RunningPi): Promise<void> {
     // Abort acknowledgement is not proof of tool/process exit. Bound the wait,
     // then terminate only the detached group created by this runtime.
-    let abortConfirmed = false;
-    await bounded(run.client.request({ type: "abort" }).then(() => { abortConfirmed = true; }).catch(() => {}), 3000);
+    if (!run.abortConfirmed) await bounded(run.client.request({ type: "abort" }).then(() => { run.abortConfirmed = true; }).catch(() => {}), 3000);
     run.client.disconnect();
     run.child.stdin.end();
     this.signal(run, "SIGTERM");
@@ -294,7 +299,7 @@ export class LocalPiRuntime {
     }
     // Pi's bash tool creates its own detached groups. Only its awaited abort
     // confirms tool cleanup; killing Pi's group after losing RPC cannot prove it.
-    if (run.promptSent && !abortConfirmed) throw new Error("Pi process group stopped, but detached tool shutdown is unconfirmed after lost abort acknowledgement");
+    if (run.promptSent && !run.abortConfirmed) throw new Error("Pi process group stopped, but detached tool shutdown is unconfirmed after lost abort acknowledgement");
   }
 
   private async waitGone(run: RunningPi, timeoutMs: number): Promise<boolean> {
