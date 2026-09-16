@@ -273,6 +273,12 @@ export default defineConfig({
       // This allows crystal-run.sh to set it at runtime without affecting normal dev mode.
     },
     plugins: [
+      {
+        name: 'system-console-platform-script',
+        generateBundle() {
+          this.emitFile({ type: 'asset', fileName: 'platform-windows.ps1', source: fs.readFileSync(resolve(__dirname, '../babel/src/system/platform-windows.ps1'), 'utf8') });
+        },
+      },
       resolveWorkspaceSubpaths(),
       guardMainBundleGraph(),
       neutralizeRequireCacheSelfEviction(),
@@ -321,6 +327,7 @@ export default defineConfig({
         input: {
           // Use bootstrap.ts as entry point to handle user-data-dir before any imports
           index: resolve(__dirname, 'src/main/bootstrap.ts'),
+          systemServer: resolve(__dirname, '../babel/src/system/main.ts'),
           // Backend bootstrap for privileged extension modules. Loaded by
           // utilityProcess.fork() and worker_threads.Worker() at runtime;
           // it MUST be a standalone entry, not pulled into the main chunk.

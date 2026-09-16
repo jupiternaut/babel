@@ -6,6 +6,8 @@
 
 ## 当前实现与验收
 
+- **真实设备与服务控制台**：[使用手册](implementation/nimbalyst/packages/babel/SYSTEM-CONSOLE.md)、[开发规格](SYSTEM-CONSOLE-SPEC.md)、[单独验收记录](implementation/SYSTEM-CONSOLE-ACCEPTANCE.md)。新增原生入口与真实 Windows 采样、服务控制、独立自启动、TUI/CLI、持久 Hooks。255 项 Babel 测试通过、真实 ConPTY 12 项通过；新控制台原生窗口交互和特权动作仍待验收，不宣称正式发布。
+
 - [源码](implementation/nimbalyst/)：上游 MIT 基线及本地改造；仅 Windows 实测。
 - [启动说明](implementation/START.md)：独立 profile、原生 Electron、TUI 与 CLI。
 - [验收记录与截图](implementation/ACCEPTANCE.md)：225 项 Babel 测试、60 项宿主定向测试、26 个工作区类型检查和 2 项真实窗口 E2E 通过。

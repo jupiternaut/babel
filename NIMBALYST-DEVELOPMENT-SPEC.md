@@ -406,3 +406,6 @@ M0 交付共享核心源码、独立服务/GUI/TUI/CLI 启动方式、GUI 和 TU
 原 spec 包还含 Nextcloud/Deck v1 内容。本文、TUI/Hooks 契约和 ADR-003/004/005 确定新业务设计；旧机器合同仅是历史基线。NB-01 必须把正文、OpenAPI、CLI、Hook 事件、任务列表、执行提示词同步为当前 v2.3 业务要求，并让契约检查覆盖它们，再接生产后台；不能用文档优先级掩盖互相矛盾的接口。
 
 本阶段不开发万能聊天服务，不自动扫描整个局域网，不把 SSH 当协同编辑协议，不复制每个 Agent 产品的所有控制台，也不为展示“忙碌”制造随机进度。UI 的目标是让用户清楚知道：任务是什么、是否真的开始、现在需要谁行动、结果依据在哪里。
+# 2026-09-16 实施增补
+
+真实电脑控制台按 [SYSTEM-CONSOLE-SPEC.md](SYSTEM-CONSOLE-SPEC.md) 与源码 [SYSTEM-CONSOLE.md](implementation/nimbalyst/packages/babel/SYSTEM-CONSOLE.md) 执行。它是独立“设备与服务”入口，保留 Trackers；GUI/TUI/CLI 共享真实后台与持久事件。上述任务 M0 约束继续适用于任务演示，不将其假数据用于本机控制。

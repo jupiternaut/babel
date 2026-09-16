@@ -17,6 +17,7 @@ import {
 import { ApiKeyDialog } from '../components/ApiKeyDialog';
 import { ShareDialog } from '../components/ShareDialog/ShareDialog';
 import { DIALOG_IDS } from './registry';
+import { SystemConsole } from '../components/SystemConsole/SystemConsole';
 
 // Type definitions for dialog data
 
@@ -140,6 +141,7 @@ function ShareDialogWrapper({
 
 // Register all simple dialogs
 export function registerSimpleDialogs() {
+  registerDialog({ id: DIALOG_IDS.SYSTEM_CONSOLE, group: 'system', component: SystemConsole, priority: 180 });
   registerDialog<KeyboardShortcutsData>({
     id: DIALOG_IDS.KEYBOARD_SHORTCUTS,
     group: 'help',

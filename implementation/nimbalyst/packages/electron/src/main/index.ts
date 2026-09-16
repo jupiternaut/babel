@@ -48,6 +48,7 @@ import { registerFileHandlers } from './ipc/FileHandlers';
 import { registerWorkspaceHandlers } from './ipc/WorkspaceHandlers.ts';
 import { registerSettingsHandlers } from './ipc/SettingsHandlers';
 import { registerWindowHandlers } from './ipc/WindowHandlers';
+import { registerSystemConsoleHandlers } from './ipc/SystemConsoleHandlers';
 import { registerWindowChromeHandlers } from './ipc/WindowChromeHandlers';
 import { registerEditorStateHandlers } from './ipc/EditorStateHandlers';
 import { registerHistoryHandlers } from './ipc/HistoryHandlers';
@@ -1911,6 +1912,7 @@ app.whenReady().then(async () => {
     registerWorkspaceWatcherHandlers();
     registerSettingsHandlers();
     registerWindowHandlers();
+    registerSystemConsoleHandlers();
     registerWindowChromeHandlers();
     registerEditorStateHandlers();
     await registerHistoryHandlers();

@@ -49,6 +49,8 @@ import {
 } from './navGutterItems';
 import { prRemoteAtom } from '../../store/atoms/pullRequests';
 import { AgentSessionsPopover } from './AgentSessionsPopover';
+import { dialogRef } from '../../contexts/DialogContext';
+import { DIALOG_IDS } from '../../dialogs/registry';
 
 export type NavigationMode = 'planning' | 'coding';
 export type SidebarView = 'files' | 'settings';
@@ -425,6 +427,14 @@ export const NavigationGutter: React.FC<NavigationGutterProps> = ({
   ];
 
   const panelItems: GutterItem[] = [
+    {
+      id: 'system-console', section: 'panels', icon: 'monitor_heart', label: '设备与服务', hideable: true,
+      render: () => (
+        <button className={navBtnClass(false)} onClick={() => dialogRef.current?.open(DIALOG_IDS.SYSTEM_CONSOLE, {})} aria-label="设备与服务" title="设备与服务" data-testid="system-console-button">
+          <MaterialSymbol icon="monitor_heart" size={20} />
+        </button>
+      ),
+    },
     // Fullscreen extension panels (view switchers), then sidebar toggles.
     ...extensionPanelButtons
       .filter((p) => p.placement === 'fullscreen')

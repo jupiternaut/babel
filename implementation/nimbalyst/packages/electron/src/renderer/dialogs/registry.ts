@@ -30,6 +30,7 @@ export const DIALOG_IDS = {
 
   // System group
   PROJECT_SELECTION: 'project-selection',
+  SYSTEM_CONSOLE: 'system-console',
 
   // Promotion group
   DISCORD_INVITATION: 'discord-invitation',

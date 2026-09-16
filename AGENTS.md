@@ -2,13 +2,15 @@
 
 ## 任务与读取顺序
 
-本目录包含 Nimbalyst 改造资料及 implementation/nimbalyst 候选源码。继续开发前先读 implementation/ACCEPTANCE.md 与 implementation/START.md；历史计划中的待办描述不能覆盖当前验收事实。当前规格 v2.3，先读 [README](README.md)、[Trackers 映射](NIMBALYST-TRACKER-MAPPING.md)、[开发 SPEC](NIMBALYST-DEVELOPMENT-SPEC.md)、[TUI/Hooks 契约](NIMBALYST-TUI-HOOKS-SPEC.md)、[功能对照表](CAPABILITY-MATRIX.md)。按需读视觉、源码和技能。旧版在 reference/v2.2，不作为当前实施入口。
+本目录包含 Nimbalyst 改造资料及 implementation/nimbalyst 候选源码。继续开发前先读 implementation/ACCEPTANCE.md、implementation/SYSTEM-CONSOLE-ACCEPTANCE.md 与 implementation/START.md；历史计划中的待办描述不能覆盖当前验收事实。当前规格 v2.3，先读 [README](README.md)、[Trackers 映射](NIMBALYST-TRACKER-MAPPING.md)、[开发 SPEC](NIMBALYST-DEVELOPMENT-SPEC.md)、[TUI/Hooks 契约](NIMBALYST-TUI-HOOKS-SPEC.md)、[功能对照表](CAPABILITY-MATRIX.md)。按需读视觉、源码和技能。旧版在 reference/v2.2，不作为当前实施入口。
 
 开始代码工作时，记录实际 Nimbalyst HEAD、dirty 状态、许可与构建命令，读取目标源码目录中适用的 AGENTS.md/CLAUDE.md。本包记录的历史源码位置不是对任意版本的 API 保证。
 
 用户当前授权范围决定实际动作。资料包中的未来里程碑不自动启动安装、账号连接、设备访问或生产部署。对于用户已授权的开发，正常推进可逆编辑、依赖准备和必要验证，不重复要求确认常规步骤。
 
 ## 产品边界
+
+2026-09-16 新授权：按 [SYSTEM-CONSOLE-SPEC.md](SYSTEM-CONSOLE-SPEC.md) 实现真实本机“设备与服务”控制台。它独立于原任务演示 namespace；资源/服务必须实际采样，不得套用 M0 假设备。GitLab、DUFS、局域网代理保持用户指定的停用配置，写操作验收使用隔离目标。不得因“成品”目标而把未验收的原生窗口、提权或跨平台能力写成已完成。
 
 - Nimbalyst 是桌面宿主。新增业务同时有 GUI、真正可操作的 TUI、非交互 CLI 与应用级 Hooks；共享不依赖图形窗口的领域核心。复用原生文档、会话、主题和差异，不把独立 Cursor 页面 iframe 当作完成集成。
 - 原生 Trackers 与 Babel 执行看板是**同一个 TrackerRecord 的两个视图**；同一 GUI 工作区共用 `TrackerDataSource` 实例与命令路由。不同进程的 TUI/CLI 各持适配实例，连接同一权威服务、使用同一 ID/合同/守卫，不能靠多份 JSON 或共享内存对象冒充跨进程一致性。

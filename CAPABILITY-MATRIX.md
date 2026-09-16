@@ -51,3 +51,6 @@ M0 中设备、Google 来源与真实执行数据使用演示场景；只读继�
 PAR-01/02 对同一 fixture 比较三端结果及交叉操作；HEADLESS-01 证明无窗口可运行；CLI-01 与 TUI-01 分别验证非交互合同和真实终端输入；HOOK-01/02 验证校验和可恢复投递；EVIDENCE-01 结合查询断言；LIFE-01 验证视图退出不杀 run。具体通过条件见契约第 6 节。
 
 每项证据记录：提交/版本、平台/终端、mode、projectId/trackerId/runId、输入、命令结果、关联eventId/cursor、前后revision、查询断言与日志/截图。图像生成与Hook日志本身都不能把未执行条目标为通过。
+## 2026-09-16 真实系统模块
+
+SYS-01～09 的实现与验收独立记录在 [系统控制 SPEC](SYSTEM-CONSOLE-SPEC.md)。服务启停、自启动、进程终止在 GUI/TUI/CLI 共用同一命令核心，资源/日志/历史共用查询，Hook 消费持久事件。真实 ConPTY 验收与原生窗口验收分别计数；系统权限不足和未验证平台不算通过。历史任务域的当前验收以 implementation/ACCEPTANCE.md 为准。

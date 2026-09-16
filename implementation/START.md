@@ -87,3 +87,6 @@ npx playwright test packages/electron/e2e/babel/archive-native.spec.ts --workers
 ```
 
 当前原生测试按开发 renderer 端口 5273 查找窗口，要求该端口没有被其他开发实例占用。真实 ConPTY 测试仅在 Windows 验证。截图、具体覆盖与未完成项目见 [ACCEPTANCE.md](ACCEPTANCE.md)。
+# 真实设备与服务控制台
+
+本轮新增模块的命令、清单和权限说明见 [SYSTEM-CONSOLE.md](nimbalyst/packages/babel/SYSTEM-CONSOLE.md)。原生窗口左导航选择“设备与服务”；它使用独立的真实控制后台 7782，下面任务演示服务 7780 不替代它。
