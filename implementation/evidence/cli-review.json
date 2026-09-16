@@ -1,0 +1,81 @@
+{
+  "command": {
+    "ok": true,
+    "commandStatus": "accepted",
+    "settled": true,
+    "revision": 4,
+    "projectId": "fixture-project-babel",
+    "trackerId": "8b1e8ce4-2f89-4a03-82fb-c2a72283b008",
+    "runId": "run-0941e9cc-acee-4794-8e5f-b9f51e808c99",
+    "correlationId": "corr-1502c971-d351-4363-b0fc-0e8702c11172",
+    "mode": "demo",
+    "result": {
+      "run": {
+        "id": "run-0941e9cc-acee-4794-8e5f-b9f51e808c99",
+        "projectId": "fixture-project-babel",
+        "taskId": "8b1e8ce4-2f89-4a03-82fb-c2a72283b008",
+        "attempt": 1,
+        "status": "succeeded",
+        "deviceId": "fixture-device-ubuntu",
+        "providerId": "pi-sim",
+        "sessionId": "session-run-0941e9cc-acee-4794-8e5f-b9f51e808c99",
+        "taskRevision": 1,
+        "inputSnapshotId": "snap-9f934ddc-f0f0-4110-b8bd-e524486bd23b",
+        "baseCommit": "demo-base-001",
+        "executionFence": 1,
+        "startedAt": "2026-09-14T07:00:22.000Z",
+        "endedAt": "2026-09-14T07:01:10.000Z",
+        "lastEventSeq": 8,
+        "summary": "模拟：验证和人工验收通过",
+        "messages": [
+          {
+            "id": "msg-042b17ef-cdac-4116-bc73-a66c14e4d5ed",
+            "role": "agent",
+            "text": "已完成任务映射，正在处理增量同步。",
+            "at": "2026-09-14T07:00:25.000Z"
+          }
+        ],
+        "inputRequests": [],
+        "verification": [],
+        "diff": {
+          "label": "模拟基线 demo-base-001（非 Git 提交）",
+          "files": [
+            {
+              "path": "demo/google-tasks.ts",
+              "additions": 30,
+              "deletions": 6,
+              "patch": "--- a/demo/google-tasks.ts\n+++ b/demo/google-tasks.ts\n@@ 模拟差异 @@\n+模拟新增行\n-模拟删除行\n"
+            },
+            {
+              "path": "demo/google-tasks.test.ts",
+              "additions": 12,
+              "deletions": 2,
+              "patch": "--- a/demo/google-tasks.test.ts\n+++ b/demo/google-tasks.test.ts\n@@ 模拟差异 @@\n+模拟新增行\n-模拟删除行\n"
+            }
+          ]
+        },
+        "review": {
+          "decision": "accept",
+          "at": "2026-09-14T07:01:10.000Z",
+          "actorId": "demo-operator"
+        }
+      },
+      "binding": {
+        "projectId": "fixture-project-babel",
+        "trackerId": "8b1e8ce4-2f89-4a03-82fb-c2a72283b008",
+        "targetDeviceId": "fixture-device-ubuntu",
+        "providerId": "pi-sim",
+        "latestRunId": "run-0941e9cc-acee-4794-8e5f-b9f51e808c99",
+        "completionPolicy": "verified_and_reviewed",
+        "revision": 4,
+        "archivedAt": null,
+        "outcome": "succeeded",
+        "restoreStage": null,
+        "executionEnabled": true
+      },
+      "stage": "DONE"
+    }
+  },
+  "stage": "DONE",
+  "runId": "run-0941e9cc-acee-4794-8e5f-b9f51e808c99"
+}

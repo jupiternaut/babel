@@ -1,0 +1,7 @@
+{
+  "upstream": "https://github.com/nimbalyst/nimbalyst",
+  "upstreamCommit": "d6e1d008d9ee264a7447f3533fa9f48f158a70b0",
+  "license": "MIT",
+  "delivery": "native M0 acceptance candidate; see ACCEPTANCE.md",
+  "sourceFiles": 7098
+}

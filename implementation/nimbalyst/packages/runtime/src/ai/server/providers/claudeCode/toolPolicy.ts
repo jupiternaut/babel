@@ -1,0 +1,102 @@
+/**
+ * Tool policy constants for Claude Code provider.
+ *
+ * Keeping these lists centralized avoids burying policy data inside
+ * large control-flow methods.
+ *
+ * Note: Planning mode tool restrictions are handled natively by the SDK
+ * via `permissionMode: 'plan'`. No manual tool filtering is needed.
+ */
+
+// Internal Nimbalyst MCP tools that are auto-allowed (no permission prompt):
+// they are display-only or confirm within their own widget, and the SDK's
+// canUseTool path otherwise falls through to a dialog handler that has no UI for
+// nimbalyst-owned tools — the Promise never resolves and the SDK surfaces "user
+// cancelled MCP tool call" (issue #236, the kanban board appearing broken).
+// Tool names follow the consolidated topology (mcp__<server>__<tool>).
+export const INTERNAL_MCP_TOOLS: readonly string[] = [
+  // Core (`nimbalyst`); some schemas defer through ToolSearch.
+  'mcp__nimbalyst__update_session_meta',
+  'mcp__nimbalyst__capture_editor_screenshot',
+  'mcp__nimbalyst__display_to_user',
+  'mcp__nimbalyst__get_session_edited_files',
+  'mcp__nimbalyst__developer_git_commit_proposal',
+  // git_log is served by the built-in Developer Tools extension, so it carries
+  // the extension prefix (not core). Read-only → safe to auto-allow.
+  'mcp__nimbalyst-developer__developer_git_log',
+  // Situational (`nimbalyst-situational`) — voice.
+  'mcp__nimbalyst-situational__voice_agent_speak',
+  'mcp__nimbalyst-situational__voice_agent_stop',
+  // Trackers (`nimbalyst-trackers`).
+  'mcp__nimbalyst-trackers__tracker_list',
+  'mcp__nimbalyst-trackers__tracker_ready',
+  'mcp__nimbalyst-trackers__work_radar',
+  'mcp__nimbalyst-trackers__tracker_get',
+  'mcp__nimbalyst-trackers__tracker_list_types',
+  'mcp__nimbalyst-trackers__tracker_create',
+  'mcp__nimbalyst-trackers__tracker_update',
+  'mcp__nimbalyst-trackers__tracker_link_session',
+  'mcp__nimbalyst-trackers__tracker_unlink_session',
+  'mcp__nimbalyst-trackers__tracker_link_file',
+  'mcp__nimbalyst-trackers__tracker_add_comment',
+  'mcp__nimbalyst-trackers__tracker_define_type',
+  'mcp__nimbalyst-trackers__tracker_delete_type',
+  // Host (`nimbalyst-host`) — session-context reads.
+  'mcp__nimbalyst-host__get_session_summary',
+  'mcp__nimbalyst-host__get_workstream_overview',
+  'mcp__nimbalyst-host__list_recent_sessions',
+  'mcp__nimbalyst-host__get_workstream_edited_files',
+];
+
+export const TEAM_TOOLS: readonly string[] = [
+  'SendMessage',
+  'TaskCreate',
+  'TaskList',
+  'TaskUpdate',
+  'TaskGet',
+  'TeamCreate',
+  'TeamDelete',
+  'TeammateTool',
+  'TodoRead',
+  'TodoWrite',
+];
+
+/**
+ * SDK-native tools that are executed by the Claude Code SDK itself (not by Nimbalyst).
+ * AskUserQuestion is included because we handle it in canUseTool (user input, not local execution).
+ * This list is the single source of truth — used for tool_use logging and tool_result logging.
+ */
+export const SDK_NATIVE_TOOLS: readonly string[] = [
+  'Read', 'Write', 'Edit', 'MultiEdit',
+  'Glob', 'Grep', 'LS',
+  'Bash',
+  'WebFetch', 'WebSearch',
+  'Task', 'Agent',  // Agent is the renamed Task tool (SDK 0.2.x+)
+  'TaskOutput', 'TaskStop', 'ExitPlanMode', 'AskUserQuestion',
+  'EnterPlanMode', 'EnterWorktree', 'ExitWorktree', 'Skill',
+  'NotebookRead', 'NotebookEdit',
+  'TodoRead', 'TodoWrite',
+  'ToolSearch',
+  // Task management tools (SDK-internal)
+  'TaskCreate', 'TaskGet', 'TaskUpdate', 'TaskList',
+  // Agent Teams tools (SDK-internal, executed by CLI subprocess)
+  'TeammateTool', 'SendMessage', 'TeamCreate', 'TeamDelete',
+  // Claude Code 2.1.116+ additions (CLI-native, do NOT route through our toolHandler)
+  'Monitor', 'PushNotification', 'RemoteTrigger',
+  'CronCreate', 'CronDelete', 'CronList',
+  'ListMcpResources', 'ListMcpResourcesTool',
+  'ReadMcpResource', 'ReadMcpResourceTool',
+  'Config', 'Mcp',
+  // claude-agent-sdk 0.3.x additions (CLI-native multi-agent orchestration)
+  'Workflow', 'REPL',
+];
+
+/**
+ * Tools the CLI emits as tool_use but Nimbalyst services handle as a side effect
+ * inside this provider (see the `tool_use` switch). Their tool_result from the CLI
+ * is informational only -- routing them through `this.toolHandler` would throw
+ * "Unknown tool", so we treat them like SDK_NATIVE_TOOLS for the warn/route check.
+ */
+export const NIMBALYST_HANDLED_TOOLS: readonly string[] = [
+  'ScheduleWakeup',
+];

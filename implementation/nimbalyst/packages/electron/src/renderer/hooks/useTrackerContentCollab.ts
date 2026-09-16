@@ -1,0 +1,489 @@
+/**
+ * useTrackerContentCollab
+ *
+ * Hook that provides collaboration config for a team-synced tracker item's
+ * content editor. For local-only items, returns null (use PGLite path).
+ *
+ * For team-synced items, the hook acquires a shared `DocumentSyncProvider`
+ * from `BodyDocCache` (phase 4a -- see
+ * `design/Collaboration/tracker-sync-redesign.md` D5). Two detail panels
+ * for the same item share one socket and one Y.Doc; close → reopen within
+ * the cache's idle window (5 min) hits a warm provider instead of
+ * paying for a fresh connect.
+ *
+ * PGLite persistence is handled by TrackerItemDetail via onGetContent/onDirtyChange
+ * on the editor config. Bootstrap from PGLite markdown is handled by
+ * TrackerItemDetail's collabEditorConfig via `initialEditorState`.
+ *
+ * Key design choice: the hook does NOT call `syncProvider.connect()` itself
+ * -- CollaborationPlugin drives the connect via `providerFactory`. This is
+ * important because Lexical's binding only observes FUTURE Y.Doc updates;
+ * if the Y.Doc were populated before the binding is created, existing
+ * server content would never render.
+ *
+ * `shouldBootstrap` is always true; Lexical's internal `_xmlText._length === 0`
+ * check is the actual gate (bootstrap only fires when the shared text is
+ * empty). Combined with `deferInitialSync: true` on CollabLexicalProvider,
+ * this ensures the bootstrap decision happens AFTER the server's sync
+ * response is applied, so we never CRDT-merge stale PGLite content into a
+ * room that already has authoritative content from another collaborator.
+ */
+
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { DocumentSyncProvider, DocumentSyncStatus } from '@nimbalyst/runtime/sync';
+import type { CollabLexicalProvider } from '@nimbalyst/runtime/collab-lexical';
+import type { Doc } from 'yjs';
+import type { Provider } from '@lexical/yjs';
+import {
+  $convertFromEnhancedMarkdownString,
+  getEditorTransformers,
+  type CommentsConfig,
+} from '@nimbalyst/runtime/editor';
+import { $getRoot, $setSelection } from 'lexical';
+import { resolveDesktopCollabConfigForUri } from '../utils/collabDocumentOpener';
+import { getBodyDocCache, type BodyDocAcquisition, type BodyDocConfigFactory } from '../services/BodyDocCache';
+import { exportCollabRecoveryPlaintext, getCollabContentAdapter } from '@nimbalyst/collab-adapters';
+import { store } from '@nimbalyst/runtime/store';
+import {
+  collabAwarenessAtom,
+  type RemoteUser,
+} from '../store/atoms/collabEditor';
+import {
+  markCollabDocumentTransportOnly,
+  publishCollabTransportState,
+  setCollabOutboxState,
+} from '../store/listeners/collabStateListeners';
+import { getTeamSyncProviderForScopeKey } from '../store/atoms/collabDocuments';
+import { buildCollabUri } from '@nimbalyst/collab-protocol';
+import { notifyDocumentCommentRecipients } from '../services/documentCommentNotifier';
+import { trackerContentCollabKey } from './trackerContentCollabKey';
+import type { TrackerSharing } from '@nimbalyst/runtime/plugins/TrackerPlugin/models/TrackerDataModel';
+import { teamMemberDisplayName } from '../utils/teamMemberDisplayName';
+
+const TRACKER_CONTENT_TTL_MS = String(90 * 24 * 60 * 60 * 1000);
+
+// Re-exported so existing callers keep their import path; the definition lives
+// in its own module for consumers that must not pull this hook's dep graph.
+export { trackerContentCollabKey } from './trackerContentCollabKey';
+
+interface UseTrackerContentCollabOptions {
+  itemId: string;
+  title?: string;
+  workspacePath?: string;
+  sharing: TrackerSharing;
+  /**
+   * orgId of the team that owns this workspace.
+   * - `undefined`: the parent is still resolving team membership; the hook
+   *   stays in `loading: true` so the UI shows a connecting state instead
+   *   of prematurely mounting the local editor.
+   * - `null`: the workspace has no team. The hook stays dormant -- callers
+   *   should fall back to local PGLite editing.
+   * - `string`: a team exists; collab setup proceeds as normal.
+   */
+  teamOrgId: string | null | undefined;
+  /**
+   * Whether THIS item is published to the team. A draft must NOT
+   * connect to its `tracker-content/<id>` room (that would push its body to the
+   * server). Personal trackers never collaborate. Defaults to published so callers
+   * that don't pass it keep the prior always-collaborative behavior.
+   */
+  itemPublished?: boolean;
+}
+
+interface TrackerContentCollabResult {
+  collaboration: {
+    providerFactory: (id: string, yjsDocMap: Map<string, Doc>) => Provider;
+    shouldBootstrap: boolean;
+    username?: string;
+    cursorColor?: string;
+    /**
+     * Cold-paint seed for Lexical. When the latest `tracker_body_cache`
+     * row is available before the DocumentRoom Y.Doc finishes its initial
+     * sync, the hook provides an `initialEditorState` callback that seeds
+     * the editor with the cached markdown. CollabLexicalProvider's
+     * `deferInitialSync: true` mode keeps the bootstrap decision behind
+     * the server response, so a non-empty room still wins.
+     */
+    initialEditorState?: (() => void) | string;
+  } | null;
+  loading: boolean;
+  status: DocumentSyncStatus;
+  syncProvider: DocumentSyncProvider | null;
+  commentsConfig: CommentsConfig | null;
+  /**
+   * Increments every time a new CollabLexicalProvider is created. Callers
+   * should include this in the React key of the editor tree that hosts
+   * `<CollaborationPlugin>`, so a stale plugin (with its `isProviderInitialized`
+   * ref still `true` from a previous provider) is fully unmounted and the new
+   * provider's sync listener actually gets registered.
+   */
+  providerEpoch: number;
+  /**
+   * The body markdown read from `tracker_body_cache` for the current
+   * `body_version`. Exposed so the caller can drive a defensive
+   * cold-paint fallback when `initialEditorState` was wired but
+   * Lexical's binding declined to bootstrap (e.g. `_xmlText._length`
+   * counted as non-zero because the binding wrote a root element
+   * before sync delivered actual content). The caller may apply this
+   * markdown via `editor.update()` after the WS reaches `connected`
+   * and the editor is still visually empty. `null` means either no
+   * cache row exists OR the fetch has not yet resolved.
+   */
+  bodyCacheMarkdown: string | null;
+}
+
+function randomCursorColor(): string {
+  const colors = [
+    '#E05555', '#2BA89A', '#3A8FD6', '#D97706',
+    '#9B59B6', '#E06B8F', '#3B82F6', '#16A34A',
+  ];
+  return colors[Math.floor(Math.random() * colors.length)];
+}
+
+export function useTrackerContentCollab({
+  itemId,
+  title,
+  workspacePath,
+  sharing,
+  teamOrgId,
+  itemPublished = true,
+}: UseTrackerContentCollabOptions): TrackerContentCollabResult {
+  const isTeamSynced = sharing === 'team';
+  const perItemShareSatisfied = itemPublished;
+  // Collab is only attempted for team-synced trackers in workspaces that
+  // actually have a team. Without a team there is nothing to collaborate
+  // with, so we skip the document-sync IPC entirely.
+  const isCollabActive = isTeamSynced && typeof teamOrgId === 'string' && perItemShareSatisfied;
+  // Pending: team-synced but the parent hasn't resolved the team yet.
+  // Stay in `loading: true` so the UI shows a connecting state instead of
+  // prematurely flipping to the local editor.
+  const isCollabPending = isTeamSynced && teamOrgId === undefined && perItemShareSatisfied;
+  const [loading, setLoading] = useState(isCollabActive || isCollabPending);
+  const [status, setStatus] = useState<DocumentSyncStatus>('disconnected');
+  const [providerEpoch, setProviderEpoch] = useState(0);
+  const [bodyCacheMarkdown, setBodyCacheMarkdown] = useState<string | null>(null);
+  const [allowBootstrap, setAllowBootstrap] = useState(false);
+  const syncProviderRef = useRef<DocumentSyncProvider | null>(null);
+  const collabProviderRef = useRef<CollabLexicalProvider | null>(null);
+  const acquisitionConfigRef = useRef<BodyDocAcquisition['config'] | null>(null);
+  const cursorColor = useMemo(() => randomCursorColor(), []);
+  const titleRef = useRef(title);
+  titleRef.current = title;
+
+  // Caller-stable username for awareness. Captured from the resolved
+  // collab config on the first successful acquire; future re-acquires
+  // (same item, same window) reuse it.
+  const userNameRef = useRef<string>('Anonymous');
+  const collabStateKey = useMemo(() => trackerContentCollabKey(itemId), [itemId]);
+
+  // Acquire a shared DocumentSyncProvider from BodyDocCache. The cache
+  // owns construction + lifecycle; we hand it a factory that materialises
+  // a DocumentSyncConfig the first time the cache needs one for `itemId`.
+  // On unmount we release; the cache holds the provider warm for 5 min
+  // so close → reopen hits the warm socket.
+  useEffect(() => {
+    if (isCollabPending) {
+      markCollabDocumentTransportOnly(collabStateKey);
+      publishCollabTransportState(collabStateKey, 'connecting');
+      setLoading(true);
+      return;
+    }
+    if (!isCollabActive || !workspacePath) {
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    let acquisition: BodyDocAcquisition | null = null;
+    // Clear any stale paint from a prior itemId. A fresh fetch sets it
+    // below; missing-cache items (new, never-saved) stay null and fall
+    // through to the caller's mdContent fallback.
+    setBodyCacheMarkdown(null);
+    setAllowBootstrap(false);
+
+    // Phase 4b cold-paint: fetch the latest `tracker_body_cache` row in
+    // parallel with the Y.Doc connect. When present, the editor seeds
+    // with this markdown immediately instead of waiting on the
+    // WebSocket. `deferInitialSync: true` on CollabLexicalProvider keeps
+    // the bootstrap decision behind the server's initial sync response,
+    // so a non-empty room still wins; the cache row is just an
+    // optimistic paint with the *correct* body version.
+    // Team creations that carry a receipt (`pending` or `published`) are seeded
+    // by the acknowledged main-process publisher. Replaying their local cache
+    // could publish private asset paths or resurrect a body deliberately cleared
+    // after creation. A `local` receipt (personal item) and a receipt lookup
+    // that fails keep the pre-receipt cold-paint path, so an older item never
+    // loses its paint to a new check. Both requests run in parallel: the
+    // receipt read must not add a round trip in front of every item open.
+    const bodyCacheFetch: Promise<{ markdown: string | null; bootstrap: boolean }> = (async () => {
+      const [receipt, result] = await Promise.all([
+        window.electronAPI.documentService.getTrackerCreationStatus({ workspacePath, itemId }).catch((err) => {
+          console.warn('[useTrackerContentCollab] creation receipt lookup failed:', err);
+          return null;
+        }),
+        window.electronAPI.documentService.getTrackerBodyCacheForDetail({ itemId }).catch((err) => {
+          console.warn('[useTrackerContentCollab] body cache fetch failed:', err);
+          return null;
+        }),
+      ]);
+      const bootstrap = !receipt || receipt.status === 'local';
+      if (!bootstrap || !result?.success || !result.row) return { markdown: null, bootstrap };
+      const raw = result.row.content;
+      if (raw == null) return { markdown: null, bootstrap };
+      return { markdown: typeof raw === 'string' ? raw : (raw?.markdown ?? null), bootstrap };
+    })();
+
+    const factory: BodyDocConfigFactory = async (id) => {
+      const documentId = `tracker-content/${id}`;
+      const uri = `collab://tracker-content/${id}`;
+      const config = await resolveDesktopCollabConfigForUri(
+        workspacePath,
+        uri,
+        documentId,
+        `Tracker ${id}`,
+      );
+      if (!config) {
+        console.warn('[useTrackerContentCollab] Failed to resolve collab config for:', id);
+        return null;
+      }
+      // Capture the resolved username so a later re-acquire (warm cache,
+      // no factory call) still has the right display name. The cache is
+      // per-window; the same user owns every entry, so caching once is
+      // safe.
+      userNameRef.current = config.userName || config.userEmail || 'Anonymous';
+      return {
+        serverUrl: config.serverUrl,
+        getJwt: config.getJwt,
+        orgId: config.orgId,
+        teamMemberId: config.teamMemberId,
+        userName: config.userName,
+        userEmail: config.userEmail,
+        documentId: config.documentId,
+        // Stamped so an out-of-band write (an agent body replacement routed in
+        // from the main process) can tell this entry apart from a same-named
+        // item in another project open in the same window.
+        workspacePath,
+        createWebSocket: config.createWebSocket,
+        onContentChanged: (yDoc) => {
+          const adapter = getCollabContentAdapter('markdown');
+          if (!adapter) return;
+          try {
+            const plaintext = exportCollabRecoveryPlaintext(adapter, yDoc);
+            if (plaintext === null) return;
+            void window.electronAPI.collabBackup.contentChanged({
+              workspacePath,
+              documentId,
+              documentType: 'markdown',
+              title: titleRef.current || id,
+              plaintext,
+              kind: 'body',
+            });
+          } catch (error) {
+            console.warn('[useTrackerContentCollab] Backup serialization failed:', error);
+          }
+        },
+      };
+    };
+
+    setLoading(true);
+    const cache = getBodyDocCache();
+    markCollabDocumentTransportOnly(collabStateKey);
+    cache.acquire(itemId, factory, {
+      onStatusChange: (newStatus) => {
+        if (cancelled) return;
+        setStatus(newStatus);
+        publishCollabTransportState(collabStateKey, newStatus);
+        if (newStatus === 'offline-unsynced') {
+          setCollabOutboxState(collabStateKey, 'pending');
+        } else if (newStatus === 'replaying') {
+          setCollabOutboxState(collabStateKey, 'replaying');
+        } else if (newStatus === 'connected') {
+          setCollabOutboxState(collabStateKey, 'clean');
+        }
+        collabProviderRef.current?.handleStatusChange(newStatus);
+        if (newStatus === 'connected') {
+          // Setting room metadata is idempotent on the server; do it on
+          // every connect so a re-warmed provider re-asserts the TTL.
+          acquisition?.syncProvider.setRoomMetadata({ ttl_ms: TRACKER_CONTENT_TTL_MS });
+        }
+      },
+      onRemoteUpdate: (origin) => {
+        if (cancelled) return;
+        collabProviderRef.current?.handleRemoteUpdate(origin);
+      },
+      onAwarenessChange: (states) => {
+        if (cancelled) return;
+        const users = new Map<string, RemoteUser>();
+        for (const [userId, state] of states) {
+          users.set(userId, {
+            name: state.user.name,
+            color: state.user.color,
+          });
+        }
+        store.set(collabAwarenessAtom(collabStateKey), users);
+      },
+    }).then(async (acq) => {
+      if (cancelled) {
+        acq?.release();
+        return;
+      }
+      if (!acq) {
+        setLoading(false);
+        return;
+      }
+      // Resolve the body-cache fetch first so the cached markdown is in
+      // state before we bump providerEpoch -- the `collaboration` memo
+      // reads bodyCacheMarkdown at the same providerEpoch bump that
+      // triggers the editor mount. Doing it after the acquire keeps the
+      // releases ordered correctly on cancellation; the two requests ran
+      // in parallel so this `await` is usually already settled.
+      const cached = await bodyCacheFetch;
+      if (cancelled) {
+        acq.release();
+        return;
+      }
+      setBodyCacheMarkdown(cached.markdown);
+      setAllowBootstrap(cached.bootstrap);
+      acquisition = acq;
+      syncProviderRef.current = acq.syncProvider;
+      acquisitionConfigRef.current = acq.config;
+      userNameRef.current = acq.config.userName || acq.config.userEmail || acq.config.teamMemberId;
+      // `deferInitialSync` suppresses the immediate `sync(true)` that
+      // CollabLexicalProvider normally fires on listener registration.
+      // Instead, sync(true) fires only when the DocumentSyncProvider reaches
+      // 'connected' status (i.e., after the server's initial sync response
+      // has been applied). By that time Lexical's Y.Doc observer has
+      // already rendered any existing server content, so the bootstrap
+      // check (`_xmlText._length === 0`) correctly skips bootstrap on a
+      // non-empty room instead of CRDT-merging stale PGLite content.
+      collabProviderRef.current = acq.makeCollabProvider({ deferInitialSync: true });
+      // Bump the epoch so the editor host can force-remount CollaborationPlugin.
+      // CollaborationPlugin guards its one-time provider initialization with an
+      // `isProviderInitialized` ref, so a stale plugin instance held across HMR
+      // or React reconciliation would otherwise keep using the destroyed
+      // provider and never register its sync listener on the new one.
+      setProviderEpoch((e) => e + 1);
+      setLoading(false);
+    }).catch((err) => {
+      if (cancelled) return;
+      console.error('[useTrackerContentCollab] cache.acquire failed:', err);
+      setLoading(false);
+    });
+
+    return () => {
+      cancelled = true;
+      acquisition?.release();
+      acquisition = null;
+      syncProviderRef.current = null;
+      acquisitionConfigRef.current = null;
+      collabProviderRef.current?.destroy();
+      collabProviderRef.current = null;
+      setStatus('disconnected');
+    };
+  }, [itemId, workspacePath, isCollabActive, isCollabPending, collabStateKey]);
+
+  const collaboration = useMemo(() => {
+    if (!collabProviderRef.current || providerEpoch === 0) return null;
+
+    const provider = collabProviderRef.current;
+    const cachedMarkdown = bodyCacheMarkdown;
+
+    return {
+      providerFactory: (id: string, yjsDocMap: Map<string, Doc>): Provider => {
+        // A config-identity change (notably right-panel -> focused document
+        // presentation) can replace CollaborationPlugin's binding while this
+        // adapter and its shared provider stay alive. Each replacement binding
+        // must receive a fresh editorDoc so connect-time replay is observable;
+        // reusing the already-populated claimed doc paints a blank editor.
+        provider.prepareForBinding();
+        yjsDocMap.set(id, provider.getYDoc());
+        return provider;
+      },
+      // Older items retain their cold-paint path; receipt-backed creations
+      // render the authoritative room and never replay the initial snapshot.
+      shouldBootstrap: allowBootstrap,
+      username: userNameRef.current,
+      cursorColor,
+      initialEditorState: cachedMarkdown
+        ? () => {
+            // Clearing a selected node without moving selection first makes
+            // Lexical throw "selection has been lost ..." (NIM-2005).
+            $setSelection(null);
+            const root = $getRoot();
+            root.clear();
+            $convertFromEnhancedMarkdownString(cachedMarkdown, getEditorTransformers());
+          }
+        : undefined,
+    };
+  }, [cursorColor, providerEpoch, bodyCacheMarkdown, allowBootstrap]);
+
+  const commentsConfig = useMemo<CommentsConfig | null>(() => {
+    const config = acquisitionConfigRef.current;
+    if (!config || providerEpoch === 0 || !workspacePath) return null;
+
+    const currentUser = {
+      id: config.teamMemberId,
+      name: config.userName || config.userEmail || config.teamMemberId,
+    };
+    const documentUri = buildCollabUri(config.orgId, config.documentId);
+    return {
+      getYDoc: () => syncProviderRef.current?.getYDoc() ?? null,
+      getCapabilities: () => ({ read: true, comment: true }),
+      isHydrated: () => syncProviderRef.current?.isSynced() ?? false,
+      currentUser,
+      getMembers: () => {
+        const teamProvider = getTeamSyncProviderForScopeKey(workspacePath);
+        return (teamProvider?.getTeamState()?.members ?? [])
+          .filter((member) => member.userId !== currentUser.id)
+          .map((member) => ({
+            userId: member.userId,
+            name: teamMemberDisplayName(member),
+            email: member.email,
+            personalOrgId: member.personalOrgId,
+          }));
+      },
+      documentTitle: title || config.documentId,
+      documentId: config.documentId,
+      documentUri,
+      onMention: (recipientUserIds, payload) => {
+        notifyDocumentCommentRecipients({
+          workspacePath,
+          documentId: config.documentId,
+          reason: 'mention',
+          recipientUserIds,
+          payload,
+        });
+      },
+      onReply: (recipientUserIds, payload) => {
+        notifyDocumentCommentRecipients({
+          workspacePath,
+          documentId: config.documentId,
+          reason: 'reply',
+          recipientUserIds,
+          payload,
+        });
+      },
+    };
+  }, [providerEpoch, title, workspacePath]);
+
+  // Local-only tracker, or team-synced tracker in a workspace with no team.
+  // Either way: no collab, parent should render the local PGLite editor.
+  if (!isCollabActive && !isCollabPending) {
+    return {
+      collaboration: null, loading: false, status: 'disconnected',
+      syncProvider: null, commentsConfig: null,
+      providerEpoch: 0,
+      bodyCacheMarkdown: null,
+    };
+  }
+
+  return {
+    collaboration,
+    loading,
+    status,
+    syncProvider: syncProviderRef.current,
+    commentsConfig,
+    providerEpoch,
+    bodyCacheMarkdown,
+  };
+}

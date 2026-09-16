@@ -22,8 +22,8 @@
     },
     {
       "path": ".gitignore",
-      "bytes": 121,
-      "sha256": "8b5aac9f007ff61af20e3aa84fec3fc8020f485aebb0539ad5b1c6e0bdb72dd9",
+      "bytes": 231,
+      "sha256": "a409cef4691e84f920dbc980a9aeccee66a7e7d1d2ddd5635addd52f61b67fae",
       "origin": {
         "kind": "publication_adaptation",
         "source_sha256": "d6439973d8a506f44142877efa1b34b8f7d904803a04bf61a03ab338883a8e2c",
@@ -34,8 +34,8 @@
     },
     {
       "path": "AGENTS.md",
-      "bytes": 9124,
-      "sha256": "8a240ebaf2b2cd160d86362dc662a712b2dd5adc80e10e965de13a63b5ad19c0",
+      "bytes": 9270,
+      "sha256": "63936f4e1ce864d0c5f8b0fcda28a786312dbe84b5b55c0abcd96561f51b39da",
       "origin": {
         "kind": "copied_from_development_kit",
         "source_sha256": "8a240ebaf2b2cd160d86362dc662a712b2dd5adc80e10e965de13a63b5ad19c0",
@@ -194,8 +194,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 6354,
-      "sha256": "7f84c120eba5025595f103255d0423a5a7e254fa5b0a7897181650611bb968a3",
+      "bytes": 7075,
+      "sha256": "41e88242a876c9b317f9a5e5d77387e19e946c03aa9633d8462ca3d54a10c036",
       "origin": {
         "kind": "publication_adaptation",
         "source_sha256": "58b7531abe5795affee8cd6cf3fc3b8f40eb6f40011c177879626b6c9a851ccd",
@@ -1721,5 +1721,6 @@
         }
       }
     }
-  ]
+  ],
+  "updatedAt": "2026-09-16"
 }

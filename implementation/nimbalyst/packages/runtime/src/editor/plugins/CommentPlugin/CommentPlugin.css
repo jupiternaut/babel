@@ -1,0 +1,63 @@
+/* Lexical-document placement for the shared comments UI.
+   Everything that draws a thread, a comment, or the composer now lives in
+   `commenting/ui/comments.css`; only the bits that know about the editor pane
+   belong here. */
+
+/* --- Reserve space for the docked panel ------------------------------------ */
+/* The toggle/panel portal into `.editor-container` (the editor pane). When the
+   panel is open, push the scrollable content left so text isn't hidden.
+
+   The panel's width and the space reserved for it are one number, so they read
+   it from one place. `--nim-comments-panel-width` is unset on every host that
+   doesn't resize the panel, which is all of desktop, and both rules fall back
+   to the 320px the panel has always been. A host that wants a draggable split
+   (the web console) sets the property on any ancestor of the editor pane and
+   both sides move together. */
+.editor-container.comments-panel-open .editor-scroller {
+  padding-right: calc(var(--nim-comments-panel-width, 320px) + 16px);
+}
+
+/* --- Panel docked to the right of the editor pane -------------------------- */
+.nim-comments-panel--docked {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: var(--nim-comments-panel-width, 320px);
+  height: auto;
+  border-left: 1px solid var(--nim-border);
+  box-shadow: -4px 0 16px rgb(0 0 0 / 18%);
+  z-index: 10;
+}
+
+/* --- Panel toggle ---------------------------------------------------------- */
+.nim-comments-toggle {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  color: var(--nim-text-muted);
+  background: var(--nim-bg-secondary);
+  border: 1px solid var(--nim-border);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 15%);
+  cursor: pointer;
+  z-index: 55;
+}
+.nim-comments-toggle:hover,
+.nim-comments-toggle.active {
+  color: var(--nim-text);
+  background: var(--nim-bg-hover);
+}
+.nim-comments-toggle .material-symbols-outlined {
+  font-size: 18px;
+}
+.nim-comments-toggle-count {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+}

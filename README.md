@@ -1,8 +1,15 @@
 # 巴别塔 BABEL · Nimbalyst 开发规范
 
-本仓库汇集当前开发 SPEC、Trackers 源码映射、设计参考、终端与 Hooks 契约和 Agent 工作规则。文档来自本地独立开发包；此次发布不包含正在开发的源码、依赖、凭据或运行数据。
+本仓库包含巴别塔开发 SPEC、Trackers 映射与 Nimbalyst 改造源码。新增执行视图、TUI、CLI 和 Hooks 共用领域服务，保留原生 Trackers。依赖、凭据与运行 profile 不入库。
 
-更新日期：2026-09-14，规格 v2.3。当前状态：**规格与设计准备，应用改造尚未实施**。第一阶段是无需 API Key、共用核心的 Nimbalyst GUI + 交互 TUI + JSON CLI + 应用 Hooks 原型 M0。旧版完整保留在 [v2.2 存档](reference/v2.2/README.md)。
+更新日期：2026-09-16，规格 v2.3。当前状态：**原生 M0 候选实现，部分闭环已验收；完整产品与全仓库发布门禁未通过**。第一阶段是无需 API Key、共用核心的 Nimbalyst GUI + 交互 TUI + JSON CLI + 应用 Hooks 原型 M0。旧版完整保留在 [v2.2 存档](reference/v2.2/README.md)。
+
+## 当前实现与验收
+
+- [源码](implementation/nimbalyst/)：上游 MIT 基线及本地改造；仅 Windows 实测。
+- [启动说明](implementation/START.md)：独立 profile、原生 Electron、TUI 与 CLI。
+- [验收记录与截图](implementation/ACCEPTANCE.md)：225 项 Babel 测试、60 项宿主定向测试、26 个工作区类型检查和 2 项真实窗口 E2E 通过。
+- **全仓库仍有 206 项测试失败**；候选分支不得以局部通过替代正式发布门禁。真实 Pi、SSH、Google 同步与 PDF 等仍未接入。
 
 ## 从这里开始
 
@@ -31,7 +38,7 @@
 
 新增功能先定义公共命令/查询/事件，再接三端；关闭桌面窗口后 TUI/CLI 仍可使用独立非图形服务。Hooks 提供校验与观测，模型通过命令、相关事件、查询和断言测试；Hook收到“完成”不等于验收通过。GUI内共用provider的要求不误用为跨进程共用JS对象。
 
-[系统规格](NIMBALYST-SYSTEM-SPEC.md)保留整体背景；[SOURCE-MAP](SOURCE-MAP.md)和[源码证据 JSON](design/nimbalyst-source-evidence.json)记录既有源码研究。源码基线是 `d6e1d008d9ee264a7447f3533fa9f48f158a70b0`，实施前必须重新核对检出的 HEAD。源码本身未复制到开发包。
+[系统规格](NIMBALYST-SYSTEM-SPEC.md)保留整体背景；[SOURCE-MAP](SOURCE-MAP.md)和[源码证据 JSON](design/nimbalyst-source-evidence.json)记录既有源码研究。源码基线是 `d6e1d008d9ee264a7447f3533fa9f48f158a70b0`，实施前必须重新核对检出的 HEAD。当前候选源码已纳入 implementation/nimbalyst，来源见 implementation/SOURCE-BASELINE.json。
 
 下列内容为历史或需求参考，不能重新启用其中已被替代的底座：
 
@@ -40,7 +47,7 @@
 - [PDF 与运维早期子规格](reference/v1/PDF-AND-OPS.md)：可借鉴双语定位、批注、旧版引用和健康检查需求；其 Nextcloud/AFFiNE/PostgreSQL 假设必须在 NB-12 实施前逐项重审。
 - [开发提示词入口](NIMBALYST-IMPLEMENTER-PROMPT.md)统一指向当前 `START-HERE-PROMPT.md`；旧提示词仅在 v2.2 快照中保留。
 
-原仓库的旧 `tasks.json`、`TASKS.md` 和 `contracts/` 没有混入此包。新版机器可读合同仍是 **NB-01 的待办**；不能因为已有 Markdown 就假定后端接口已经同步。
+原仓库的旧 `tasks.json`、`TASKS.md` 和 `contracts/` 没有混入此包。当前实现合同见 implementation/nimbalyst/packages/babel；其覆盖与真实验收以 implementation/ACCEPTANCE.md 为准。不能因为接口存在就假定后续真实集成已经完成。
 
 GitHub 发布保留了[旧仓库完整资料快照](reference/pre-v2.3-repository/README.md)，包括最初合同、历史任务及此前未推送的研究资料；根目录 SPEC/TASKS/IMPLEMENTER-PROMPT 已改为当前入口，旧合同不再放在根目录直接供实施使用。v2.2 开发包另保存在 reference/v2.2。历史快照中的状态只反映对应时点。
 

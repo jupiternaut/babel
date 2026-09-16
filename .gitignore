@@ -7,7 +7,13 @@ __pycache__/
 *.pyc
 .venv/
 node_modules/
-implementation/
 .DS_Store
 Thumbs.db
 *.log
+
+# Runtime state is never source
+**/service.token
+**/demo-profile/
+**/electron-profile/
+**/test-results/
+**/playwright-report/

@@ -1,0 +1,1549 @@
+import Store from '../../utils/privateSettingsStore';
+export { handleAskUserQuestion } from './askUserQuestionHandler';
+import { BrowserWindow, ipcMain } from "electron";
+import {
+  AgentMessagesRepository,
+  AISessionsRepository,
+} from "@nimbalyst/runtime";
+import { STRUCTURED_INPUT_FIELD_TYPES } from "@nimbalyst/collab-protocol";
+import { getSessionStateManager } from "@nimbalyst/runtime/ai/server/SessionStateManager";
+import { notificationService } from "../../services/NotificationService";
+import { findWindowIdForWorkspacePath } from "../mcpWorkspaceResolver";
+import { setSessionPendingPrompt } from "../../services/ai/pendingPromptPersistence";
+import { getGitSubprocessEnv } from "../../services/gitEnv";
+import {
+  resolveRequestUserInputPromptTargets,
+  resolveToolUseIdFromMcpRequest,
+} from "./codexToolCallResolver";
+import {
+  isClaudeCliSession,
+  persistInteractivePromptToolUse,
+  persistInteractivePromptToolResult,
+} from "./interactivePromptTranscript";
+import { applyInteractivePromptSettleTurnState } from "./interactivePromptSettleState";
+import { markToolResultPersisted } from "../../services/ai/claudeCliToolResultSeen";
+import {
+  resolveClaudeCliToolPermission,
+  normalizeToolPermissionAnswer,
+  parseToolPermissionResponseRecord,
+  type ToolPermissionAnswer,
+} from "../../services/ai/claudeCliToolPermission";
+import {
+  isPatternApproved,
+  markPatternApproved,
+} from "../../services/ai/claudeCliPermissionCache";
+import { broadcastMessageLogged } from "../../services/ai/claudeCliUserPromptLog";
+import { ClaudeSettingsManager } from "../../services/ClaudeSettingsManager";
+import { getPermissionService } from "../../services/PermissionService";
+import { SessionCommitService } from "../../services/SessionCommitService";
+import { scopeProposalToRepo } from "../../services/workspaceRepos";
+import { findFreshInteractiveResponse } from "./interactiveResponsePolling";
+import {
+  clearPendingInteractiveWaiter,
+  countPendingInteractiveWaiters,
+  notePendingInteractiveWaiter,
+  shouldSettleFromSessionFallback,
+} from "./interactivePromptFallback";
+import {
+  clearLiveInteractivePrompt,
+  noteLiveInteractivePrompt,
+} from "./interactivePromptLiveness";
+import {
+  attachInteractivePromptCall,
+  type InteractivePromptCallExtra,
+} from "./interactivePromptKeepalive";
+import {
+  shouldTerminalizePrompt,
+  type InteractivePromptSettleReason,
+} from "./interactivePromptAbandonment";
+
+export function getInteractiveToolSchemas(sessionId: string | undefined) {
+  if (!sessionId) return [];
+
+  return [
+    requestUserInputSchema(),
+    {
+      name: "AskUserQuestion",
+      description:
+        "Prompt the user with one or more multiple-choice questions and wait for their response. Use for explicit confirmation or disambiguation.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          questions: {
+            type: "array",
+            minItems: 1,
+            description:
+              "Questions to ask; each should offer 2-3 options.",
+            items: {
+              type: "object",
+              properties: {
+                header: {
+                  type: "string",
+                  description:
+                    "Short label shown above the question (12 chars or fewer)",
+                },
+                question: {
+                  type: "string",
+                  description: "The question to show the user",
+                },
+                options: {
+                  type: "array",
+                  minItems: 2,
+                  items: {
+                    type: "object",
+                    properties: {
+                      label: {
+                        type: "string",
+                        description: "User-facing option label",
+                      },
+                      description: {
+                        type: "string",
+                        description: "Short sentence describing this option",
+                      },
+                    },
+                    required: ["label", "description"],
+                  },
+                },
+                multiSelect: {
+                  type: "boolean",
+                  description:
+                    "Whether multiple options can be selected for this question",
+                },
+              },
+              required: ["header", "question", "options"],
+            },
+          },
+        },
+        required: ["questions"],
+      },
+    },
+    {
+      name: "developer_git_commit_proposal",
+      description: `Propose files and commit message for a git commit; the user reviews and adjusts the proposal in an interactive widget before committing.
+
+IMPORTANT: First call get_session_edited_files, cross-reference with git status, and include ALL session-edited files that have uncommitted changes — do not cherry-pick a subset.
+
+ONE REPOSITORY PER CALL. A commit cannot span repositories. If the files you are committing live in more than one repository (a workspace can have attached folders that are their own checkouts), call this tool once per repository — each call with only that repository's files and a commit message describing that repository's change. A call whose files span repositories is rejected.
+
+Commit message: type prefix (feat:/fix:/refactor:/docs:/test:/chore:), title states the user-visible outcome, focus on impact and why (not technique), lines under 72 chars, no emojis, dash bullets only for multiple distinct changes. If the commit resolves an issue or tracker item, include its canonical closing reference (e.g. Fixes #123, Closes ABC-123), or a neutral reference line if the closing syntax is unclear.`,
+      inputSchema: {
+        type: "object",
+        properties: {
+          filesToStage: {
+            type: "array",
+            items: {
+              oneOf: [
+                { type: "string" },
+                {
+                  type: "object",
+                  properties: {
+                    path: {
+                      type: "string",
+                      description:
+                        "File path, either relative to the workspace root or absolute. Files in an attached folder are supplied to you as absolute paths; pass them back unchanged.",
+                    },
+                    status: {
+                      type: "string",
+                      enum: ["added", "modified", "deleted"],
+                      description: "Git status of the file",
+                    },
+                  },
+                  required: ["path", "status"],
+                },
+              ],
+            },
+            description:
+              "Array of file paths (strings) or file objects with path and status (added/modified/deleted)",
+          },
+          commitMessage: {
+            type: "string",
+            description:
+              "Proposed commit message following the guidelines above",
+          },
+          reasoning: {
+            type: "string",
+            description:
+              "Explanation of why these files were selected and why this commit message is appropriate",
+          },
+        },
+        required: ["filesToStage", "commitMessage", "reasoning"],
+      },
+    },
+  ];
+}
+
+type McpToolResult = {
+  content: Array<{ type: string; text: string }>;
+  isError: boolean;
+};
+
+/** IPC channel the renderer's ToolPermission answer is routed onto (per request). */
+export function getToolPermissionResponseChannel(
+  sessionId: string | undefined,
+  requestId: string,
+): string {
+  return `tool-permission-response:${sessionId || "unknown"}:${requestId}`;
+}
+
+/**
+ * Block until the ToolPermission widget answer arrives over IPC (desktop fast
+ * path). A long max-wait fails CLOSED (deny) so a forgotten prompt can't wedge
+ * the CLI forever. Mobile responses arrive by sync and are persisted as
+ * permission_response rows, so poll the DB as the durable fallback.
+ */
+function waitForToolPermissionAnswer(
+  sessionId: string,
+  requestId: string,
+  signal?: InteractivePromptCallExtra['signal'],
+): Promise<ToolPermissionAnswer> {
+  const channel = getToolPermissionResponseChannel(sessionId, requestId);
+  console.log(
+    `[MCP Server] ToolPermission waiting for response: requestId=${requestId}, sessionId=${sessionId}`,
+  );
+  return new Promise<ToolPermissionAnswer>((resolve) => {
+    let settled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let pollTimer: ReturnType<typeof setInterval> | null = null;
+    let detachCall: (() => void) | null = null;
+
+    const settle = (answer: ToolPermissionAnswer, source: string) => {
+      if (settled) return;
+      settled = true;
+      detachCall?.();
+      if (timer) clearTimeout(timer);
+      if (pollTimer) clearInterval(pollTimer);
+      ipcMain.removeListener(channel, onResponse);
+      console.log(
+        `[MCP Server] ToolPermission settled via ${source}: requestId=${requestId}, decision=${answer.decision}`,
+      );
+      resolve(answer);
+    };
+
+    const onResponse = (_event: unknown, payload: any) => {
+      settle(normalizeToolPermissionAnswer(payload), "ipc");
+    };
+
+    ipcMain.once(channel, onResponse);
+
+    // NIM-2607: when the CLI that asked for this permission goes away, the
+    // request socket closes. Settle the waiter fail-closed rather than leaving
+    // an approval surface up whose "Allow" would answer nobody.
+    detachCall = attachInteractivePromptCall({
+      request: undefined,
+      extra: { signal },
+      toolName: 'ToolPermission',
+      onAbort: () =>
+        settle(
+          { decision: 'deny', scope: 'once', cancelled: true, unansweredReason: 'client-abort' },
+          'client-abort',
+        ),
+    });
+
+    const POLL_INTERVAL = 1000;
+    pollTimer = setInterval(async () => {
+      if (settled) return;
+      try {
+        const messages = await AgentMessagesRepository.list(sessionId, { limit: 50 });
+        for (const msg of messages) {
+          const answer = parseToolPermissionResponseRecord(msg.content, requestId);
+          if (answer) {
+            settle(answer, "db-poll");
+            return;
+          }
+        }
+      } catch {
+        // Database fallback is best-effort; the timeout still fail-closes.
+      }
+    }, POLL_INTERVAL);
+
+    const MAX_WAIT = 10 * 60 * 1000;
+    timer = setTimeout(() => {
+      console.warn(
+        `[MCP Server] ToolPermission timed out (deny): requestId=${requestId}`,
+      );
+      settle(
+        { decision: "deny", scope: "once", cancelled: true, unansweredReason: "timeout" },
+        "timeout",
+      );
+    }, MAX_WAIT);
+  });
+}
+
+/**
+ * NIM-806 Phase 4 (Direction A): render a Nimbalyst ToolPermission widget for a
+ * genuine claude-code-cli tool that needs approval, and return the decision.
+ *
+ * The CLI reaches this via its `PreToolUse` permission hook → Nimbalyst's local
+ * `/permission` endpoint (httpServer) → here. (We originally targeted
+ * `--permission-prompt-tool`, but that flag is silently ignored by the
+ * interactive CLI; the PreToolUse hook is the mechanism that works interactively.)
+ *
+ * We render the real ToolPermission widget inline (synthetic
+ * `nimbalyst_tool_use`/`tool_result` rows — the external CLI never writes to
+ * ai_agent_messages) and return `{behavior:'allow'|'deny'}` in the MCP-result
+ * shape; the endpoint maps that to the hook's permissionDecision. All Electron/IPC
+ * I/O is supplied here; the decision logic lives in the pure, unit-tested
+ * `resolveClaudeCliToolPermission`.
+ */
+export async function handleToolPermission(
+  args: any,
+  sessionId: string | undefined,
+  workspacePath: string | undefined,
+  _request: any,
+  extra?: InteractivePromptCallExtra,
+): Promise<McpToolResult> {
+  if (!sessionId) {
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify({ behavior: "deny", message: "No session for permission request" }),
+        },
+      ],
+      isError: false,
+    };
+  }
+
+  const isCliSession = await isClaudeCliSession(sessionId);
+
+  let sessionTitle = "AI Session";
+  try {
+    const session = await AISessionsRepository.get(sessionId);
+    if (session?.title) sessionTitle = session.title;
+  } catch {
+    // default title
+  }
+
+  return resolveClaudeCliToolPermission(
+    { args, sessionId, workspacePath },
+    {
+      isPatternApproved,
+      markPatternApproved,
+      // Workspace mode (allow-all / bypass-all) auto-approves without a widget,
+      // mirroring the SDK path — the hook bypasses the CLI's own mode handling.
+      getPermissionMode: (wp) => (wp ? getPermissionService().getPermissionMode(wp) : null),
+      // Honor patterns saved via "Always" (and explicit denies) across sessions.
+      getAllowDenyLists: async (wp) => {
+        if (!wp) return { allow: [], deny: [] };
+        try {
+          const eff = await ClaudeSettingsManager.getInstance().getEffectiveSettings(wp);
+          return { allow: eff.permissions.allow ?? [], deny: eff.permissions.deny ?? [] };
+        } catch {
+          return { allow: [], deny: [] };
+        }
+      },
+      makeRequestId: () =>
+        `tool-perm-${sessionId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      persistToolUse: async ({ sessionId: sid, toolUseId, input }) => {
+        await persistInteractivePromptToolUse({
+          sessionId: sid,
+          toolUseId,
+          toolName: "ToolPermission",
+          input,
+        });
+        // The permission-prompt call is the CLI's own mechanism — it is NOT in
+        // the model's streamed tool_use, so the proxy never broadcasts a reload
+        // for it. Broadcast ourselves so the widget renders promptly.
+        broadcastMessageLogged(sid, workspacePath ?? "");
+      },
+      persistToolResult: async ({ sessionId: sid, toolUseId, result, isError }) => {
+        await persistInteractivePromptToolResult({ sessionId: sid, toolUseId, result, isError });
+        broadcastMessageLogged(sid, workspacePath ?? "");
+      },
+      waitForAnswer: ({ sessionId: sid, requestId }) =>
+        waitForToolPermissionAnswer(sid, requestId, extra?.signal),
+      setWaitingStatus: (sid) => {
+        getSessionStateManager()
+          .updateActivity({ sessionId: sid, status: "waiting_for_input" })
+          .catch((err) => {
+            console.error("[MCP Server] Failed to set waiting_for_input for tool permission:", err);
+          });
+      },
+      applySettle: (sid) => {
+        void applyInteractivePromptSettleTurnState({
+          sessionId: sid,
+          isCliSession,
+          stateManager: getSessionStateManager(),
+        }).catch(() => {});
+        // Symmetric with notifyBlocked below.
+        void setSessionPendingPrompt(sid, false);
+      },
+      savePattern: async (wp, pattern) => {
+        await ClaudeSettingsManager.getInstance().addAllowedTool(wp, pattern);
+      },
+      notifyBlocked: ({ sessionId: sid, workspacePath: wp }) => {
+        notificationService.showBlockedNotification(sid, sessionTitle, "permission", wp ?? "");
+        // A permission prompt blocks the session exactly like a question does.
+        // This previously only told the tray, so the sidebar and mobile showed a
+        // CLI session waiting on a permission as merely running -- the mirror of
+        // the AskUserQuestion gap. Persisting also notifies the tray.
+        void setSessionPendingPrompt(sid, true);
+      },
+      log: (m) => console.log(`[MCP Server] ${m}`),
+    },
+  );
+}
+
+/**
+ * Record an approved commit against the session's tracker items.
+ *
+ * A commit the user approved is their sign-off on the work, so when its message
+ * closes linked items ("Fixes NIM-123") the session is complete too. Agents are
+ * barred from writing `done` or `complete` themselves; this is the one path that
+ * has a human's approval behind it, so it writes both rather than leaving
+ * finished work parked in `in-review` / `validating` forever.
+ *
+ * Fire-and-forget: a linking failure must not fail the commit that succeeded.
+ */
+async function linkCommitToTrackerItems(
+  commitHash: string,
+  commitMessage: string,
+  sessionId: string,
+  workspacePath: string
+): Promise<void> {
+  try {
+    const { commitTrackerLinker } = await import(
+      "../../services/CommitTrackerLinker"
+    );
+    const { closedItemIds } = await commitTrackerLinker.linkBySession(
+      commitHash,
+      commitMessage,
+      sessionId,
+      workspacePath
+    );
+    if (closedItemIds.length === 0) return;
+
+    const { SessionNamingService } = await import(
+      "../../services/SessionNamingService"
+    );
+    await SessionNamingService.getInstance().applySessionMetadata(sessionId, {
+      phase: "complete",
+    });
+    console.log(
+      `[MCP Server] Commit ${commitHash.slice(0, 7)} closed ${closedItemIds.length} tracker item(s); session marked complete`
+    );
+  } catch (err) {
+    console.error("[MCP Server] Commit-tracker linking failed:", err);
+  }
+}
+
+export async function handleGitCommitProposal(
+  args: any,
+  sessionId: string | undefined,
+  workspacePath: string | undefined,
+  request: any,
+  extra?: InteractivePromptCallExtra,
+): Promise<McpToolResult> {
+  type FileToStage =
+    | string
+    | { path: string; status: "added" | "modified" | "deleted" };
+
+  const rawProposalArgs = args as
+    | {
+        filesToStage?: FileToStage[] | string;
+        commitMessage?: string;
+        reasoning?: string;
+      }
+    | undefined;
+
+  // The model sometimes sends filesToStage as a JSON-encoded string instead of an array
+  let parsedFilesToStage = rawProposalArgs?.filesToStage;
+  if (typeof parsedFilesToStage === "string") {
+    console.warn(
+      "[MCP Server] developer_git_commit_proposal: filesToStage received as string instead of array, parsing JSON"
+    );
+    try {
+      parsedFilesToStage = JSON.parse(parsedFilesToStage);
+    } catch (e) {
+      console.error(
+        "[MCP Server] developer_git_commit_proposal: Failed to parse filesToStage string as JSON:",
+        e
+      );
+      parsedFilesToStage = undefined;
+    }
+  }
+  if (parsedFilesToStage && !Array.isArray(parsedFilesToStage)) {
+    console.error(
+      "[MCP Server] developer_git_commit_proposal: filesToStage is not an array after parsing, got:",
+      typeof parsedFilesToStage
+    );
+    parsedFilesToStage = undefined;
+  }
+  const proposalArgs = rawProposalArgs
+    ? {
+        ...rawProposalArgs,
+        filesToStage: Array.isArray(parsedFilesToStage)
+          ? parsedFilesToStage
+          : undefined,
+      }
+    : undefined;
+
+  if (!proposalArgs?.filesToStage || !proposalArgs?.commitMessage) {
+    return {
+      content: [{ type: "text", text: "Error: filesToStage and commitMessage are required" }],
+      isError: true,
+    };
+  }
+
+  if (!workspacePath) {
+    return {
+      content: [{ type: "text", text: "Error: workspacePath is required for git commit proposal" }],
+      isError: true,
+    };
+  }
+
+  // One proposal is one commit in one repo. Accepting a list that spans repos
+  // would put N commits behind a single approval, sharing one message, with
+  // only the first hash ever surfaced. Refuse and name the groups so the agent
+  // makes one call per repo -- it corrects within the same turn.
+  const proposalPaths = proposalArgs.filesToStage.map((file) =>
+    typeof file === "string" ? file : file.path
+  );
+  const scope = scopeProposalToRepo(workspacePath, proposalPaths);
+  if (!scope.ok) {
+    const groupList = scope.groups
+      .map((group) => `${group.repoPath}\n${group.files.map((f) => `  - ${f}`).join("\n")}`)
+      .join("\n\n");
+    return {
+      content: [
+        {
+          type: "text",
+          text:
+            `Error: this proposal spans ${scope.groups.length} git repositories. ` +
+            `A commit cannot cross repositories, so call developer_git_commit_proposal ` +
+            `once per repository, each with only that repository's files and a commit ` +
+            `message describing that repository's change.\n\n${groupList}`,
+        },
+      ],
+      isError: true,
+    };
+  }
+  const proposalRepoPath = scope.repoPath ?? undefined;
+
+  // Find the target window (resolves worktree paths to parent project)
+  const commitWindowId = await findWindowIdForWorkspacePath(workspacePath);
+  if (!commitWindowId) {
+    return {
+      content: [{ type: "text", text: `Error: No window found for workspace: ${workspacePath}` }],
+      isError: true,
+    };
+  }
+
+  const commitWindow = BrowserWindow.fromId(commitWindowId);
+  if (!commitWindow || commitWindow.isDestroyed()) {
+    return {
+      content: [{ type: "text", text: "Error: Window no longer exists" }],
+      isError: true,
+    };
+  }
+
+  // Use provider tool-call ID as the proposal ID when available
+  const toolUseId = await resolveToolUseIdFromMcpRequest(
+    request,
+    sessionId,
+    "developer_git_commit_proposal",
+  );
+  const proposalId =
+    toolUseId ||
+    `git-commit-proposal-${Date.now()}-${Math.random()
+      .toString(36)
+      .substring(7)}`;
+
+  const targetSessionId = sessionId || "unknown";
+
+  // Persist the proposal to database for durability
+  try {
+    const now = new Date();
+
+    // Synthesize a nimbalyst_tool_use row so the transcript parser can produce
+    // a tool_call_started canonical event for the widget before the SDK's
+    // own assistant chunk (which carries the same tool_use block) clears
+    // the AgentMessageWriteQueue. The queue holds non-blocking chunk writes
+    // for up to 200ms of idle, and once the SDK pauses here waiting for the
+    // user response no further chunks arrive to drive a flush -- so without
+    // this synthetic write the widget would not appear until the next
+    // explicit `flushPendingWrites()` (turn end, abort, etc.).
+    //
+    // Same shape AskUserQuestion uses. Keyed by the SDK's toolUseId; the
+    // parser's existing cross-batch dedup (findByProviderToolCallId) keeps
+    // the later SDK chunk from creating a duplicate canonical event.
+    if (toolUseId) {
+      try {
+        await AgentMessagesRepository.create({
+          sessionId: targetSessionId,
+          source: "claude-code",
+          direction: "output",
+          content: JSON.stringify({
+            type: "nimbalyst_tool_use",
+            id: toolUseId,
+            name: "developer_git_commit_proposal",
+            input: {
+              filesToStage: proposalArgs.filesToStage,
+              commitMessage: proposalArgs.commitMessage,
+              reasoning: proposalArgs.reasoning,
+              // Resolved here, not sent by the model. The widget reads the tool
+              // input, so this is the only place it can reach it.
+              repoPath: proposalRepoPath,
+            },
+          }),
+          hidden: false,
+          createdAt: now,
+        });
+      } catch (err) {
+        console.warn(
+          "[MCP Server] Failed to persist synthetic developer_git_commit_proposal tool_use:",
+          err
+        );
+      }
+    }
+
+    await AgentMessagesRepository.create({
+      sessionId: targetSessionId,
+      source: "mcp",
+      direction: "output",
+      content: JSON.stringify({
+        type: "git_commit_proposal",
+        proposalId,
+        toolUseId,
+        filesToStage: proposalArgs.filesToStage,
+        commitMessage: proposalArgs.commitMessage,
+        reasoning: proposalArgs.reasoning,
+        workspacePath,
+        // The repo this proposal commits into, resolved from the files. The
+        // widget names it and renders paths relative to it -- an attached
+        // folder's absolute path would otherwise render as a tree from `/`.
+        repoPath: proposalRepoPath,
+        timestamp: now.getTime(),
+        status: "pending",
+      }),
+      hidden: false,
+      createdAt: now,
+    });
+    // console.log(
+    //   `[MCP Server] Persisted git commit proposal: ${proposalId}, notifying renderer for session: ${targetSessionId}`
+    // );
+    if (commitWindow) {
+      // Include proposal data in the IPC so renderer-side consumers (the
+      // GitCommit widget AND the voice forwarding path) can display the
+      // commit message and act on the file list without needing a separate
+      // round-trip to load the persisted proposal from the database.
+      commitWindow.webContents.send("ai:gitCommitProposal", {
+        sessionId: targetSessionId,
+        proposalId,
+        commitMessage: proposalArgs.commitMessage,
+        filesToStage: proposalArgs.filesToStage,
+        workspacePath,
+      });
+    } else {
+      console.warn("[MCP Server] No commitWindow found to send IPC event");
+    }
+
+    // Persist pending-prompt bit + push to mobile (this also notifies the tray)
+    void setSessionPendingPrompt(targetSessionId, true);
+  } catch (error) {
+    console.error("[MCP Server] Failed to persist git commit proposal:", error);
+    // Continue anyway - worst case is no durability
+  }
+
+  // Check if auto-commit is enabled
+  let isAutoCommit = false;
+  try {
+    const aiSettingsStore = new Store({ name: "ai-settings" });
+    isAutoCommit = aiSettingsStore.get("autoCommitEnabled", false) as boolean;
+  } catch {
+    // If we can't read settings, fall through to manual mode
+  }
+
+  if (isAutoCommit) {
+    console.log(
+      `[MCP Server] Auto-commit enabled, executing commit directly for proposal: ${proposalId}`
+    );
+
+    const getFilePath = (f: FileToStage) =>
+      typeof f === "string" ? f : f.path;
+    const filePaths = proposalArgs.filesToStage!.map(getFilePath);
+    const commitMessage = proposalArgs.commitMessage!;
+
+    const {
+      createGitCommitProposalResponse,
+      executeGitCommitAcrossRepos,
+    } = await import("../../services/GitCommitService");
+
+    let commitResult: {
+      success: boolean;
+      commitHash?: string;
+      commitDate?: string;
+      error?: string;
+    };
+    try {
+      commitResult = await executeGitCommitAcrossRepos(
+        workspacePath,
+        commitMessage,
+        filePaths,
+        { logContext: "[git:auto-commit]", env: getGitSubprocessEnv() }
+      );
+    } catch (error) {
+      console.error("[MCP Server] Auto-commit failed:", error);
+      commitResult = {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+
+    const response = createGitCommitProposalResponse(
+      commitResult,
+      filePaths,
+      commitMessage
+    );
+
+    // Persist the response to DB
+    const { database } = await import(
+      "../../database/PGLiteDatabaseWorker"
+    );
+    const timestamp = Date.now();
+    const responseContent = {
+      type: "git_commit_proposal_response",
+      proposalId,
+      ...response,
+      respondedAt: timestamp,
+      respondedBy: "auto_commit",
+    };
+    await database.query(
+      `INSERT INTO ai_agent_messages (session_id, source, direction, content, created_at, hidden)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [
+        targetSessionId,
+        "nimbalyst",
+        "output",
+        JSON.stringify(responseContent),
+        new Date(timestamp),
+        false,
+      ]
+    );
+
+    // Notify renderer to clear the pending interactive prompt indicator
+    if (commitWindow && !commitWindow.isDestroyed()) {
+      commitWindow.webContents.send("ai:gitCommitProposalResolved", {
+        sessionId: targetSessionId,
+        proposalId,
+        workspacePath,
+      });
+      commitWindow.webContents.send("mcp:gitCommitProposal", {
+        proposalId,
+        workspacePath,
+        sessionId: targetSessionId,
+        filesToStage: proposalArgs.filesToStage,
+        commitMessage: proposalArgs.commitMessage,
+        reasoning: proposalArgs.reasoning,
+      });
+    }
+    // Persist resolved state + push to mobile
+    void setSessionPendingPrompt(targetSessionId, false);
+
+    if (commitResult.success) {
+      console.log(
+        `[MCP Server] Auto-commit completed: ${commitResult.commitHash}`
+      );
+    } else {
+      console.warn(
+        `[MCP Server] Auto-commit did not commit: ${commitResult.error || "unknown error"}`
+      );
+    }
+
+    if (response.action === "committed" && response.commitHash) {
+      // Record the sha -> session link so the Git Log panel can show provenance
+      void SessionCommitService.getInstance().recordCommit({
+        commitSha: response.commitHash,
+        sessionId: targetSessionId,
+        workspaceId: workspacePath,
+      });
+
+      // Link commit to tracker items via session (fire-and-forget)
+      void linkCommitToTrackerItems(
+        response.commitHash,
+        commitMessage,
+        targetSessionId,
+        workspacePath,
+      );
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `Auto-committed ${filePaths.length} file(s).\nCommit hash: ${
+              response.commitHash
+            }${
+              response.commitDate
+                ? `\nCommit date: ${response.commitDate}`
+                : ""
+            }\nCommit message: ${commitMessage}`,
+          },
+        ],
+        isError: false,
+      };
+    }
+
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: `Auto-commit failed: ${
+            response.error || "No changes were committed"
+          }`,
+        },
+      ],
+      isError: true,
+    };
+  }
+
+  // Show OS notification if app is backgrounded
+  let sessionTitle = "AI Session";
+  try {
+    const session = await AISessionsRepository.get(targetSessionId);
+    if (session?.title) {
+      sessionTitle = session.title;
+    }
+  } catch {
+    // Ignore - use default title
+  }
+  notificationService.showBlockedNotification(
+    targetSessionId,
+    sessionTitle,
+    "git_commit",
+    workspacePath
+  );
+
+  // Wait for user confirmation with DB polling fallback.
+  // The IPC listener is the fast path; DB polling catches responses when the
+  // transport drops (the bug that caused this tool to hang indefinitely).
+  // NIM-2208: see handleAskUserQuestion — paired with the clear in settle below.
+  if (targetSessionId) noteLiveInteractivePrompt(targetSessionId);
+
+  return new Promise((resolve) => {
+    const getFilePath = (f: FileToStage) =>
+      typeof f === "string" ? f : f.path;
+
+    let settled = false;
+    let pollTimer: ReturnType<typeof setInterval> | null = null;
+    let detachCall: (() => void) | null = null;
+
+    type CommitResult = {
+      action: "committed" | "cancelled" | "error";
+      commitHash?: string;
+      commitDate?: string;
+      error?: string;
+      filesCommitted?: string[];
+      commitMessage?: string;
+    };
+
+    const settle = (result: CommitResult, source: string) => {
+      if (settled) return;
+      settled = true;
+      detachCall?.();
+      if (targetSessionId) clearLiveInteractivePrompt(targetSessionId);
+
+      console.log(
+        `[MCP Server] Git commit proposal settled via ${source}: action=${result.action}, hash=${result.commitHash || "none"}`
+      );
+
+      if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
+      ipcMain.removeListener(responseChannel, onResponse);
+
+      if (result.action === "committed" && result.commitHash) {
+        if (targetSessionId && targetSessionId !== "unknown") {
+          // Record the sha -> session link for the Git Log panel
+          void SessionCommitService.getInstance().recordCommit({
+            commitSha: result.commitHash,
+            sessionId: targetSessionId,
+            workspaceId: workspacePath,
+          });
+
+          // Link commit to tracker items via session (fire-and-forget)
+          void linkCommitToTrackerItems(
+            result.commitHash,
+            result.commitMessage || proposalArgs.commitMessage || "",
+            targetSessionId,
+            workspacePath,
+          );
+        }
+
+        const filesCount =
+          result.filesCommitted?.length ||
+          proposalArgs.filesToStage!.map(getFilePath).length;
+        resolve({
+          content: [
+            {
+              type: "text",
+              text: `User confirmed and committed ${filesCount} file(s).\nCommit hash: ${
+                result.commitHash
+              }${
+                result.commitDate
+                  ? `\nCommit date: ${result.commitDate}`
+                  : ""
+              }\nCommit message: ${
+                result.commitMessage || proposalArgs.commitMessage
+              }`,
+            },
+          ],
+          isError: false,
+        });
+      } else if (result.action === "committed" && !result.commitHash) {
+        resolve({
+          content: [
+            {
+              type: "text",
+              text: `Commit failed: No commit hash returned. The files may not have been staged correctly.`,
+            },
+          ],
+          isError: true,
+        });
+      } else {
+        resolve({
+          content: [
+            {
+              type: "text",
+              text: result.error
+                ? `Commit failed: ${result.error}`
+                : "User cancelled the commit proposal.",
+            },
+          ],
+          isError: result.error ? true : false,
+        });
+      }
+    };
+
+    const onResponse = (_event: unknown, result: CommitResult) =>
+      settle(result, "ipc");
+
+    const responseChannel = `git-commit-proposal-response:${sessionId || "unknown"}:${proposalId}`;
+    // console.log(
+    //   `[MCP Server] Registering git commit proposal listener on channel: ${responseChannel}`
+    // );
+    ipcMain.on(responseChannel, onResponse);
+
+    // #1341 / NIM-2607: heartbeat the call while the proposal is on screen, and
+    // settle as cancelled if the client abandons it -- a stale commit button is
+    // worse than none, because pressing it looks like it committed.
+    detachCall = attachInteractivePromptCall({
+      request,
+      extra,
+      toolName: 'developer_git_commit_proposal',
+      onAbort: () => settle({ action: 'cancelled' }, 'client-abort'),
+    });
+
+    // Database polling fallback: if the IPC path fails (e.g., transport drop),
+    // poll for a response message written by the durable prompt handler.
+    if (targetSessionId && targetSessionId !== "unknown") {
+      const POLL_INTERVAL = 1000;
+      const MAX_POLL_TIME = 10 * 60 * 1000;
+      const pollStart = Date.now();
+
+      pollTimer = setInterval(async () => {
+        if (settled || Date.now() - pollStart > MAX_POLL_TIME) {
+          if (pollTimer) {
+            clearInterval(pollTimer);
+            pollTimer = null;
+          }
+          return;
+        }
+
+        try {
+          const messages = await AgentMessagesRepository.list(
+            targetSessionId,
+            { limit: 20 }
+          );
+          for (const msg of messages) {
+            try {
+              const content = JSON.parse(msg.content);
+              if (
+                content.type === "git_commit_proposal_response" &&
+                content.proposalId === proposalId
+              ) {
+                settle(
+                  {
+                    action: content.action || "cancelled",
+                    commitHash: content.commitHash,
+                    commitDate: content.commitDate,
+                    error: content.error,
+                    filesCommitted: content.filesCommitted,
+                    commitMessage: content.commitMessage,
+                  },
+                  "db-poll"
+                );
+                return;
+              }
+            } catch {
+              // Not valid JSON, skip
+            }
+          }
+        } catch {
+          // Database error, continue polling
+        }
+      }, POLL_INTERVAL);
+    }
+
+    // Send the proposal to the renderer
+    commitWindow.webContents.send("mcp:gitCommitProposal", {
+      proposalId,
+      workspacePath,
+      sessionId: sessionId || "unknown",
+      filesToStage: proposalArgs.filesToStage,
+      commitMessage: proposalArgs.commitMessage,
+      reasoning: proposalArgs.reasoning,
+    });
+  });
+}
+
+// ============================================================
+// RequestUserInput
+// ============================================================
+//
+// Generic structured-input prompt with typed fields. The widget renders the
+// fields and collects answers. Response delivery follows the durable-prompts
+// pattern: IPC fast-path on `request-user-input-response:<sessionId>:<promptId>`,
+// and a DB polling fallback that watches for a `request_user_input_response`
+// message in `ai_agent_messages`.
+
+// IMPORTANT: This is a flat union schema, not `oneOf` over discriminated
+// sub-schemas. OpenAI's function-calling schema converter (used by Codex when
+// translating MCP tool schemas) does not handle `oneOf` cleanly and collapses
+// it to a generic type -- in practice the agent saw `fields: string[]` and had
+// to guess the real shape. A single object with a `type` enum and all
+// properties optional is less strict but Codex/OpenAI consume it correctly.
+//
+// Per-type validation happens in the runtime widget and tool handler, not the
+// schema. Field-type-specific required properties are documented in the
+// description text so the agent gets it right.
+const REQUEST_USER_INPUT_FIELD_SCHEMA = {
+  type: "object",
+  description:
+    "One field in a structured prompt. The `type` discriminator determines which other properties apply. Required-by-type:\n" +
+    "  - multiSelect: items[]; optional minSelected, maxSelected\n" +
+    "  - singleSelect: options[]; optional allowOther\n" +
+    "  - reorder: items[]; optional minItems\n" +
+    "  - editText: initialText; optional format ('markdown'|'plain'), placeholder, minLength, maxLength\n" +
+    "  - confirm: optional defaultValue (boolean); omit it to make the user pick yes or no before they can submit",
+  properties: {
+    type: {
+      type: "string",
+      enum: [...STRUCTURED_INPUT_FIELD_TYPES],
+      description: "Field type discriminator.",
+    },
+    id: {
+      type: "string",
+      description: "Key for this field's answer in the response payload.",
+    },
+    label: { type: "string", description: "Short label shown above the control." },
+    description: { type: "string", description: "Optional longer explanation." },
+
+    // multiSelect / reorder share `items`. multiSelect items use defaultChecked
+    // and badge; reorder items use removable. Extra properties on the wrong
+    // field type are ignored.
+    items: {
+      type: "array",
+      description:
+        "For multiSelect and reorder fields. multiSelect items: { id, title, subtitle?, badge?, defaultChecked? }. reorder items: { id, title, subtitle?, removable? }.",
+      items: {
+        type: "object",
+        properties: {
+          id: { type: "string" },
+          title: { type: "string" },
+          subtitle: { type: "string" },
+          badge: { type: "string", description: "multiSelect only: short badge label." },
+          defaultChecked: { type: "boolean", description: "multiSelect only: pre-check this item." },
+          removable: { type: "boolean", description: "reorder only: show a delete affordance for this item." },
+        },
+        required: ["id", "title"],
+      },
+    },
+
+    // multiSelect bounds.
+    minSelected: { type: "integer", minimum: 0, description: "multiSelect: floor on selections (default 0)." },
+    maxSelected: { type: "integer", minimum: 0, description: "multiSelect: ceiling (default = items.length)." },
+
+    // reorder bound.
+    minItems: { type: "integer", minimum: 0, description: "reorder: floor when items have removable: true (default 0)." },
+
+    // singleSelect.
+    options: {
+      type: "array",
+      description: "For singleSelect: array of { id, label, description? }.",
+      items: {
+        type: "object",
+        properties: {
+          id: { type: "string" },
+          label: { type: "string" },
+          description: { type: "string" },
+        },
+        required: ["id", "label"],
+      },
+    },
+    allowOther: { type: "boolean", description: "singleSelect: show an 'Other' textarea fallback." },
+
+    // editText.
+    initialText: { type: "string", description: "editText: the seed text the user will edit." },
+    format: {
+      type: "string",
+      enum: ["markdown", "plain"],
+      description: "editText: how to interpret initialText and serialize the answer (default 'markdown').",
+    },
+    placeholder: { type: "string", description: "editText: placeholder text when empty." },
+    minLength: { type: "integer", minimum: 0, description: "editText: minimum length to allow submit." },
+    maxLength: { type: "integer", minimum: 1, description: "editText: maximum length." },
+
+    // confirm.
+    defaultValue: {
+      type: "boolean",
+      description:
+        "confirm: pre-select yes or no. Omitted means unanswered -- submit stays blocked until the user picks, so an untouched field can never be read as a deliberate no.",
+    },
+  },
+  required: ["type", "id", "label"],
+};
+
+function requestUserInputSchema() {
+  return {
+    // NOTE: Do NOT rename to anything that snake_cases to `request_user_input` --
+    // that collides with a Codex CLI built-in tool gated to Plan mode and the
+    // agent gets refused with "request_user_input is unavailable in Default mode".
+    name: "PromptForUserInput",
+    description: `Ask the user for structured input via a composable widget with typed fields; the answer payload is keyed by field id. The "fields" argument is an ARRAY OF OBJECTS ({ type, id, label, ... }), never an array of strings — per-type required properties are documented on the field schema.
+
+Field types: multiSelect (pick a subset), singleSelect (branching choice), reorder (drag-to-reorder with optional delete), editText (edit a seeded draft), confirm (yes/no).
+
+Prefer this tool over AskUserQuestion when input is richer than a flat list of options (order, removal, freeform edits, or multi-field composition).`,
+    inputSchema: {
+      type: "object",
+      properties: {
+        title: { type: "string", description: "Overall prompt title" },
+        intro: { type: "string", description: "1-2 sentences of context above the fields" },
+        fields: {
+          type: "array",
+          minItems: 1,
+          items: REQUEST_USER_INPUT_FIELD_SCHEMA,
+        },
+        submitLabel: { type: "string", description: 'Submit button label (default "Confirm")' },
+        cancelLabel: { type: "string", description: 'Cancel button label (default "Cancel")' },
+      },
+      required: ["fields"],
+    },
+  };
+}
+
+export function getRequestUserInputResponseChannel(
+  sessionId: string,
+  promptId: string,
+): string {
+  return `request-user-input-response:${sessionId || "unknown"}:${promptId}`;
+}
+
+export function getRequestUserInputFallbackResponseChannel(
+  sessionId: string,
+): string {
+  return `request-user-input-response:${sessionId || "unknown"}:__fallback__`;
+}
+
+export async function handleRequestUserInput(
+  args: any,
+  sessionId: string | undefined,
+  workspacePath: string | undefined,
+  request: any,
+  extra?: InteractivePromptCallExtra,
+): Promise<McpToolResult> {
+  const fields = Array.isArray(args?.fields) ? args.fields : [];
+  if (fields.length === 0) {
+    return {
+      content: [
+        { type: "text", text: "Error: at least one field is required in PromptForUserInput" },
+      ],
+      isError: true,
+    };
+  }
+
+  // Per-type required-shape validation. The MCP input schema is intentionally
+  // flat (all per-type properties optional, only type/id/label required) because
+  // OpenAI's function-calling schema converter mangles `oneOf` unions and the
+  // agent ends up guessing -- see the comment above REQUEST_USER_INPUT_FIELD_SCHEMA.
+  // That permissiveness means the agent occasionally emits a field like
+  // `{ type: "singleSelect", id, label }` with no `options` array, and the
+  // widget then throws "Cannot read properties of undefined (reading 'map')"
+  // when it tries to seed/render the field. Catch it here and return a precise
+  // error so the agent can retry with the right shape.
+  const fieldShapeErrors: string[] = [];
+  for (const field of fields) {
+    if (!field || typeof field !== "object") {
+      fieldShapeErrors.push("each field must be an object");
+      continue;
+    }
+    const fieldId = typeof field.id === "string" ? field.id : "<missing id>";
+    switch (field.type) {
+      case "multiSelect":
+        if (!Array.isArray(field.items) || field.items.length === 0) {
+          fieldShapeErrors.push(
+            `multiSelect field '${fieldId}' requires a non-empty items[] array of { id, title }`,
+          );
+        }
+        break;
+      case "singleSelect":
+        if (!Array.isArray(field.options) || field.options.length === 0) {
+          fieldShapeErrors.push(
+            `singleSelect field '${fieldId}' requires a non-empty options[] array of { id, label }`,
+          );
+        }
+        break;
+      case "reorder":
+        if (!Array.isArray(field.items) || field.items.length === 0) {
+          fieldShapeErrors.push(
+            `reorder field '${fieldId}' requires a non-empty items[] array of { id, title }`,
+          );
+        }
+        break;
+      case "editText":
+        if (typeof field.initialText !== "string") {
+          fieldShapeErrors.push(
+            `editText field '${fieldId}' requires an initialText string (may be empty)`,
+          );
+        }
+        break;
+      case "confirm":
+        // No required-by-type properties beyond the base { type, id, label }.
+        break;
+      default:
+        fieldShapeErrors.push(
+          `field '${fieldId}' has unknown or missing type '${String(field.type)}' (expected one of multiSelect, singleSelect, reorder, editText, confirm)`,
+        );
+    }
+  }
+  if (fieldShapeErrors.length > 0) {
+    return {
+      content: [
+        {
+          type: "text",
+          text:
+            "Error: PromptForUserInput received malformed field(s). Fix and retry:\n  - "
+            + fieldShapeErrors.join("\n  - "),
+        },
+      ],
+      isError: true,
+    };
+  }
+
+  const promptId =
+    await resolveToolUseIdFromMcpRequest(request, sessionId, "PromptForUserInput") ||
+    `rui-${sessionId || "unknown"}-${Date.now()}`;
+  const { waiterPromptIds: promptIdAliases } = resolveRequestUserInputPromptTargets(promptId);
+  const promptIdAliasSet = new Set(promptIdAliases);
+  const responseNotBefore = Date.now();
+  const sessionKey = sessionId || "unknown";
+  const responseChannel = getRequestUserInputResponseChannel(sessionKey, promptId);
+  const fallbackResponseChannel = getRequestUserInputFallbackResponseChannel(sessionKey);
+
+  console.log(
+    `[MCP Server] PromptForUserInput waiting for response: promptId=${promptId}, sessionId=${sessionId}`,
+  );
+
+  // Update session status so all windows show the pending indicator.
+  if (sessionId) {
+    getSessionStateManager().updateActivity({
+      sessionId,
+      status: "waiting_for_input",
+    }).catch((err) => {
+      console.error("[MCP Server] Failed to update session status:", err);
+    });
+    // Persist pending-prompt bit + push to mobile so the sidebar indicator
+    // survives renderer reloads and reaches other devices.
+    void setSessionPendingPrompt(sessionId, true, "decision");
+  }
+
+  // NIM-806: do NOT persist a synthetic nimbalyst_tool_use here (same reasoning
+  // as handleAskUserQuestion). The proxy observation bridge already persists the
+  // CLI's assistant turn containing this PromptForUserInput tool_use block (full
+  // name mcp__nimbalyst__PromptForUserInput, which CustomToolWidgets maps to
+  // RequestUserInputWidget), keyed by the same promptId. A second synthetic row
+  // landed ~before the proxy turn's text → widget rendered above its motivating
+  // text + a duplicate card. Settle still writes the synthetic tool_result.
+  // `isCliSession` is still needed by the settle path.
+  const isCliSession = sessionId ? await isClaudeCliSession(sessionId) : false;
+
+  // Notify renderer so the widget can pick up the prompt data immediately
+  // (used for voice forwarding -- the widget itself reads from the tool call).
+  try {
+    if (workspacePath) {
+      const targetWindowId = await findWindowIdForWorkspacePath(workspacePath);
+      if (targetWindowId) {
+        const targetWindow = BrowserWindow.fromId(targetWindowId);
+        if (targetWindow && !targetWindow.isDestroyed()) {
+          targetWindow.webContents.send("ai:requestUserInput", {
+            sessionId,
+            promptId,
+            args,
+          });
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("[MCP Server] PromptForUserInput: failed to notify renderer:", err);
+  }
+
+  // Show OS notification if the app is backgrounded.
+  let sessionTitle = "AI Session";
+  if (sessionId) {
+    try {
+      const session = await AISessionsRepository.get(sessionId);
+      if (session?.title) sessionTitle = session.title;
+    } catch {
+      // Ignore - use default title.
+    }
+    notificationService.showBlockedNotification(
+      sessionId,
+      sessionTitle,
+      "question",
+      workspacePath ?? "",
+    );
+  }
+
+  // NIM-1981: track this waiter so the session-scoped fallback can be accepted
+  // safely when it is the only pending prompt for the session.
+  notePendingInteractiveWaiter(sessionKey);
+  // NIM-2208: separate registry (see interactivePromptLiveness) so the
+  // stale-prompt reconcile knows this session is genuinely blocked.
+  if (sessionId) noteLiveInteractivePrompt(sessionId);
+
+  return new Promise((resolve) => {
+    let settled = false;
+    let pollTimer: ReturnType<typeof setInterval> | null = null;
+    let detachCall: (() => void) | null = null;
+
+    const settle = async (
+      result: { answers?: Record<string, unknown>; cancelled?: boolean; respondedBy?: "desktop" | "mobile" },
+      source: string,
+      reason: InteractivePromptSettleReason = 'user-responded',
+    ) => {
+      if (settled) return;
+      settled = true;
+      detachCall?.();
+      clearPendingInteractiveWaiter(sessionKey);
+      // See handleAskUserQuestion: an abandoned call takes the waiter down but
+      // leaves the form standing, because the user has decided nothing.
+      const terminalize = shouldTerminalizePrompt({
+        kind: 'request_user_input',
+        reason,
+      });
+      if (sessionId) clearLiveInteractivePrompt(sessionId);
+
+      console.log(
+        `[MCP Server] PromptForUserInput settled via ${source}: promptId=${promptId}, cancelled=${result?.cancelled}`,
+      );
+
+      if (sessionId) {
+        // Restore the running indicator; CLI sessions defer to the PID watcher
+        // (NIM-806 Defect A).
+        void applyInteractivePromptSettleTurnState({
+          sessionId,
+          isCliSession,
+          stateManager: getSessionStateManager(),
+        }).catch(() => {});
+        // Persist resolved state + push to mobile (this also notifies the tray).
+        void setSessionPendingPrompt(sessionId, false);
+        // Notify renderer to clear the pending indicator and remove from atom.
+        try {
+          BrowserWindow.getAllWindows().forEach((w) => {
+            if (!w.isDestroyed()) {
+              w.webContents.send("ai:requestUserInputResolved", {
+                sessionId,
+                promptId,
+              });
+            }
+          });
+        } catch {
+          // Non-fatal.
+        }
+      }
+
+      if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
+      ipcMain.removeListener(responseChannel, onResponse);
+      ipcMain.removeListener(fallbackResponseChannel, onFallbackResponse);
+
+      const cancelled = result?.cancelled === true;
+      const answers = result?.answers && typeof result.answers === "object"
+        ? result.answers
+        : {};
+      const respondedBy = result?.respondedBy || "desktop";
+      const respondedAt = Date.now();
+
+      // Persist a synthetic tool_result keyed by the same providerToolCallId
+      // (`promptId`) so the canonical transcript event for this tool call gets
+      // its `result` populated immediately. Without this, the widget relies on
+      // the SDK subprocess to emit its own tool_result block; if the subprocess
+      // exits between resolving the MCP call and flushing that chunk (e.g. the
+      // turn was cancelled, the session was stopped, the pipe broke), the
+      // tool_use canonical event stays "pending" forever and the widget shows
+      // the input mode again on remount. The SDK's later real tool_result is
+      // an idempotent re-update on the same row, so duplicates are harmless.
+      if (sessionId && terminalize) {
+        // Mark before the write so the CLI proxy's continuation-body scrape skips
+        // this same tool_use_id (NIM-806 Defect B).
+        markToolResultPersisted(sessionId, promptId);
+        try {
+          await AgentMessagesRepository.create({
+            sessionId,
+            source: "claude-code",
+            direction: "output",
+            createdAt: new Date(respondedAt),
+            content: JSON.stringify({
+              type: "nimbalyst_tool_result",
+              tool_use_id: promptId,
+              result: JSON.stringify({
+                cancelled,
+                answers: cancelled ? {} : answers,
+                respondedBy,
+                respondedAt,
+              }),
+              is_error: cancelled,
+            }),
+          });
+        } catch (err) {
+          console.warn("[MCP Server] Failed to persist synthetic PromptForUserInput tool_result:", err);
+        }
+      }
+
+      if (cancelled) {
+        resolve({
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({
+                cancelled: true,
+                respondedBy,
+                respondedAt,
+              }),
+            },
+          ],
+          isError: true,
+        });
+        return;
+      }
+
+      resolve({
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify({
+              answers,
+              respondedBy,
+              respondedAt,
+            }),
+          },
+        ],
+        isError: false,
+      });
+    };
+
+    const onResponse = (
+      _event: unknown,
+      result: {
+        answers?: Record<string, unknown>;
+        cancelled?: boolean;
+        respondedBy?: "desktop" | "mobile";
+      },
+    ) => settle(result, "ipc");
+
+    const onFallbackResponse = (
+      _event: unknown,
+      result: {
+        promptId?: string;
+        rawPromptId?: string;
+        answers?: Record<string, unknown>;
+        cancelled?: boolean;
+        respondedBy?: "desktop" | "mobile";
+      },
+    ) => {
+      const responsePromptIds = [
+        typeof result.promptId === "string" ? result.promptId : null,
+        typeof result.rawPromptId === "string" ? result.rawPromptId : null,
+      ].filter((value): value is string => typeof value === "string" && value.length > 0);
+
+      // NIM-1981: on the Codex path the waiter id and the widget's response id can
+      // be unrelated, so a strict id match would reject the correct answer and hang
+      // the turn. Accept the session-scoped fallback when it is unambiguous (sole
+      // pending prompt); stay strict when several prompts are pending.
+      if (
+        !shouldSettleFromSessionFallback({
+          waiterPromptId: promptId,
+          promptIdAliasSet,
+          responsePromptIds,
+          pendingWaiterCountForSession: countPendingInteractiveWaiters(sessionKey),
+        })
+      ) {
+        return;
+      }
+      settle(result, "ipc-fallback");
+    };
+
+    ipcMain.on(responseChannel, onResponse);
+    ipcMain.on(fallbackResponseChannel, onFallbackResponse);
+
+    // #1341 / NIM-2607: heartbeat the call so the client's idle watchdog leaves
+    // the form alone, and settle as cancelled if the client abandons it.
+    detachCall = attachInteractivePromptCall({
+      request,
+      extra,
+      toolName: 'PromptForUserInput',
+      onAbort: () => { void settle({ cancelled: true }, 'client-abort', 'client-abandoned'); },
+    });
+
+    // Database polling fallback for resilience to IPC drops.
+    if (sessionId) {
+      const POLL_INTERVAL = 1000;
+      const MAX_POLL_TIME = 10 * 60 * 1000;
+      const pollStart = Date.now();
+
+      pollTimer = setInterval(async () => {
+        if (settled || Date.now() - pollStart > MAX_POLL_TIME) {
+          if (pollTimer) {
+            clearInterval(pollTimer);
+            pollTimer = null;
+          }
+          // NIM-1981: on poll timeout the promise is abandoned without settling,
+          // so drop this waiter from the pending count (settle already clears it).
+          if (!settled) {
+            clearPendingInteractiveWaiter(sessionKey);
+          }
+          return;
+        }
+
+        try {
+          const messages = await AgentMessagesRepository.listTail(sessionId, 50);
+          // NIM-1981: when this is the sole pending prompt for the session, the
+          // freshest persisted response is unambiguously ours even if the Codex
+          // tool-call ids don't line up (see shouldSettleFromSessionFallback).
+          const matchAnyId = countPendingInteractiveWaiters(sessionKey) <= 1;
+          const content = findFreshInteractiveResponse(messages, {
+            expectedType: "request_user_input_response",
+            idFields: ["promptId", "rawPromptId"],
+            acceptedIds: promptIdAliasSet,
+            notBefore: responseNotBefore,
+            matchAnyId,
+          });
+          if (!content) return;
+          if (content.cancelled) {
+            settle({ cancelled: true, respondedBy: content.respondedBy as "desktop" | "mobile" | undefined }, "db-poll");
+          } else {
+            settle({
+              answers: content.answers as Record<string, unknown> | undefined,
+              respondedBy: content.respondedBy as "desktop" | "mobile" | undefined,
+            }, "db-poll");
+          }
+        } catch {
+          // Database error, keep polling.
+        }
+      }, POLL_INTERVAL);
+    }
+  });
+}

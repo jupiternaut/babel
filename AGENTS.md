@@ -2,7 +2,7 @@
 
 ## 任务与读取顺序
 
-本目录是 Nimbalyst 改造的资料包，不是已经实现的应用仓库。当前规格 v2.3，先读 [README](README.md)、[Trackers 映射](NIMBALYST-TRACKER-MAPPING.md)、[开发 SPEC](NIMBALYST-DEVELOPMENT-SPEC.md)、[TUI/Hooks 契约](NIMBALYST-TUI-HOOKS-SPEC.md)、[功能对照表](CAPABILITY-MATRIX.md)。按需读视觉、源码和技能。旧版在 reference/v2.2，不作为当前实施入口。
+本目录包含 Nimbalyst 改造资料及 implementation/nimbalyst 候选源码。继续开发前先读 implementation/ACCEPTANCE.md 与 implementation/START.md；历史计划中的待办描述不能覆盖当前验收事实。当前规格 v2.3，先读 [README](README.md)、[Trackers 映射](NIMBALYST-TRACKER-MAPPING.md)、[开发 SPEC](NIMBALYST-DEVELOPMENT-SPEC.md)、[TUI/Hooks 契约](NIMBALYST-TUI-HOOKS-SPEC.md)、[功能对照表](CAPABILITY-MATRIX.md)。按需读视觉、源码和技能。旧版在 reference/v2.2，不作为当前实施入口。
 
 开始代码工作时，记录实际 Nimbalyst HEAD、dirty 状态、许可与构建命令，读取目标源码目录中适用的 AGENTS.md/CLAUDE.md。本包记录的历史源码位置不是对任意版本的 API 保证。
 

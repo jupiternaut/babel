@@ -1,0 +1,64 @@
+{
+  "id": "com.nimbalyst.calc-sheets",
+  "name": "Calc Sheets",
+  "version": "1.0.2",
+  "description": "Line-oriented calculation worksheets with units, formulas, and live result gutters",
+  "author": "Nimbalyst",
+  "main": "dist/index.js",
+  "styles": "dist/index.css",
+  "apiVersion": "1.0.0",
+  "marketplace": {
+    "changelog": "1.0.2: The results column in a shared calc sheet stays in sync with the document.",
+    "categories": ["data"],
+    "tags": ["calculator", "worksheet", "formula", "units", "finance", "planning"],
+    "icon": "calculate",
+    "featured": false,
+    "tagline": "Reusable business-model worksheets with live results",
+    "longDescription": "Open .calc.md files in a dedicated editor built for line-oriented assumptions, formulas, units, assertions, and quick business modeling. Mix calculations with narrative markdown source while live results stay focused in a calculator-style gutter.",
+    "highlights": [
+      "Line-based worksheets instead of grid-heavy spreadsheets",
+      "Narrative markdown stays readable without becoming a calculation error",
+      "Live result gutter with unit-aware evaluation",
+      "Custom editor embeds directly inside markdown documents",
+      "YAML frontmatter for currency, units, and display defaults"
+    ],
+    "fileTypes": [".calc.md"],
+    "screenshots": [
+      {
+        "alt": "Calc Sheets editor showing assumptions, formulas, and live result gutters",
+        "fileToOpen": "samples/demo.calc.md"
+      }
+    ]
+  },
+  "permissions": {
+    "filesystem": true
+  },
+  "contributions": {
+    "customEditors": [
+      {
+        "filePatterns": ["*.calc.md"],
+        "displayName": "Calc Sheet Editor",
+        "component": "CalcSheetEditor",
+        "priority": 20,
+        "supportsDiffMode": false,
+        "supportsSourceMode": true,
+        "showDocumentHeader": false,
+        "supportsTranscriptEmbed": true,
+        "collaboration": {
+          "supported": true
+        }
+      }
+    ],
+    "fileIcons": {
+      "*.calc.md": "calculate"
+    },
+    "newFileMenu": [
+      {
+        "extension": ".calc.md",
+        "displayName": "Calc Sheet",
+        "icon": "calculate",
+        "defaultContent": "---\ntitle: New Calc Sheet\nbaseCurrency: USD\ndisplay:\n  decimals: 2\nunits: []\n---\n\n# Inputs\nprice = 100 USD\nquantity = 1\n\n# Results\ntotal = price * quantity -> currency(USD, 2)\n"
+      }
+    ]
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "date": "2026-09-16",
+  "scope": "isolated Windows native M0; not full product acceptance",
+  "babelTests": 225,
+  "hostFocusedTests": 60,
+  "typedWorkspaces": 26,
+  "nativeE2ESpecs": 2,
+  "rootPrepush": {
+    "passed": 13849,
+    "failed": 206,
+    "skipped": 26,
+    "unhandledErrors": 1
+  },
+  "rawLogsKeptLocally": {
+    "babel-tests-complete.log": {
+      "sha256": "ad2eecb28f04d81eb785daa5c418a70e0fc385d96a266c2d069ad9027e534ef5",
+      "bytes": 5084
+    },
+    "babel-typecheck-final.log": {
+      "sha256": "cfbee4d8d14f5f410804bfdf4f084fd5205063aeb9c5d766446d0ba0e9592745",
+      "bytes": 59
+    },
+    "host-targeted.log": {
+      "sha256": "c91d04ad20f6d094a812f903652bc3bc505b5fa9373886754128d0abe739e54a",
+      "bytes": 2139
+    },
+    "typecheck-complete.log": {
+      "sha256": "1634df4cf52a393f7d1657f00641f99b3f5eba98edfef67211b2b477cfb33375",
+      "bytes": 1068
+    },
+    "e2e.log": {
+      "sha256": "1b41743f7563b08d04999ee9c17fa43ca7087771958dac50f3b056868da419bb",
+      "bytes": 547
+    },
+    "archive-e2e.log": {
+      "sha256": "519ec4f1adb14b69dec38b9e4cfb88018825fe487922a19bc495ffed728d1123",
+      "bytes": 547
+    },
+    "prepush.log": {
+      "sha256": "2d4bf5decb82776f918c63768dd7741c868b92970094153ca2ad4d8e70c91c42",
+      "bytes": 265140
+    }
+  }
+}
