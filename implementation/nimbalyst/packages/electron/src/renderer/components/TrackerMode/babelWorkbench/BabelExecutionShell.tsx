@@ -8,7 +8,7 @@ import {
   setWorkbenchTab,
 } from './babelDrafts';
 import { runStatusLabel, toolStateLabel, verificationLabel } from './babelRunLabels';
-import { capabilityOf, useBabelRunActions } from './useBabelRunActions';
+import { capabilityOf, useBabelRunActions, type BabelExecutionTarget, type BabelRunView } from './useBabelRunActions';
 import './BabelWorkbench.css';
 
 type TabId = 'detail' | 'session' | 'review' | 'history' | 'archive';
@@ -64,6 +64,7 @@ const BabelExecutionShellInner: React.FC<{
     setTab(next);
   };
 
+  const mode = actions.detail?.mode ?? (dataSource as { mode?: 'demo' | 'local' }).mode ?? 'demo';
   const latest = actions.detail?.latestRun ?? null;
   const shown = actions.viewingRun ?? latest;
   const viewingOld = Boolean(actions.viewingRunId && latest && actions.viewingRunId !== latest.id);
@@ -90,9 +91,9 @@ const BabelExecutionShellInner: React.FC<{
           <div className="min-w-0">
             <h2 className="line-clamp-2 text-[14px] font-medium text-nim">{actions.detail?.title || trackerId}</h2>
             <p className="babel-detail-meta text-[12px] text-nim-muted">
-              <span className="babel-demo-badge">演示数据</span>
+              <span className="babel-demo-badge">{mode === 'local' ? '本机 Pi' : '演示数据'}</span>
               {actions.detail?.stage ? ` · ${actions.detail.stage}` : ''}
-              {latest ? ` · ${runStatusLabel(latest.status)}` : ''}
+              {latest ? ` · ${runStatusLabel(latest.status, mode)}` : ''}
               {latest?.deviceId ? ` · ${latest.deviceId}` : ''}
               {latest ? ` · 第 ${latest.attempt ?? 1} 次` : ''}
             </p>
@@ -111,12 +112,13 @@ const BabelExecutionShellInner: React.FC<{
             当前项目或设备筛选下，看板不显示此条目。选中和已保存字段仍保留。
           </p>
         ) : null}
+        {mode === 'local' ? <ExecutionIdentity target={latest?.execution ?? actions.detail?.executionTarget} sessionId={latest?.sessionId} /> : null}
         <p className="mt-2 text-[11px] text-nim-muted">切换条目会保留草稿。执行需手动开始。</p>
       </header>
 
       <div className="babel-detail-actions shrink-0">
         <BabelRunActionBar actions={actions} trackerId={trackerId} layout="panel" />
-        {!viewingOld && latest && (latest.status === 'lost' || latest.status === 'cancel_requested') ? (
+        {mode === 'demo' && !viewingOld && latest && (latest.status === 'lost' || latest.status === 'cancel_requested') ? (
           <ReconcileRunControl
             key={JSON.stringify([dataSource.endpoint, dataSource.projectId, trackerId, latest.id, latest.status, actions.detail?.revision])}
             runId={latest.id}
@@ -158,6 +160,7 @@ const BabelExecutionShellInner: React.FC<{
           <>
         <div hidden={current !== 'session'} className="px-3 py-2 text-[12px] text-nim">
           <SessionPane
+            mode={mode}
             shown={shown}
             viewingOld={viewingOld}
             draftMessage={actions.draft.message}
@@ -174,6 +177,7 @@ const BabelExecutionShellInner: React.FC<{
         </div>
         <div hidden={current !== 'review'} className="px-3 py-2 text-[12px] text-nim">
           <ReviewPane
+            mode={mode}
             shown={shown}
             viewingOld={viewingOld}
             artifacts={actions.artifacts}
@@ -188,6 +192,7 @@ const BabelExecutionShellInner: React.FC<{
         </div>
         <div hidden={current !== 'history'} className="px-3 py-2 text-[12px] text-nim">
           <HistoryPane
+            mode={mode}
             history={actions.history}
             latestId={latest?.id ?? null}
             viewingRunId={actions.viewingRunId}
@@ -280,7 +285,18 @@ function ReconcileRunControl({ runId, busy, disabledReason, onReconcile }: {
   );
 }
 
+function ExecutionIdentity({ target, sessionId }: { target?: BabelExecutionTarget; sessionId?: string | null }) {
+  return (
+    <dl className="babel-execution-identity" aria-label="Pi 执行身份">
+      <div><dt>工作目录</dt><dd>{target?.workdir ?? '尚未确认'}</dd></div>
+      <div><dt>模型</dt><dd>{target ? `${target.provider} / ${target.model}` : '尚未确认'}</dd></div>
+      <div><dt>会话</dt><dd>{sessionId ?? '尚未建立'}</dd></div>
+    </dl>
+  );
+}
+
 function SessionPane({
+  mode,
   shown,
   viewingOld,
   draftMessage,
@@ -294,7 +310,8 @@ function SessionPane({
   onCancel,
   onRetry,
 }: {
-  shown: { id: string; status: string; deviceId?: string; attempt?: number; summary?: string; sessionId?: string | null; messages?: Array<{ id: string; role: string; text: string; at: string }>; inputRequests?: Array<{ id: string; prompt: string; answered?: boolean }> } | null;
+  mode: 'demo' | 'local';
+  shown: BabelRunView | null;
   viewingOld: boolean;
   draftMessage: string;
   draftRespond: string;
@@ -308,27 +325,28 @@ function SessionPane({
   onRetry: () => void;
 }) {
   if (!shown) {
-    return <p className="text-nim-muted">还没有执行记录。待办请用「开始模拟」，不要把保存当成启动。</p>;
+    return <p className="text-nim-muted">还没有执行记录。待办请用「{mode === 'local' ? '开始执行' : '开始模拟'}」，不要把保存当成启动。</p>;
   }
   const pending = (shown.inputRequests ?? []).filter((row) => !row.answered);
   const tools = (shown.messages ?? [])
-    .filter((row) => row.role === 'tool' || row.role === 'system')
-    .map((row) => ({ label: row.text, state: row.role === 'tool' ? 'succeeded' : row.role }));
+    .filter((row) => row.role === 'tool' || (mode === 'demo' && row.role === 'system'))
+    .map((row) => ({ label: row.text, state: mode === 'local' ? '' : row.role === 'tool' ? 'succeeded' : row.role }));
   return (
     <div className="flex flex-col gap-3">
       {viewingOld ? (
         <p className="text-nim-muted">正在查看旧执行 {shown.id}，只读，不会改当前 run。</p>
       ) : null}
-      <p>{runStatusLabel(shown.status)}{shown.deviceId ? ` · ${shown.deviceId}` : ''} · 尝试 {shown.attempt ?? 1}</p>
+      <p>{runStatusLabel(shown.status, mode)}{shown.deviceId ? ` · ${shown.deviceId}` : ''} · 尝试 {shown.attempt ?? 1}</p>
+      {mode === 'local' && viewingOld ? <ExecutionIdentity target={shown.execution} sessionId={shown.sessionId} /> : null}
       {shown.summary ? <p className="text-nim-faint">{shown.summary}</p> : null}
       {shown.status === 'accepted' ? <p className="text-nim-muted">启动已接受，还不表示这次执行已经成功。</p> : null}
       {shown.sessionId ? <p className="text-nim-faint">会话 {shown.sessionId}（创建会话不等于开始执行）</p> : null}
       <section>
         <h3 className="text-[11px] font-medium text-nim-faint">工具活动</h3>
-        {tools.length === 0 ? <p className="text-nim-muted">暂无工具活动。演示数据，不是真实 Agent 轨迹。</p> : (
+        {tools.length === 0 ? <p className="text-nim-muted">{mode === 'local' ? '暂无工具输出，尚无工具执行完成证据。' : '暂无工具活动。演示数据，不是真实 Agent 轨迹。'}</p> : (
           <ul>
             {tools.map((item, index) => (
-              <li key={`${item.label}-${index}`}>{item.label} · {toolStateLabel(item.state)}</li>
+              <li key={`${item.label}-${index}`}>{item.label}{item.state ? ` · ${toolStateLabel(item.state)}` : ''}</li>
             ))}
           </ul>
         )}
@@ -337,7 +355,7 @@ function SessionPane({
         {(shown.messages ?? []).map((msg) => (
           <article key={msg.id} className="rounded border border-nim bg-nim-secondary px-2 py-1.5">
             <div className="text-[11px] text-nim-faint">{msg.role} · {msg.at}</div>
-            <div>{msg.text}</div>
+            <div className="babel-run-message-text">{msg.text}</div>
           </article>
         ))}
       </section>
@@ -396,6 +414,7 @@ function SessionPane({
 }
 
 function ReviewPane({
+  mode,
   shown,
   viewingOld,
   artifacts,
@@ -407,6 +426,7 @@ function ReviewPane({
   onChanges,
   onShowDiff,
 }: {
+  mode: 'demo' | 'local';
   shown: { status: string; diff?: { label?: string; files?: Array<{ path: string; additions: number; deletions: number; patch?: string }> } | null; verification?: Array<{ id: string; text: string; state: string; required?: boolean }>; review?: { decision?: string } | null } | null;
   viewingOld: boolean;
   artifacts: Array<{ name: string; kind?: string; available?: boolean }>;
@@ -421,10 +441,10 @@ function ReviewPane({
   const files = shown?.diff?.files ?? [];
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-nim-faint">演示数据。宿主没有可接的 run 差异组件，这里用同一套 token 的可读面板。</p>
-      {shown?.diff?.label ? <p><strong>模拟基线</strong>：{shown.diff.label}</p> : null}
+      <p className="text-nim-faint">{mode === 'local' ? '以下仅展示本次执行返回的差异与验收证据。进程结束或消息输出不能代替验收。' : '演示数据。宿主没有可接的 run 差异组件，这里用同一套 token 的可读面板。'}</p>
+      {shown?.diff?.label ? <p><strong>{mode === 'local' ? '执行基线' : '模拟基线'}</strong>：{shown.diff.label}</p> : null}
       {files.length === 0 ? (
-        <p className="text-nim-muted">还没有模拟差异。差异绑定当前 run，不是真实 Git 提交。</p>
+        <p className="text-nim-muted">{mode === 'local' ? '尚未提供真实文件差异，不能据此确认代码变更。' : '还没有模拟差异。差异绑定当前 run，不是真实 Git 提交。'}</p>
       ) : (
         files.map((file) => (
           <article key={file.path} className="rounded border border-nim bg-nim-secondary p-2">
@@ -495,11 +515,13 @@ function ReviewPane({
 }
 
 function HistoryPane({
+  mode,
   history,
   latestId,
   viewingRunId,
   onViewRun,
 }: {
+  mode: 'demo' | 'local';
   history: {
     comments: Array<{ id: string; authorId?: string; createdAt?: string; body: string }>;
     activity: Array<{ id: string; at?: string; actorId?: string; detail?: string }>;
@@ -546,7 +568,7 @@ function HistoryPane({
                     className={`min-h-8 rounded px-2 text-left ${viewing ? 'bg-nim-tertiary text-nim' : 'text-nim-muted hover:bg-nim-tertiary'}`}
                     onClick={() => onViewRun(current ? null : run.id)}
                   >
-                    {run.id} · 尝试 {run.attempt ?? 1} · {runStatusLabel(run.status)}
+                    {run.id} · 尝试 {run.attempt ?? 1} · {runStatusLabel(run.status, mode)}
                     {current ? ' · 当前' : ' · 只读查看'}
                   </button>
                 </li>

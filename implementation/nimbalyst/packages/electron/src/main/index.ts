@@ -49,6 +49,7 @@ import { registerWorkspaceHandlers } from './ipc/WorkspaceHandlers.ts';
 import { registerSettingsHandlers } from './ipc/SettingsHandlers';
 import { registerWindowHandlers } from './ipc/WindowHandlers';
 import { registerSystemConsoleHandlers } from './ipc/SystemConsoleHandlers';
+import { registerBabelLocalHandlers } from './ipc/BabelLocalHandlers';
 import { registerWindowChromeHandlers } from './ipc/WindowChromeHandlers';
 import { registerEditorStateHandlers } from './ipc/EditorStateHandlers';
 import { registerHistoryHandlers } from './ipc/HistoryHandlers';
@@ -1913,6 +1914,7 @@ app.whenReady().then(async () => {
     registerSettingsHandlers();
     registerWindowHandlers();
     registerSystemConsoleHandlers();
+    registerBabelLocalHandlers();
     registerWindowChromeHandlers();
     registerEditorStateHandlers();
     await registerHistoryHandlers();

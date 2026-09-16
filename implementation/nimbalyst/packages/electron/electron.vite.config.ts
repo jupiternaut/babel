@@ -390,6 +390,7 @@ export default defineConfig({
       'import.meta.env.BABEL_DEMO_WORKSPACE': JSON.stringify(process.env.BABEL_DEMO_WORKSPACE || ''),
       'import.meta.env.BABEL_PROFILE': JSON.stringify(process.env.BABEL_PROFILE || ''),
       'import.meta.env.BABEL_ENDPOINT': JSON.stringify(process.env.BABEL_ENDPOINT || ''),
+      'import.meta.env.BABEL_MODE': JSON.stringify(process.env.BABEL_MODE || ''),
       'import.meta.env.BABEL_PROJECT_ID': JSON.stringify(process.env.BABEL_PROJECT_ID || ''),
     },
     plugins: [

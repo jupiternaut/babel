@@ -48,7 +48,14 @@ export interface BabelArtifact {
   available?: boolean;
 }
 
+export interface BabelExecutionTarget {
+  workdir: string;
+  provider: string;
+  model: string;
+}
+
 export interface BabelRunView {
+  execution?: BabelExecutionTarget & { kind: 'pi'; sessionFile?: string };
   id: string;
   status: string;
   deviceId?: string;
@@ -63,6 +70,8 @@ export interface BabelRunView {
 }
 
 export interface BabelTaskDetail {
+  mode: 'demo' | 'local';
+  executionTarget?: BabelExecutionTarget;
   stage: string;
   revision?: number;
   readOnly: boolean;
@@ -114,7 +123,10 @@ export function useBabelRunActions(trackerId: string, dataSource: BabelDemoTrack
       };
       const latest = (task.latestRun ?? null) as BabelRunView | null;
       const runs = ((task as { runs?: BabelRunView[] }).runs ?? (latest ? [latest] : [])) as BabelRunView[];
+      const execution = task as { mode?: 'demo' | 'local'; executionTarget?: BabelExecutionTarget };
       const next: BabelTaskDetail = {
+        mode: execution.mode ?? (dataSource as { mode?: 'demo' | 'local' }).mode ?? 'demo',
+        executionTarget: execution.executionTarget,
         stage: String(task.stage ?? ''),
         revision: record.revision,
         readOnly: Boolean(record.system?.readOnly),
@@ -212,10 +224,11 @@ export function useBabelRunActions(trackerId: string, dataSource: BabelDemoTrack
     setViewing(runId);
   }, [cacheKey, scope, loadedScope, detail?.runs]);
 
-  const runAction = useCallback(async (work: (current: () => boolean) => Promise<void>) => {
+  const runAction = useCallback(async (work: (current: () => boolean) => Promise<void>, allowHistorical = false) => {
     // Reject callbacks captured for a previous selection or run snapshot, even
     // if an old button handler is invoked after the new selection renders.
     if (!scope.active || loadedScope !== scope || !detail || scope.detail !== detail || pendingActions.has(cacheKey)) return;
+    if (!allowHistorical && scope.viewingRunId && scope.viewingRunId !== detail.bindingRunId) return;
     let finish!: () => void;
     const pending = new Promise<void>((resolve) => { finish = resolve; });
     pendingActions.set(cacheKey, pending);
@@ -235,9 +248,19 @@ export function useBabelRunActions(trackerId: string, dataSource: BabelDemoTrack
   }, [refresh, scope, loadedScope, detail, cacheKey]);
 
   const start = useCallback(() => runAction(async (current) => {
-    await dataSource.startRun(trackerId, `host-start-${trackerId}-${Date.now()}`);
-    if (current()) setNote('已接受模拟执行。创建会话不等于已经开始；这是 demo run，不是真实 Agent。');
-  }), [dataSource, runAction, trackerId]);
+    if (detail?.mode === 'local') {
+      if (!detail.executionTarget || !Number.isInteger(detail.revision)) {
+        if (current()) setNote('执行目录、模型或任务版本尚未确认，请刷新后再开始。');
+        return;
+      }
+      await dataSource.startRun(trackerId, `host-start-${trackerId}-${Date.now()}`, detail.revision, detail.executionTarget);
+    } else {
+      await dataSource.startRun(trackerId, `host-start-${trackerId}-${Date.now()}`);
+    }
+    if (current()) setNote(detail?.mode === 'local'
+      ? '已接受本机 Pi 执行请求。请在会话中查看实际输出；请求已接受不代表执行或验收成功。'
+      : '已接受模拟执行。创建会话不等于已经开始；这是 demo run，不是真实 Agent。');
+  }), [dataSource, detail, runAction, trackerId]);
 
   const cancel = useCallback(() => {
     const runId = detail?.bindingRunId;
@@ -252,7 +275,7 @@ export function useBabelRunActions(trackerId: string, dataSource: BabelDemoTrack
     if (!runId) return Promise.resolve();
     return runAction(async () => {
       await dataSource.getDiff(runId);
-    });
+    }, true);
   }, [dataSource, detail?.bindingRunId, runAction, viewingRunId]);
 
   const accept = useCallback(() => {
@@ -260,9 +283,9 @@ export function useBabelRunActions(trackerId: string, dataSource: BabelDemoTrack
     if (!runId) return Promise.resolve();
     return runAction(async (current) => {
       await dataSource.acceptReview(runId, detail?.revision);
-      if (current()) setNote('已验收完成。这是演示结果，不是真实 Agent 成功。');
+      if (current()) setNote(detail?.mode === 'local' ? '已记录人工验收通过。' : '已验收完成。这是演示结果，不是真实 Agent 成功。');
     });
-  }, [dataSource, detail?.bindingRunId, detail?.revision, runAction]);
+  }, [dataSource, detail?.bindingRunId, detail?.revision, detail?.mode, runAction]);
 
   const sendMessage = useCallback(() => {
     const runId = detail?.bindingRunId;
@@ -308,9 +331,9 @@ export function useBabelRunActions(trackerId: string, dataSource: BabelDemoTrack
     if (!runId) return Promise.resolve();
     return runAction(async (current) => {
       await dataSource.postRaw('run.retry', { runId });
-      if (current()) setNote('已接受重试。这是演示执行，不是真实 Agent。');
+      if (current()) setNote(detail?.mode === 'local' ? '已接受 Pi 重试请求，请查看新执行的实际输出。' : '已接受重试。这是演示执行，不是真实 Agent。');
     });
-  }, [dataSource, detail?.bindingRunId, runAction]);
+  }, [dataSource, detail?.bindingRunId, detail?.mode, runAction]);
 
   const reconcile = useCallback((resolution: 'cancelled' | 'failed') => {
     if (!scope.active || loadedScope !== scope) return Promise.resolve();
@@ -326,11 +349,14 @@ export function useBabelRunActions(trackerId: string, dataSource: BabelDemoTrack
       || caps['run.reconcile']?.allowed !== true) return Promise.resolve();
     return runAction(async (current) => {
       await dataSource.postRaw('run.reconcile', { runId: run.id, resolution }, detail.revision);
-      if (current()) setNote(`已记录演示核对结果：${resolution === 'cancelled' ? '已取消' : '失败'}。不代表真实 Worker 已停止。`);
+      if (current()) setNote(detail.mode === 'local'
+        ? `已记录服务核对结果：${resolution === 'cancelled' ? '已取消' : '失败'}。`
+        : `已记录演示核对结果：${resolution === 'cancelled' ? '已取消' : '失败'}。不代表真实 Worker 已停止。`);
     });
   }, [caps, dataSource, detail, loadedScope, runAction, scope]);
 
   return {
+    mode: loadedScope === scope && detail ? detail.mode : (dataSource as { mode?: 'demo' | 'local' }).mode ?? 'demo',
     busy: loadedScope !== scope || busy || pendingActions.has(cacheKey),
     note,
     detail: loadedScope === scope ? detail : null,

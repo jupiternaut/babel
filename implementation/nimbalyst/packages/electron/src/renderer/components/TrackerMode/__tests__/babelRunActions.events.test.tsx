@@ -249,3 +249,19 @@ it('refreshes selected run and review capability after another client writes', a
   unmount();
   expect(unsubscribe).toHaveBeenCalledOnce();
 });
+
+
+it('keeps historical runs read-only even if a current-run action callback is invoked', async () => {
+  const { mock, source } = mockSource();
+  const { result } = renderHook(() => useBabelRunActions('a', source));
+  await waitFor(() => expect(result.current.busy).toBe(false));
+  act(() => { result.current.updateDraft({ message: 'do not send' }); result.current.viewRun('old-a'); });
+  await waitFor(() => expect(result.current.viewingRun?.id).toBe('old-a'));
+  await act(async () => {
+    await result.current.start(); await result.current.cancel(); await result.current.accept();
+    await result.current.sendMessage(); await result.current.showDiff();
+  });
+  expect(mock.startRun).not.toHaveBeenCalled(); expect(mock.cancelRun).not.toHaveBeenCalled();
+  expect(mock.acceptReview).not.toHaveBeenCalled(); expect(mock.postRaw).not.toHaveBeenCalled();
+  expect(mock.getDiff).toHaveBeenCalledWith('old-a');
+});

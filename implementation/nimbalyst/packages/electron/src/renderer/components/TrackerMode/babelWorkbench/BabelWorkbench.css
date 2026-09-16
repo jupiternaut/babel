@@ -425,3 +425,37 @@
     border-color: Highlight;
   }
 }
+
+/* Execution identity and streamed output remain on stable, readable surfaces. */
+.babel-execution-identity {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0.5rem 0 0;
+  font-size: 0.75rem;
+  color: var(--nim-text-muted);
+}
+.babel-execution-identity > div {
+  display: grid;
+  grid-template-columns: 4rem minmax(0, 1fr);
+  gap: 0.5rem;
+}
+.babel-execution-identity dd {
+  margin: 0;
+  color: var(--nim-text);
+  overflow-wrap: anywhere;
+}
+.babel-run-message-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.babel-start-dialog .confirm-dialog-message {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.babel-start-dialog .confirm-dialog {
+  min-width: 0;
+  width: min(31.25rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem);
+  overflow: auto;
+  overscroll-behavior: contain;
+}

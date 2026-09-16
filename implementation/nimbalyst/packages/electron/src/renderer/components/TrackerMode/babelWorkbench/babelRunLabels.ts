@@ -1,4 +1,4 @@
-export function runStatusLabel(status: string): string {
+export function runStatusLabel(status: string, mode: 'demo' | 'local' = 'demo'): string {
   const labels: Record<string, string> = {
     requested: '已请求',
     accepted: '已接受，尚未完成',
@@ -8,7 +8,7 @@ export function runStatusLabel(status: string): string {
     review_required: '待审查',
     cancel_requested: '取消尚未确认',
     lost: '失联，尚未核对',
-    succeeded: '已成功（演示）',
+    succeeded: mode === 'local' ? '已完成并验收' : '已成功（演示）',
     failed: '失败',
     cancelled: '已取消',
   };

@@ -5,9 +5,14 @@
 
 const DEFAULT_PROFILE = 'D:/Projects/babel-nimbalyst-data/demo-profile';
 
+export function babelExecutionMode(): 'demo' | 'local' {
+  return readEnv('BABEL_MODE') === 'local' ? 'local' : 'demo';
+}
+
 export function allowedDemoWorkspacePath(): string {
   const explicit = readEnv('BABEL_DEMO_WORKSPACE');
   if (explicit) return normalizePath(explicit);
+  if (babelExecutionMode() === 'local') return '';
   const profile = readEnv('BABEL_PROFILE') || DEFAULT_PROFILE;
   return normalizePath(`${profile.replace(/[/\\]+$/, '')}/workspaces/babel`);
 }
@@ -41,6 +46,7 @@ function readEnv(name: string): string | undefined {
   try {
     // Static access is required for Vite's explicit define replacements.
     const configured: Record<string, string | undefined> = {
+      BABEL_MODE: import.meta.env.BABEL_MODE,
       BABEL_DEMO_WORKSPACE: import.meta.env.BABEL_DEMO_WORKSPACE,
       BABEL_PROFILE: import.meta.env.BABEL_PROFILE,
       BABEL_ENDPOINT: import.meta.env.BABEL_ENDPOINT,

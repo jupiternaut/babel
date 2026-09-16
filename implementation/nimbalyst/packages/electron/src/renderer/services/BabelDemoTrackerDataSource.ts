@@ -7,7 +7,7 @@ import type {
   TrackerItem,
   TrackerSyncState,
 } from '@nimbalyst/collab-client/trackers';
-import { babelDemoEndpoint, babelDemoProjectId } from './babelDemoWorkspace';
+import { babelDemoEndpoint, babelDemoProjectId, babelExecutionMode } from './babelDemoWorkspace';
 import {
   BABEL_DEMO_UNIMPLEMENTED_CODE,
   BABEL_DEMO_UNIMPLEMENTED_MESSAGE,
@@ -44,7 +44,11 @@ type BabelBinding = {
   archivedAt?: string | null;
 };
 
+type ExecutionTarget = { workdir: string; provider: string; model: string };
+
 type BabelDetail = {
+  mode?: 'demo' | 'local';
+  executionTarget?: ExecutionTarget;
   record: BabelRecord;
   binding?: BabelBinding;
   stage?: string;
@@ -54,20 +58,26 @@ type BabelDetail = {
 type CapabilityMap = Record<string, { allowed: boolean; reason?: string; code?: string }>;
 
 /**
- * Host TrackerDataSource over the isolated Babel demo HTTP service.
- * Card IDs stay TrackerRecord.id. Writes never go to real IPC/MCP.
+ * TrackerDataSource for the isolated Babel service. Local Pi uses authenticated
+ * main-process IPC; demo retains HTTP. Card IDs stay TrackerRecord.id.
  */
 export class BabelDemoTrackerDataSource implements TrackerDataSource {
   readonly kind = 'babel-demo' as const;
+  readonly mode: 'demo' | 'local';
   readonly workspacePath: string;
   readonly projectId: string;
   readonly endpoint: string;
   private readonly listeners = new Set<(change: TrackerDataChange) => void>();
   private watch: EventSource | null = null;
   private disposed = false;
+  private pollTimer: ReturnType<typeof setTimeout> | null = null;
+  private pollGeneration = 0;
+  private polling = false;
+  private eventCursor: string | undefined;
   private syncState: TrackerSyncState;
 
-  constructor(options: { workspacePath: string; endpoint?: string; projectId?: string }) {
+  constructor(options: { workspacePath: string; endpoint?: string; projectId?: string; mode?: 'demo' | 'local' }) {
+    this.mode = options.mode ?? babelExecutionMode();
     this.workspacePath = options.workspacePath;
     this.endpoint = (options.endpoint ?? babelDemoEndpoint()).replace(/\/$/, '');
     this.projectId = options.projectId ?? babelDemoProjectId();
@@ -263,8 +273,8 @@ export class BabelDemoTrackerDataSource implements TrackerDataSource {
     }
   }
 
-  async startRun(trackerId: string, idempotencyKey: string): Promise<Record<string, unknown>> {
-    return this.postCommand('run.start', { trackerId }, idempotencyKey);
+  async startRun(trackerId: string, idempotencyKey: string, expectedRevision?: number, executionTarget?: ExecutionTarget): Promise<Record<string, unknown>> {
+    return this.postCommand('run.start', { trackerId, ...(executionTarget ? { executionTarget } : {}) }, idempotencyKey, expectedRevision);
   }
 
   async cancelRun(runId: string): Promise<Record<string, unknown>> {
@@ -324,6 +334,7 @@ export class BabelDemoTrackerDataSource implements TrackerDataSource {
   }
 
   private ensureWatch(): void {
+    if (this.mode === 'local') { this.ensureLocalPoll(); return; }
     if (this.watch || typeof EventSource === 'undefined') return;
     const url = new URL(`${this.endpoint}/v2/events`);
     url.searchParams.set('projectId', this.projectId);
@@ -343,7 +354,47 @@ export class BabelDemoTrackerDataSource implements TrackerDataSource {
     this.watch = source;
   }
 
+  private ensureLocalPoll(): void {
+    if (this.polling || this.disposed || this.listeners.size === 0) return;
+    this.polling = true;
+    const generation = ++this.pollGeneration;
+    const current = () => !this.disposed && generation === this.pollGeneration && this.listeners.size > 0;
+    const poll = async () => {
+      try {
+        const batch = await this.query<{ cursor?: string | number; events?: Array<{ cursor: string | number; trackerId?: string | null }> }>(
+          'events.list', { cursor: this.eventCursor, limit: 200 },
+        );
+        if (!current()) return;
+        const events = batch.events ?? [];
+        for (const trackerId of new Set(events.map(event => event.trackerId).filter((id): id is string => Boolean(id)))) {
+          const detail = await this.getTask(trackerId);
+          if (!current()) return;
+          this.emit({ type: 'items-upserted', items: [toTrackerItem(detail, this.workspacePath)] });
+        }
+        // The response cursor may be ahead of a limited page of events.
+        const cursor = events.length > 0 ? events[events.length - 1].cursor : batch.cursor;
+        if (cursor !== undefined) this.eventCursor = String(cursor);
+        if (this.syncState.status !== 'connected') {
+          this.syncState = { ...this.syncState, status: 'connected' };
+          this.emit({ type: 'status', sync: this.syncState });
+        }
+      } catch {
+        if (current() && this.syncState.status !== 'error') {
+          this.syncState = { ...this.syncState, status: 'error' };
+          this.emit({ type: 'status', sync: this.syncState });
+        }
+      } finally {
+        if (current()) this.pollTimer = setTimeout(() => { void poll(); }, 1000);
+      }
+    };
+    void poll();
+  }
+
   private closeWatch(): void {
+    this.pollGeneration++;
+    this.polling = false;
+    if (this.pollTimer) clearTimeout(this.pollTimer);
+    this.pollTimer = null;
     this.watch?.close();
     this.watch = null;
   }
@@ -368,6 +419,16 @@ export class BabelDemoTrackerDataSource implements TrackerDataSource {
   }
 
   private async request<T>(pathname: string, body: unknown, idempotencyKey?: string): Promise<T> {
+    this.assertActive();
+    if (this.mode === 'local') {
+      if (typeof window === 'undefined' || !window.electronAPI?.invoke) {
+        throw new BabelHostCommandError('BABEL_LOCAL_CONNECTION', '本机 Pi 需要原生桌面连接');
+      }
+      const kind = pathname === '/v2/command' ? 'command' : 'query';
+      const parsed = await window.electronAPI.invoke(`babel-local:${kind}`, this.workspacePath, body);
+      if (parsed?.ok === false) throw new BabelHostCommandError(parsed.code ?? 'BABEL_LOCAL_CONNECTION', parsed.message ?? 'Pi 服务不可用');
+      return parsed as T;
+    }
     const headers: Record<string, string> = { accept: 'application/json', 'content-type': 'application/json' };
     if (idempotencyKey) headers['idempotency-key'] = idempotencyKey;
     const response = await fetch(`${this.endpoint}${pathname}`, {
