@@ -227,10 +227,26 @@ export function useBabelRunActions(trackerId: string, dataSource: BabelDemoTrack
     setViewing(runId);
   }, [cacheKey, scope, loadedScope, detail?.runs]);
 
-  const runAction = useCallback(async (work: (current: () => boolean) => Promise<void>, allowHistorical = false) => {
+  const runAction = useCallback(async (work: (current: () => boolean) => Promise<void>, allowHistorical = false, confirmedStart = false) => {
     // Reject callbacks captured for a previous selection or run snapshot, even
     // if an old button handler is invoked after the new selection renders.
-    if (!scope.active || loadedScope !== scope || !detail || scope.detail !== detail || pendingActions.has(cacheKey)) return;
+    if (!scope.active || loadedScope !== scope || !detail || pendingActions.has(cacheKey)) return;
+    if (scope.detail !== detail) {
+      const latest = scope.detail;
+      // Polling may replace an identical detail object while the start dialog is
+      // open. Keep the reviewed identity/revision/target, not object identity.
+      const sameStart = confirmedStart && latest?.mode === 'local' && detail.mode === 'local'
+        && latest.revision === detail.revision && latest.title === detail.title
+        && latest.bindingRunId === detail.bindingRunId && latest.readOnly === detail.readOnly
+        && latest.archived === detail.archived
+        && latest.executionTarget?.workdir === detail.executionTarget?.workdir
+        && latest.executionTarget?.provider === detail.executionTarget?.provider
+        && latest.executionTarget?.model === detail.executionTarget?.model;
+      if (!sameStart) {
+        if (confirmedStart) setNote('任务或执行目标已变化，请重新确认后开始。');
+        return;
+      }
+    }
     if (!allowHistorical && scope.viewingRunId && scope.viewingRunId !== detail.bindingRunId) return;
     let finish!: () => void;
     const pending = new Promise<void>((resolve) => { finish = resolve; });
@@ -263,7 +279,7 @@ export function useBabelRunActions(trackerId: string, dataSource: BabelDemoTrack
     if (current()) setNote(detail?.mode === 'local'
       ? '已接受本机 Pi 执行请求。请在会话中查看实际输出；请求已接受不代表执行或验收成功。'
       : '已接受模拟执行。创建会话不等于已经开始；这是 demo run，不是真实 Agent。');
-  }), [dataSource, detail, runAction, trackerId]);
+  }, false, detail?.mode === 'local'), [dataSource, detail, runAction, trackerId]);
 
   const cancel = useCallback(() => {
     const runId = detail?.bindingRunId;

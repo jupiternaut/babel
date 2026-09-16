@@ -12,12 +12,13 @@ const target = { workdir: '/tmp/pi-project', provider: 'test-provider', model: '
 function setup(mode: 'local' | 'demo' = 'local', running = false) {
   const listeners = new Set<() => void>();
   let revision = 4;
+  let configuredTarget = { ...target };
   const startRun = vi.fn(async () => undefined);
   const postRaw = vi.fn(async () => undefined);
   const source = {
     endpoint: 'http://127.0.0.1:7781', projectId: 'local-project', mode: 'demo',
     getTask: async (id: string) => ({
-      mode, executionTarget: mode === 'local' ? target : undefined,
+      mode, executionTarget: mode === 'local' ? { ...configuredTarget } : undefined,
       record: { revision, fields: { title: `任务 ${id}` } }, stage: running ? 'RUNNING' : 'TODO',
       latestRun: running ? { id: 'run-a', status: 'executing', sessionId: 'pi-session-1', execution: { kind: 'pi', ...target },
         messages: [{ id: 'tool-1', role: 'tool', text: '工具开始\n尚未结束', at: 'now' }] } : null,
@@ -28,6 +29,8 @@ function setup(mode: 'local' | 'demo' = 'local', running = false) {
     startRun, postRaw,
   };
   return { source: source as unknown as BabelDemoTrackerDataSource, startRun, postRaw,
+    refresh: () => { for (const listener of listeners) listener(); },
+    changeTarget: () => { configuredTarget = { ...target, model: 'another-model' }; for (const listener of listeners) listener(); },
     update: () => { revision++; for (const listener of listeners) listener(); } };
 }
 
@@ -52,6 +55,21 @@ it('requires a reviewable local target confirmation and cancelling never starts 
   fireEvent.click(screen.getByRole('button', { name: '确认开始执行' }));
   await waitFor(() => expect(startRun).toHaveBeenCalledWith('a', expect.any(String), 4, target));
   expect(screen.queryByText(/demo run/)).toBeNull();
+});
+
+it.each(['identical', 'changed-target'] as const)('keeps confirmed start bound to its semantic snapshot after %s refresh', async (change) => {
+  const { source, startRun, refresh, changeTarget } = setup();
+  render(<BabelRunControls trackerId="a" dataSource={source} />);
+  await waitFor(() => expect(screen.getByRole('button', { name: '开始执行' }).hasAttribute('disabled')).toBe(false));
+  fireEvent.click(screen.getByRole('button', { name: '开始执行' }));
+  await act(async () => { if (change === 'identical') refresh(); else changeTarget(); });
+  fireEvent.click(screen.getByRole('button', { name: '确认开始执行' }));
+  await act(async () => {});
+  if (change === 'identical') expect(startRun).toHaveBeenCalledWith('a', expect.any(String), 4, target);
+  else {
+    expect(startRun).not.toHaveBeenCalled();
+    expect(screen.getByText('任务或执行目标已变化，请重新确认后开始。')).toBeTruthy();
+  }
 });
 
 it.each(['selection', 'revision'] as const)('never redirects a frozen local start after %s changes', async (change) => {
