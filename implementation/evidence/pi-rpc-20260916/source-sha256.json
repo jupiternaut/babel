@@ -1,0 +1,9 @@
+{
+  "implementation/nimbalyst/packages/babel/src/pi/rpc-client.ts": "b101f544c5175a0de9dc9d8f37fba0e29d263cd34863b36498e855d7487c1e96",
+  "implementation/nimbalyst/packages/babel/src/pi/probe.ts": "b7f2706b5e1e2a727a3a368427524de8f8a87bd1fd87ebbcdb757f029821eaf9",
+  "implementation/nimbalyst/packages/babel/src/pi/cli.ts": "587ebb9f8159d8313d13d3a9dee19419b03fba73c09a6a77726fd84d1b017ebe",
+  "implementation/nimbalyst/packages/babel/src/cli/run.ts": "c34b2f3301aff23ded7cd88fcc7bd5f722a741b8b892671d01bb928ab95c3afd",
+  "implementation/nimbalyst/packages/babel/src/cli/help.ts": "f41992834b3f2b5235ad2db18877f9ba4184178c0e7c58a797ceb069b25af152",
+  "implementation/nimbalyst/packages/babel/tests/pi-rpc-client.test.ts": "572be9de7b68a7e9a815c6bfd3ec9d19e7bb5f0dafb7c26efb439a0042369571",
+  "implementation/nimbalyst/packages/babel/tests/pi-probe.test.ts": "26c796a446e29f43be0a71a126a65a69b92df30ca2a431ee1296ee445e351870"
+}

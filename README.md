@@ -12,6 +12,8 @@
 
 - **[TASK 开发与验收清单](TASKS.md)**：列清每项待开发功能，分别标记“开发完成”和“验收通过”；开发会话与验收会话从这里接续。
 
+- **[Pi 连接预检](implementation/nimbalyst/packages/babel/PI-INTEGRATION.md)**：CLI 可用隔离空配置检查本机 Pi RPC；Mac / Pi 0.84.1 已握手并确认进程退出。未调用模型、未接通三端真实任务，不能计为 M1 完成。
+
 - **真实设备与服务控制台**：[使用手册](implementation/nimbalyst/packages/babel/SYSTEM-CONSOLE.md)、[开发规格](SYSTEM-CONSOLE-SPEC.md)、[单独验收记录](implementation/SYSTEM-CONSOLE-ACCEPTANCE.md)。新增原生入口与真实 Windows 采样、服务控制、独立自启动、TUI/CLI、持久 Hooks。255 项 Babel 测试通过、真实 ConPTY 12 项通过；新控制台原生窗口交互和特权动作仍待验收，不宣称正式发布。
 
 - [源码](implementation/nimbalyst/)：上游 MIT 基线及本地改造；已完成 Mac M3 原生 demo 子路径实测，Windows 历史证据单独保留。

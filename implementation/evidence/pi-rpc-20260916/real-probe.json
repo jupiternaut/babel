@@ -1,0 +1,21 @@
+{
+  "ok": true,
+  "mode": "pi-rpc-probe",
+  "protocolConnected": true,
+  "modelExecutionVerified": false,
+  "taskIntegrationVerified": false,
+  "executable": "/opt/homebrew/lib/node_modules/@earendil-works/pi-coding-agent/dist/cli.js",
+  "pid": 256,
+  "sessionId": "01a0aa43-4c10-70b5-ae60-acf9ebb2f80d",
+  "isStreaming": false,
+  "messageCount": 0,
+  "requests": [
+    "get_state",
+    "get_messages"
+  ],
+  "eventTypes": [],
+  "stderrBytes": 0,
+  "credentials": "isolated-empty-profile",
+  "shutdownConfirmed": true,
+  "externalPidCheckAfterReturn": "absent"
+}

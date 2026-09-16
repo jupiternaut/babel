@@ -259,3 +259,24 @@ Mac 平台 Apple M3 / macOS27 / Node24.15，profile `mac-glass-script-20260916`�
 [原生结果](implementation/evidence/m0-05a-20260916/relations-evidence.json)、[冲突截图](implementation/evidence/m0-05a-20260916/relations-conflict-native.png)、[PTY 原始字节的 JSON 转义记录](implementation/evidence/m0-05a-20260916/relations-pty.json)、[源码与检查哈希](implementation/evidence/m0-05a-20260916/validation.json)。PTY JSON 可按 UTF-8 解码还原 raw 并校验 rawSha256；避免把终端补齐空格误当源码空白错误。
 
 未验证：独立验收会话、任意关系词汇/类型、创建时关系编排、终端完整冲突选择、应用退出后的持久草稿、所有主题/窄窗/200% 字体/系统 IME/VoiceOver、Windows/Ubuntu 与真实 Agent/生产服务。完整 M0-05/16/19 不勾完成；下一片接终端冲突选择与草稿恢复。
+
+## M1-02a：Pi RPC 传输与隔离连接预检
+
+日期：2026-09-16；基线 `80c7f34`；cwd `/Users/gengrf/Projects/babel`，分支 `ui/macos-glass`，起始工作树干净。Nimbalyst 同仓 HEAD，许可 MIT；Node24.15 / npm11.12，无新增依赖。根据用户明确的 Pi 执行分工，最小接入工程与 M0 剩余收口并行；没有再建推理/工具引擎。TASKS 新增 M1-02a 工程子项，只勾开发完成，独立验收留空。
+
+本片新增薄 RPC 传输：严格 JSONL/UTF-8、请求 ID 和命令匹配、事件与响应分离、超时不重派、异常/断连显式失败。prompt/abort 接收成功不推导完成或停止；传输不启动/杀死进程、不读取凭据。独立 CLI `pi probe` 使用新建空配置、目录和环境白名单，仅 get_state/get_messages，禁用工具/扩展/上下文发现并采用 offline 模式；其自建进程退出确认后才返回并清理。现有真实 Worker 拒绝保护与 M0 模拟路径不变。
+
+实际开发者操作：在 Babel 包目录执行 `node --import tsx src/cli/main.ts pi probe --executable /opt/homebrew/bin/pi --json`，真实安装包 Pi 0.84.1 返回非空 sessionId、isStreaming=false、0 消息，stderrBytes=0。返回后单独检查 PID 不存在。本片未调用模型或使用现有账号；进程握手不能算真实代码任务完成。
+
+| 检查 | 结果 |
+|---|---|
+| RPC/CLI 定向 | 12 通过，0 未处理错误；乱序/分块中文/Unicode 分隔符、超时不重发、错误拒绝、超限、EOF、写流错误、环境隔离与子进程退出 |
+| Babel 类型/全包 | 类型通过；65 文件，334 通过 / 4 跳过 / 0 失败 |
+| 宿主完整门禁 | 26 工作区类型通过；1673 文件通过 / 7 跳过，14195 项通过 / 26 跳过 / 0 失败，210.28 秒 |
+| 真实进程 | Mac M3 / Pi 0.84.1 / Node24.15，最终 CLI 预检通过、进程退出；模型调用为 0 |
+
+首次 test-first 检查因模块未创建而失败。补充 EOF/写入失败测试发现 write callback 中移除监听早于 error 事件，产生未处理错误；改为在流 error 事件处理后通过定向与全量检查。一次手工预检从仓库根运行，因该 cwd 没有 tsx 而失败；按文档从 Babel 包目录复跑成功。失败日志与最终结果分别保留。
+
+日志根 `/Users/gengrf/Library/Logs/Babel-Dev/pi-rpc-20260916/`；可移植证据见 [索引](implementation/evidence/pi-rpc-20260916/README.md)、[预检输出](implementation/evidence/pi-rpc-20260916/real-probe.json)、[校验与版本](implementation/evidence/pi-rpc-20260916/validation.json)、[源码哈希](implementation/evidence/pi-rpc-20260916/source-sha256.json)。源码冻结后完成全部检查，再更新文档；不以文档改动重复运行全套测试。
+
+未验证：独立验收、真实模型/工具/文件修改、任务/run/session 绑定、生产持久托管和恢复、GUI/TUI Pi 界面、完整取消/接管、真实 Git Diff、Windows/Ubuntu 及其他 Pi 版本。本片无视觉改动，不重复引用旧截图为新验收。下一片将已验证的传输接到任务身份、三端日志/输入与实际运行状态；真正调用模型前仍需明确 provider/model/账号范围。

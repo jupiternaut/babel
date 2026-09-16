@@ -1,0 +1,30 @@
+
+> @nimbalyst/babel@0.1.0-m0 test
+> vitest run --environment node --run tests/pi-rpc-client.test.ts
+
+
+ RUN  v3.2.7 /Users/gengrf/Projects/babel/implementation/nimbalyst/packages/babel
+
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/pi-rpc-client.test.ts [ tests/pi-rpc-client.test.ts ]
+Error: Cannot find module '../src/pi/rpc-client.ts' imported from '/Users/gengrf/Projects/babel/implementation/nimbalyst/packages/babel/tests/pi-rpc-client.test.ts'
+ ❯ tests/pi-rpc-client.test.ts:4:1
+      2| import { PassThrough } from "node:stream";
+      3| import { afterEach, describe, expect, it } from "vitest";
+      4| import { PiRpcClient, PiRpcError } from "../src/pi/rpc-client.ts";
+       | ^
+      5|
+      6| const clients: PiRpcClient[] = [];
+
+Caused by: Error: Failed to load url ../src/pi/rpc-client.ts (resolved id: ../src/pi/rpc-client.ts) in /Users/gengrf/Projects/babel/implementation/nimbalyst/packages/babel/tests/pi-rpc-client.test.ts. Does the file exist?
+ ❯ loadAndTransform node_modules/vite/dist/node/chunks/config.js:22739:33
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  no tests
+   Start at  07:41:04
+   Duration  227ms (transform 17ms, setup 0ms, collect 0ms, tests 0ms, environment 0ms, prepare 84ms)

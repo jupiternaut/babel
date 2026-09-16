@@ -18,6 +18,7 @@ export const HELP_TEXT = `babel — 巴别塔 M0 非交互 CLI（演示数据，
 
 命令:
   babel capabilities --json
+  babel pi probe --executable <Pi 可执行文件绝对路径> [--timeout 15000] --json
   babel project list --json
   babel device list --project <id> --json
   babel schema types --json
@@ -60,6 +61,7 @@ export const HELP_TEXT = `babel — 巴别塔 M0 非交互 CLI（演示数据，
 
 说明:
   标准输出只含 JSON 或 JSONL，不含 ANSI。诊断写 stderr。
+  pi probe 仅用空配置检查真实 Pi RPC，不调用模型、不接任务；输出 mode=pi-rpc-probe，不是 demo 执行。
   启动成功只表示 command accepted；settled=false 时 run 尚未完成。
   events watch 的 Ctrl-C 只断开订阅，不会取消 run。
   task list --attention-only 只看等待输入、失败、失联、待验收，保留四阶段并排除归档。
@@ -74,6 +76,7 @@ export const HELP_JSON = {
   settled: true,
   commands: [
     "capabilities",
+    "pi probe",
     "project list",
     "device list",
     "schema types",

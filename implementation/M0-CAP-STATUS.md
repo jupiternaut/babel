@@ -4,6 +4,8 @@
 
 **M0 仍在收口。** 已有原生 Mac GUI、真实 POSIX PTY、CLI 的 demo 交叉闭环，但未把全部 CAP 的必需输入路径、失败路径和三端等价条件验完。表中“demo 子路径通过”仅覆盖写明的操作，不表示整项 CAP 或整个 M0 通过。真实 Pi、生产 Gateway、SSH、Google OAuth 和第三方服务不属于这些 demo 证据。
 
+后续工程增量 M1-02a 已提供 Pi RPC 传输与隔离 CLI 预检，实际连接本机 Pi 0.84.1 读取空会话并退出；未调用模型、未接通任务服务或 GUI/TUI。它不改变下表的模拟执行/差异状态。见 [Pi 接入边界](nimbalyst/packages/babel/PI-INTEGRATION.md)。
+
 ## 路由与证据口径
 
 本文链接相对 `implementation/`；表内测试路径相对 `implementation/nimbalyst/packages/`。同名 `packages/babel/src/gui` 是独立辅助界面，不以它替代 Nimbalyst 原生验收。当前原生运行详情挂载的是 `BabelExecutionShell`，不能用未挂载的 `BabelWorkflowPanel` 文件推定入口可达。

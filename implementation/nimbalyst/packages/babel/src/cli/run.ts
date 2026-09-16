@@ -1,5 +1,6 @@
 import { createInterface } from "node:readline";
 import { runSystemCli } from "../system/cli.ts";
+import { runPiCli } from "../pi/cli.ts";
 import {
   BabelError,
   DEFAULT_ENDPOINT,
@@ -57,6 +58,7 @@ export async function executeCli(argv: string[]): Promise<CliExecution> {
 
 export async function runCli(argv: string[], io: CliIo = process): Promise<number> {
   if (argv[0] === "system") return runSystemCli(argv.slice(1), io);
+  if (argv[0] === "pi") return runPiCli(argv.slice(1), io);
   let flags: CliFlags;
   try {
     flags = parseArgv(argv);

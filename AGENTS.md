@@ -29,6 +29,8 @@
 
 ## 实现顺序
 
+当前 Pi 接入分工：执行仍由 Pi 提供，Babel 负责同记录/会话绑定、输出与输入、状态和验收，不另建推理与工具执行引擎。最小适配可以与剩余 M0 收口并行推进；真实模型调用必须明确 provider/model/账号范围。无凭据 RPC 预检只算工程证据，不是三端任务完成。当前切片及边界见 TASKS 和 implementation/nimbalyst/packages/babel/PI-INTEGRATION.md。
+
 开发任务参考 [并发编排方案](MULTI-AGENT-PLAN.md) 的合同与文件归属原则。当前 UI 切片由主控/设计负责人、前端、宿主/数据集成、独立验收协作；业务扩展仍覆盖 TUI/CLI/Hooks。先固定场景和接口，再并发独立模块；核心/Schema/lockfile、共享材质 API 与最终集成由唯一拥有者维护。工具不支持子Agent时保持同一依赖图顺序执行，不假称多Agent已运行。以下 NB 是历史依赖顺序，按当前证据补缺口，不能要求重写已有核心后才开始设计。
 
 1. NB-00：固定源码基线，核实扩展点、许可、Electron 耦合与无头服务边界，补齐功能矩阵。在 `implementation/nimbalyst/` 准备独立源码检出和当前主开发平台的独立 profile，保护已有数据。

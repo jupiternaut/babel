@@ -1,0 +1,92 @@
+{
+  "date": "2026-09-16",
+  "taskId": "M1-02a",
+  "sourceBase": "80c7f34a72f3aa60d9a3b6883abf3f8b4d0674cf",
+  "candidate": "commit containing this evidence; source hashes in source-sha256.json",
+  "mode": "pi-rpc-probe",
+  "developmentComplete": true,
+  "acceptancePassed": false,
+  "scope": "Engineering transport and CLI preflight only; not a GUI/TUI/CLI task execution feature",
+  "platform": {
+    "os": "macOS 27.0",
+    "hardware": "Apple M3",
+    "arch": "arm64",
+    "node": "24.15.0"
+  },
+  "pi": {
+    "package": "@earendil-works/pi-coding-agent",
+    "version": "0.84.1",
+    "cliSha256": "840d1e8e689ed9e4937bcb00b9a810e02a8567d9afb10a47097f11ca93ea1521",
+    "protocolDocSha256": "5f48a9796c924f133bf8c7018cec97ffd4240c607d554c559b6e2f9f480a0ab8"
+  },
+  "checks": {
+    "workspaceTypecheck": {
+      "passedWorkspaces": 26
+    },
+    "workspaceTests": {
+      "passed": 14195,
+      "skipped": 26,
+      "failed": 0,
+      "passedFiles": 1673,
+      "skippedFiles": 7,
+      "durationSeconds": 210.28
+    },
+    "babelTypecheck": "passed",
+    "babelTests": {
+      "passed": 334,
+      "skipped": 4,
+      "failed": 0,
+      "passedFiles": 65
+    },
+    "focused": {
+      "passed": 12,
+      "unhandledErrors": 0
+    },
+    "realPiProbe": {
+      "result": "real-probe.json",
+      "commands": [
+        "get_state",
+        "get_messages"
+      ],
+      "modelCalls": 0,
+      "taskRunStarted": false,
+      "processExitConfirmed": true
+    }
+  },
+  "failuresResolved": [
+    "Initial test-first run could not import the not-yet-written RPC module.",
+    "Write-after-end regression produced an unhandled stream error; corrected by handling the stream error event instead of removing listeners in its earlier write callback.",
+    "Final probe was initially invoked from the repository root where tsx is unavailable; rerun from the documented Babel package cwd passed."
+  ],
+  "notVerified": [
+    "independent acceptance",
+    "GUI/TUI real Pi integration",
+    "task/run/session binding and persistence",
+    "real model prompt/tools or code modification",
+    "worker process recovery and cancellation lifecycle",
+    "Windows/Ubuntu/other Pi versions",
+    "production auth/Gateway/SSH/OAuth/release"
+  ],
+  "logRoot": "/Users/gengrf/Library/Logs/Babel-Dev/pi-rpc-20260916",
+  "evidenceSha256": {
+    "before.log": "3d8df92f16460fdf60293db45e6d238e4fbbcc12314effa526ba2d3282b335c6",
+    "focused-corrected.log": "d435e115ce798e5a4fe2e22b43ef5e87c5c366e7fb9a06efa5f8eb3d22c91960",
+    "focused-final.log": "fe2d8dd0773ba65418f96ed2c7c40e447f32482ec5c434590277c80479557abc",
+    "real-probe.json": "e5a1ce96b552d1354d7da8c6377ad6f0ff0fc9a5f01bae81406e18a599c832ec",
+    "source-sha256.json": "6f4d7a81888d91465e321fe4114a41969bfe7ee99bea408a752a4243aa007ebe",
+    "test-babel.log": "cead35b4a2747c9d43ea4c975e4242a7bf4749a0e5c8911ec18923ee6af0e30f",
+    "test-host.log": "e3214a9aac80e780ff19fba48935953bf0980f12d197a8a509677dd1224b23ac",
+    "typecheck-babel-final.log": "b0783ec60d10eb74d253079a4d93c6dfc82d7b01195082a27654efcef12cfd87",
+    "typecheck-host.log": "83cbefb98874b0d6a877d3c05c67fbcd098b6c628f722dac0b3356d7d043bf74"
+  },
+  "rawLogSha256": {
+    "before.log": "50a1d0260447e5e04c1c80f57ff5a315383e9468d659f7f0ebb4d7bd34f39ef8",
+    "focused-corrected.log": "e64e8f752af0d54ad2803d3ac19b31523fe1c700a0cc12e8246cc992b06d1f40",
+    "focused-final.log": "87535337bf5de16da6e5a0a94b363477b0af18ee376112917f74bafb28350cc6",
+    "test-babel.log": "0a96d2a64c0ef57570afa592d0f0e968c52b38fe5dcd45527a90a1e6a5aaf25a",
+    "test-host.log": "08a321aa52b65ffe4cd21a0a16998733ec99306329bb7b5c5a85ebc25d3f6277",
+    "typecheck-babel-final.log": "19e949560398fd220fcb435a973449df31369c7dae7fcb5d8694ac8ddb1f26b5",
+    "typecheck-host.log": "83cbefb98874b0d6a877d3c05c67fbcd098b6c628f722dac0b3356d7d043bf74"
+  },
+  "logNormalization": "Repository logs remove trailing whitespace and blank EOF lines only; original logs and their hashes are retained separately."
+}
