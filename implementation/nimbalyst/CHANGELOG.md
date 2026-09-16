@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Edit Babel priorities, owners, and tags across desktop, terminal, and CLI with explicit saves and conflict protection.
 - Edit Babel dependencies across clients with bidirectional updates, cycle checks, and preserved conflicting drafts.
 - Check a local Pi connection from Babel CLI using an empty profile without running a model.
+- Bind Babel tasks to an explicitly configured local Pi session, with confirmed launch targets, shared output, follow-up messages, and verified process cancellation across desktop, terminal, and CLI.
 - Run sessions in your own Cloudflare sandbox with machine navigation, the shared composer, attachments and Actions, and profile/account selections remembered per project.
 
 ### Changed

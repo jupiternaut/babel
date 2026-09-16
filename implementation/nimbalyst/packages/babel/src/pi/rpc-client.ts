@@ -4,6 +4,7 @@ import type { Readable, Writable } from "node:stream";
 
 export type PiRpcCommand =
   | { type: "get_state" | "get_messages" | "abort" }
+  | { type: "set_auto_retry"; enabled: boolean }
   | { type: "prompt"; message: string; streamingBehavior?: "steer" | "followUp" }
   | { type: "steer" | "follow_up"; message: string };
 

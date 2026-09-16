@@ -23,6 +23,9 @@ import {
   type ExecutionBinding,
   type HookConfig,
   type Outcome,
+  type Mode,
+  type ProjectRecord,
+  type ExecutionTarget,
   type QueryName,
   type QueryRequest,
   type RunRecord,
@@ -36,6 +39,8 @@ import { matchesCommand, runBeforeHook, runObserveHook } from "./hooks.ts";
 import { hashPayload, nextOrderKey, uid } from "./ids.ts";
 import { FileStore, type OutboxItem, type Snapshot } from "./store.ts";
 
+import type { LocalPiRuntime, PiObservation } from "../pi/runtime.ts";
+
 export type SimulateMode = "async" | "sync" | "off";
 
 export interface DomainOptions {
@@ -45,6 +50,7 @@ export interface DomainOptions {
   simulate?: SimulateMode;
   stepMs?: number;
   now?: () => string;
+  local?: { project: ProjectRecord; provider: string; model: string; runtime: Pick<LocalPiRuntime, "start" | "message" | "cancel" | "isActive" | "dispose"> };
 }
 
 export interface TaskCard {
@@ -103,6 +109,10 @@ const HTTP_OK_COMMANDS: CommandName[] = [
 
 export class DomainService {
   readonly store: FileStore;
+  readonly mode: Mode;
+  readonly executionTarget?: ExecutionTarget;
+  private readonly local?: DomainOptions["local"];
+  private readonly localReady = new Set<string>();
   readonly profileDir: string;
   readonly fixtures: DesignFixtures;
   readonly workdir: string;
@@ -114,16 +124,35 @@ export class DomainService {
   private readonly inflight = new Map<string, { hash: string; promise: Promise<CommandResult> }>();
   private pumping = false;
   private disposed = false;
+  private shuttingDown = false;
 
   constructor(options: DomainOptions) {
+    this.local = options.local;
+    this.mode = options.local ? "local" : "demo";
+    this.executionTarget = options.local ? { workdir: options.local.project.workdir, provider: options.local.provider, model: options.local.model } : undefined;
     this.profileDir = options.profileDir;
-    this.workdir = options.workdir ?? path.join(options.profileDir, "workspaces", "babel");
+    this.workdir = options.local?.project.workdir ?? options.workdir ?? path.join(options.profileDir, "workspaces", "babel");
     this.fixtures = loadDesignFixtures(options.fixturesPath);
-    this.simulate = options.simulate ?? (process.env.BABEL_SIMULATE as SimulateMode) ?? "async";
+    this.simulate = options.local ? "off" : options.simulate ?? (process.env.BABEL_SIMULATE as SimulateMode) ?? "async";
     this.stepMs = options.stepMs ?? 280;
     this.nowFn = options.now;
-    this.store = new FileStore(options.profileDir);
-    if (this.store.data.records.length === 0) {
+    this.store = new FileStore(options.profileDir, this.mode);
+    if (options.local) {
+      const data = this.store.data;
+      if (data.projects.length && (data.projects[0].id !== options.local.project.id || data.projects[0].workdir !== this.workdir)) {
+        this.store.close();
+        throw new BabelError("PRECONDITION", "本地配置与已保存的项目不匹配，请使用独立 profile");
+      }
+      data.projects = [options.local.project];
+      data.devices = [{ id: "local-device", label: "本机 Pi", displayStatus: "configured", available: true }];
+      for (const run of data.runs) {
+        if (!TERMINAL_RUN.has(run.status)) {
+          run.status = "lost";
+          run.summary = "服务重新启动，原 Pi 进程状态待核对；没有自动重跑";
+        }
+      }
+      this.store.persist();
+    } else if (this.store.data.records.length === 0) {
       this.replaceSnapshot(buildDemoSnapshot(this.fixtures, this.workdir));
     } else {
       this.migrateSemanticSceneFlags();
@@ -137,6 +166,21 @@ export class DomainService {
     for (const timer of this.timers) clearTimeout(timer);
     this.timers.clear();
     this.listeners.clear();
+    this.store.close();
+  }
+
+  async shutdown(): Promise<void> {
+    this.shuttingDown = true;
+    try {
+      if (this.local) {
+        this.store.transaction((data) => {
+          for (const run of data.runs) {
+            if (!TERMINAL_RUN.has(run.status) && this.local!.runtime.isActive(run.id)) run.status = "cancel_requested";
+          }
+        });
+        await this.local.runtime.dispose();
+      }
+    } finally { this.dispose(); }
   }
 
   onEvent(listener: (event: BabelEvent) => void): () => void {
@@ -166,8 +210,6 @@ export class DomainService {
     }
     const key = idemKey(actor, request);
     const hash = hashPayload(request.input);
-    const replayed = this.replayIdempotency(request, actor);
-    if (replayed) return replayed;
     const pending = this.inflight.get(key);
     if (pending) {
       if (pending.hash !== hash) {
@@ -177,6 +219,8 @@ export class DomainService {
       }
       return pending.promise;
     }
+    const replayed = this.replayIdempotency(request, actor);
+    if (replayed) return replayed;
     const promise = this.executeAuthorizedCommand(request, actor);
     this.inflight.set(key, { hash, promise });
     try {
@@ -213,7 +257,7 @@ export class DomainService {
           return JSON.parse(row.resultJson) as CommandResult;
         }
       }
-      const dispatched = this.dispatchCommand(data, request, actor);
+      const dispatched = { ...this.dispatchCommand(data, request, actor), mode: this.mode };
       if (request.idempotencyKey) {
         data.idempotency.push({
           key: idemKey(actor, request),
@@ -227,7 +271,18 @@ export class DomainService {
       return dispatched;
     });
     void this.pumpOutbox();
-    if (request.name === "run.start" || request.name === "run.retry") {
+    if (this.local && result.commandStatus !== "replayed") {
+      try {
+        await this.executeLocalEffect(request, result);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        if (!this.disposed) this.store.transaction((data) => {
+          const row = data.idempotency.find((item) => item.key === idemKey(actor, request));
+          if (row) row.effectError = message;
+        });
+        throw new BabelError("UNAVAILABLE", message);
+      }
+    } else if (!this.local && (request.name === "run.start" || request.name === "run.retry")) {
       const runId = result.runId;
       if (runId) this.scheduleSimulation(runId, "default");
     }
@@ -261,10 +316,10 @@ export class DomainService {
   health(): Record<string, unknown> {
     return {
       ok: true,
-      mode: "demo",
+      mode: this.mode,
       protocolVersion: PROTOCOL_VERSION,
       schemaVersion: SCHEMA_VERSION,
-      demoLabel: this.fixtures.demoLabel,
+      demoLabel: this.mode === "demo" ? this.fixtures.demoLabel : "本地 Pi",
       clock: this.store.data.clock,
       cursor: this.store.data.cursor,
     };
@@ -273,6 +328,7 @@ export class DomainService {
   /** Test / inject helper: advance one simulated run step immediately. */
   advanceRun(runId: string, scenario: InjectScenario = "default"): void {
     this.assertActive();
+    if (this.local) throw new BabelError("PRECONDITION", "本地执行禁止注入模拟结果");
     this.store.transaction((data) => this.simulateOnce(data, runId, scenario));
     void this.pumpOutbox();
   }
@@ -336,7 +392,93 @@ export class DomainService {
         idempotencyKey: request.idempotencyKey,
       });
     }
+    if (row.effectError) throw new BabelError("UNAVAILABLE", row.effectError);
     return JSON.parse(row.resultJson) as CommandResult;
+  }
+
+  private async executeLocalEffect(request: CommandRequest, result: CommandResult): Promise<void> {
+    const runtime = this.local!.runtime;
+    const runId = result.runId;
+    if (!runId) return;
+    if (request.name === "run.start" || request.name === "run.retry") {
+      const record = this.requireRecord(this.store.data, request.projectId, result.trackerId!).record;
+      const prompt = [record.fields.title, record.fields.description, record.content.markdown,
+        JSON.stringify(record.fields.acceptance)].filter(Boolean).join("\n\n");
+      // No automatic replay on launch failure. The accepted run remains the identity
+      // for all subsequent observations, including failure and uncertain delivery.
+      void runtime.start({ runId, workdir: this.workdir, prompt }, (event) => this.observePi(runId, event))
+        .then(() => {
+          if (this.disposed) return;
+          this.localReady.add(runId);
+          this.store.transaction((data) => {
+            const run = data.runs.find((row) => row.id === runId);
+            if (run?.status === "accepted") {
+              run.status = "executing";
+              this.emit(data, { type: "run.started", projectId: run.projectId, trackerId: run.taskId, runId,
+                revision: null, correlationId: `pi:${runId}`, payload: { ready: true } });
+            }
+          });
+        })
+        .catch((error) => {
+          const run = this.store.data.runs.find((row) => row.id === runId);
+          if (run?.status !== "cancel_requested") this.observePi(runId, { type: "lost", message: String(error) });
+        });
+    } else if (request.name === "run.message" && !(result.result as { replayed?: boolean }).replayed) {
+      try {
+        await runtime.message(runId, String(request.input.text));
+      } catch (error) {
+        this.observePi(runId, { type: "lost", message: `消息交付未确认，未自动重发：${String(error)}` });
+        throw error;
+      }
+    } else if (request.name === "run.cancel") {
+      try { await runtime.cancel(runId); }
+      catch (error) {
+        this.observePi(runId, { type: "lost", message: `停止未确认：${String(error)}` });
+        throw error;
+      }
+    }
+  }
+
+  private observePi(runId: string, event: PiObservation): void {
+    if (this.disposed) return;
+    this.store.transaction((data) => {
+      const run = data.runs.find((row) => row.id === runId);
+      if (!run || TERMINAL_RUN.has(run.status)) return;
+      const { record } = this.requireRecord(data, run.projectId, run.taskId);
+      const correlationId = `pi:${runId}`;
+      if (event.type === "stopped") {
+        if (run.status === "cancel_requested") this.finishCancel(data, run.id, correlationId);
+        return;
+      }
+      let type = "run.updated";
+      if (event.type === "session") {
+        run.sessionId = event.sessionId;
+        if (run.execution) run.execution.sessionFile = event.sessionFile;
+        record.system.linkedSessions = [...new Set([...(record.system.linkedSessions ?? []), event.sessionId])];
+        run.summary = "Pi 会话已连接";
+        type = "run.started";
+      } else if (event.type === "message") {
+        const previous = run.messages.find((message) => message.id === event.id);
+        if (previous) previous.text = event.replace ? event.text : previous.text + event.text;
+        else run.messages.push({ id: event.id, role: event.role, text: event.text, at: this.now(data) });
+        type = "message.delta";
+      } else if (event.type === "tool.started" || event.type === "tool.finished") {
+        type = event.type;
+        run.messages.push({ id: uid("tool"), role: "tool", text: `${event.name} · ${event.type === "tool.started" ? "开始" : event.isError ? "失败" : "结束"}\n${JSON.stringify(event.details ?? {})}`, at: this.now(data) });
+      } else if (event.type === "idle") {
+        if (run.status !== "cancel_requested" && run.status !== "lost") {
+          run.status = "review_required";
+          run.summary = "Pi 本轮已结束；代码结果和验收尚未核实，可补充消息继续";
+        }
+      } else if (event.type === "failed" || event.type === "lost") {
+        // Failure is not proof the process has stopped; retain the workspace lock.
+        if (run.status !== "cancel_requested") run.status = "lost";
+        run.summary = event.message;
+      }
+      this.emit(data, { type, projectId: run.projectId, trackerId: run.taskId, runId,
+        revision: record.revision, correlationId, payload: { ...event, status: run.status } });
+    });
+    void this.pumpOutbox();
   }
 
   private assertProjectAccess(projectId: string | null | undefined, actor: Actor | undefined, stream: boolean): void {
@@ -351,6 +493,9 @@ export class DomainService {
   }
 
   private dispatchCommand(data: Snapshot, request: CommandRequest, actor: Actor): CommandResult {
+    if (this.local && ["demo.reset", "demo.inject", "run.retry", "run.reconcile", "run.respond", "review.request_changes", "review.accept"].includes(request.name)) {
+      throw new BabelError("PRECONDITION", "本地 Pi 尚未接入此动作；请通过会话补充消息或停止执行");
+    }
     const correlationId = request.correlationId ?? uid("corr");
     const ctx: CmdCtx = { data, request, actor, correlationId };
     switch (request.name) {
@@ -404,21 +549,21 @@ export class DomainService {
     const projectId = request.projectId ?? DEFAULT_PROJECT_ID;
     switch (request.name as QueryName) {
       case "project.list":
-        return { mode: "demo", projects: data.projects.filter((row) => actor.projectIds.includes(row.id)) };
+        return { mode: this.mode, projects: data.projects.filter((row) => actor.projectIds.includes(row.id)) };
       case "schema.types":
         return {
-          mode: "demo",
+          mode: this.mode,
           types: NATIVE_TYPES.map((id) => ({ id, label: typeLabel(id), executable: isExecutableType(id) })),
           statusScopes: ["open", "closed", "all"],
           views: data.views,
         };
       case "device.list":
-        return { mode: "demo", devices: data.devices.map(annotateDevice) };
+        return { mode: this.mode, devices: data.devices.map(annotateDevice) };
       case "view.list":
-        return { mode: "demo", views: data.views };
+        return { mode: this.mode, views: data.views };
       case "hook.list":
         return {
-          mode: "demo",
+          mode: this.mode,
           hooks: data.hookConfigs,
           outbox: data.outbox,
           deliveries: data.hookDeliveries,
@@ -433,31 +578,31 @@ export class DomainService {
       case "task.list":
         return this.queryTaskList(data, projectId, input);
       case "ready.list":
-        return { mode: "demo", items: this.readyItems(data, projectId) };
+        return { mode: this.mode, items: this.readyItems(data, projectId) };
       case "run.show": {
         const run = this.requireRun(data, projectId, str(input.runId ?? input.id));
-        return { mode: "demo", run, artifacts: artifactsOf(run) };
+        return { mode: this.mode, run, artifacts: artifactsOf(run) };
       }
       case "run.list": {
         const trackerId = input.trackerId ? str(input.trackerId) : undefined;
         const runs = data.runs
           .filter((row) => row.projectId === projectId && (!trackerId || row.taskId === trackerId))
           .sort((a, b) => a.attempt - b.attempt);
-        return { mode: "demo", runs };
+        return { mode: this.mode, runs };
       }
       case "diff.get": {
         const run = this.requireRun(data, projectId, str(input.runId ?? input.id));
-        return { mode: "demo", runId: run.id, diff: run.diff };
+        return { mode: this.mode, runId: run.id, diff: run.diff };
       }
       case "artifact.list": {
         const run = this.requireRun(data, projectId, str(input.runId ?? input.id));
-        return { mode: "demo", runId: run.id, artifacts: artifactsOf(run) };
+        return { mode: this.mode, runId: run.id, artifacts: artifactsOf(run) };
       }
       case "events.list": {
         const cursor = input.cursor != null ? String(input.cursor) : undefined;
         const limit = Number(input.limit ?? 200);
         return {
-          mode: "demo",
+          mode: this.mode,
           cursor: data.cursor,
           events: this.eventsSince(projectId, cursor, actor).slice(0, limit),
         };
@@ -467,7 +612,7 @@ export class DomainService {
         const found = this.requireRecord(data, projectId, trackerId);
         const runs = data.runs.filter((row) => row.projectId === projectId && row.taskId === trackerId);
         return {
-          mode: "demo",
+          mode: this.mode,
           trackerId,
           comments: found.record.system.comments ?? [],
           activity: found.record.system.activity ?? [],
@@ -659,7 +804,7 @@ export class DomainService {
     this.assertRevision(record, request.expectedRevision);
     this.assertNoCancelOrLost(data, binding);
     const latest = binding.latestRunId ? data.runs.find((row) => row.id === binding.latestRunId) : undefined;
-    if (latest && ACTIVE_RUN.has(latest.status) && latest.status !== "review_required") {
+    if (latest && ACTIVE_RUN.has(latest.status) && (this.local || latest.status !== "review_required")) {
       throw new BabelError("PRECONDITION", "进行中的执行不能归档，请先结束或取消", { runId: latest.id, status: latest.status });
     }
     binding.restoreStage = deriveStage(record, binding);
@@ -741,7 +886,16 @@ export class DomainService {
     this.assertNoCancelOrLost(data, binding);
     const active = data.runs.find((row) => row.projectId === request.projectId && row.taskId === record.id && !TERMINAL_RUN.has(row.status));
     if (active) throw new BabelError("RUN_ACTIVE", "同一条目至多一个未终止执行", { runId: active.id, status: active.status });
-    const deviceId = String(request.input.deviceId ?? binding.targetDeviceId ?? "fixture-device-ubuntu");
+    if (this.local) {
+      if (request.expectedRevision == null || !request.idempotencyKey) throw new BabelError("PRECONDITION", "本地启动必须携带任务版本、执行目标和幂等键");
+      const target = request.input.executionTarget as ExecutionTarget | undefined;
+      if (!target || target.workdir !== this.executionTarget!.workdir || target.provider !== this.executionTarget!.provider || target.model !== this.executionTarget!.model) {
+        throw new BabelError("PRECONDITION", "执行目标已变化，请重新确认工作目录和模型");
+      }
+      const occupied = data.runs.find((row) => !TERMINAL_RUN.has(row.status));
+      if (occupied) throw new BabelError("RUN_ACTIVE", "工作目录已有未终止执行；独立 worktree 尚未接入", { runId: occupied.id });
+    }
+    const deviceId = this.local ? "local-device" : String(request.input.deviceId ?? binding.targetDeviceId ?? "fixture-device-ubuntu");
     const device = data.devices.find((row) => row.id === deviceId);
     if (device && !device.available) {
       throw new BabelError("UNAVAILABLE", "目标设备当前不可用（演示离线）", { deviceId, displayStatus: device.displayStatus });
@@ -754,16 +908,17 @@ export class DomainService {
       attempt: previous ? previous.attempt + 1 : data.runs.filter((row) => row.taskId === record.id).length + 1,
       status: "accepted",
       deviceId,
-      providerId: String(request.input.providerId ?? "pi-sim"),
+      providerId: this.local ? "pi" : String(request.input.providerId ?? "pi-sim"),
+      ...(this.executionTarget ? { execution: { kind: "pi" as const, ...this.executionTarget } } : {}),
       sessionId: null,
       taskRevision: record.revision,
       inputSnapshotId: uid("snap"),
-      baseCommit: "demo-base-001",
+      baseCommit: this.local ? null : "demo-base-001",
       executionFence: (previous?.executionFence ?? 0) + 1,
       startedAt: now,
       endedAt: null,
       lastEventSeq: 0,
-      summary: String(request.input.summary ?? "模拟执行已接受，尚未完成"),
+      summary: this.local ? "本地 Pi 启动请求已保存，等待会话连接" : String(request.input.summary ?? "模拟执行已接受，尚未完成"),
       messages: [],
       inputRequests: [],
       verification: (record.fields.acceptance ?? []).map((item) => ({ ...item, state: "pending" as const })),
@@ -800,6 +955,10 @@ export class DomainService {
     const { data, request, correlationId } = ctx;
     const run = this.requireRun(data, request.projectId, str(request.input.runId ?? request.input.id));
     if (TERMINAL_RUN.has(run.status)) throw new BabelError("PRECONDITION", "已结束的执行只能查看，不能再发送运行消息");
+    if (this.local && (!this.localReady.has(run.id) || !["executing", "review_required"].includes(run.status) || !this.local.runtime.isActive(run.id))) {
+      throw new BabelError("PRECONDITION", "Pi 会话未连接或正在停止，不能发送");
+    }
+    if (this.local && !request.idempotencyKey) throw new BabelError("PRECONDITION", "消息必须携带幂等键");
     const text = str(request.input.text);
     const clientMessageId = request.input.clientMessageId ? String(request.input.clientMessageId) : undefined;
     if (clientMessageId && run.messages.some((row) => row.clientMessageId === clientMessageId)) {
@@ -807,6 +966,7 @@ export class DomainService {
     }
     const message = { id: uid("msg"), role: "user" as const, text, at: this.now(data), clientMessageId };
     run.messages.push(message);
+    if (this.local) { run.status = "executing"; run.summary = "正在向 Pi 发送补充消息"; }
     this.emit(data, {
       type: "message.delta",
       projectId: request.projectId,
@@ -859,6 +1019,7 @@ export class DomainService {
     const { data, request, correlationId } = ctx;
     const run = this.requireRun(data, request.projectId, str(request.input.runId ?? request.input.id));
     if (TERMINAL_RUN.has(run.status)) throw new BabelError("PRECONDITION", "执行已经结束");
+    if (this.local && !this.local.runtime.isActive(run.id)) throw new BabelError("LOST_UNRECONCILED", "本服务不再持有原 Pi 进程，不能声称已停止");
     run.status = "cancel_requested";
     this.emit(data, {
       type: "run.finished",
@@ -1109,7 +1270,7 @@ export class DomainService {
       correlationId: ctx.correlationId,
       payload: { action: "demo.reset" },
     });
-    return okBare(ctx.request, ctx.correlationId, { reset: true, mode: "demo" });
+    return okBare(ctx.request, ctx.correlationId, { reset: true, mode: this.mode });
   }
 
   private cmdInject(ctx: CmdCtx): CommandResult {
@@ -1230,8 +1391,8 @@ export class DomainService {
     const counts = { TODO: 0, RUNNING: 0, DONE: 0, ARCHIVED: 0 };
     for (const card of items) counts[card.stage] += 1;
     return {
-      mode: "demo",
-      demoLabel: this.fixtures.demoLabel,
+      mode: this.mode,
+      demoLabel: this.mode === "demo" ? this.fixtures.demoLabel : "本地 Pi",
       cursor: data.cursor,
       counts,
       items,
@@ -1262,7 +1423,7 @@ export class DomainService {
           actions["run.start"] = { allowed: false, reason: "已有未终止执行", code: "RUN_ACTIVE" };
           actions["run.retry"] = { allowed: false, reason: "未终止不能重试", code: "RUN_ACTIVE" };
         }
-        if (latest && ACTIVE_RUN.has(latest.status) && latest.status !== "review_required") {
+        if (latest && ACTIVE_RUN.has(latest.status) && (this.local || latest.status !== "review_required")) {
           actions["task.archive"] = { allowed: false, reason: "进行中的执行不能归档，请先结束或取消", code: "PRECONDITION" };
         }
         if (latest?.status === "cancel_requested") {
@@ -1307,8 +1468,21 @@ export class DomainService {
         }
       }
     }
+    if (this.local) {
+      for (const name of ["demo.reset", "demo.inject", "run.retry", "run.reconcile", "run.respond", "review.accept", "review.request_changes"]) {
+        actions[name] = { allowed: false, reason: "本地 Pi 尚未接入此动作", code: "PRECONDITION" };
+      }
+      if (data.runs.some((row) => !TERMINAL_RUN.has(row.status))) {
+        actions["run.start"] = actions["run.retry"] = { allowed: false, reason: "工作目录已有未终止执行", code: "RUN_ACTIVE" };
+      }
+      const selected = runId ? data.runs.find((row) => row.id === runId) : data.runs.find((row) => row.id === data.bindings.find((item) => item.trackerId === trackerId)?.latestRunId);
+      if (!selected || !this.localReady.has(selected.id) || !this.local.runtime.isActive(selected.id) || !["executing", "review_required"].includes(selected.status)) {
+        actions["run.message"] = { allowed: false, reason: "Pi 会话未连接或正在停止", code: "PRECONDITION" };
+      }
+      if (selected?.status === "lost" && !this.local.runtime.isActive(selected.id)) actions["run.cancel"] = { allowed: false, reason: "原 Pi 进程状态待核对", code: "LOST_UNRECONCILED" };
+    }
     return {
-      mode: "demo",
+      mode: this.mode,
       protocolVersion: PROTOCOL_VERSION,
       disabledNote: "禁用表示该动作当前不可用或未在本阶段适配，不表示三端功能已经等价完成",
       actions,
@@ -1381,8 +1555,9 @@ export class DomainService {
     const runs = data.runs.filter((row) => row.projectId === record.projectId && row.taskId === record.id);
     const latest = binding.latestRunId ? runs.find((row) => row.id === binding.latestRunId) : undefined;
     return {
-      mode: "demo",
-      demoLabel: this.fixtures.demoLabel,
+      mode: this.mode,
+      demoLabel: this.mode === "demo" ? this.fixtures.demoLabel : "本地 Pi",
+      ...(this.executionTarget ? { executionTarget: this.executionTarget } : {}),
       record,
       binding,
       stage: deriveStage(record, binding),
@@ -1715,7 +1890,7 @@ export class DomainService {
     if (!run || run.status !== "cancel_requested") return;
     run.status = "cancelled";
     run.endedAt = this.now(data);
-    run.summary = "模拟：取消已确认";
+    run.summary = this.local ? "Pi 进程停止已确认" : "模拟：取消已确认";
     const { record, binding } = this.requireRecord(data, run.projectId, run.taskId);
     binding.outcome = "unresolved";
     record.fields.status = "wont-do";
@@ -1762,7 +1937,7 @@ export class DomainService {
       occurredAt: this.now(data),
       correlationId: partial.correlationId,
       causationId: null,
-      mode: "demo",
+      mode: this.mode,
       payload: partial.payload,
     };
     data.events.push(event);
@@ -1872,13 +2047,14 @@ export class DomainService {
       trackerId: record.id,
       runId,
       correlationId,
-      mode: "demo",
+      mode: this.mode,
       result,
     };
   }
 
   private now(data: Snapshot): string {
     if (this.nowFn) return this.nowFn();
+    if (this.local) { data.clock = new Date().toISOString(); return data.clock; }
     const next = new Date(Date.parse(data.clock) + 1000).toISOString();
     data.clock = next;
     return next;
@@ -1894,7 +2070,7 @@ export class DomainService {
   }
 
   private assertActive(): void {
-    if (this.disposed) throw new BabelError("UNAVAILABLE", "服务已关闭");
+    if (this.disposed || this.shuttingDown) throw new BabelError("UNAVAILABLE", "服务正在关闭或已关闭");
   }
 }
 
@@ -1953,6 +2129,7 @@ function orderBetween(before: string | undefined, after: string | undefined, exi
 }
 
 function artifactsOf(run: RunRecord): Array<{ id: string; name: string; kind: string; available: boolean }> {
+  if (run.execution?.kind === "pi") return [];
   return (run.diff?.files ?? []).map((file) => ({
     id: `art-${run.id}-${file.path}`,
     name: file.path,

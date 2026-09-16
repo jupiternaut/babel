@@ -38,8 +38,14 @@ export function createDemoServer(options: ServerOptions) {
   const bindPort = options.port ?? 7780;
   const domain = options.domain;
   const serviceToken = options.serviceToken;
+  if (domain.mode === "local" && host !== "127.0.0.1") throw new BabelError("PRECONDITION", "本地 Pi 服务只允许绑定 127.0.0.1");
   const bound = { port: bindPort };
+  const streams = new Set<ServerResponse>();
   const server = createServer((req, res) => {
+    if (req.url?.split("?")[0] === "/v2/events") {
+      streams.add(res);
+      res.on("close", () => streams.delete(res));
+    }
     void handle(req, res, domain, serviceToken);
   });
   return {
@@ -62,11 +68,14 @@ export function createDemoServer(options: ServerOptions) {
         });
       });
     },
-    close(): Promise<void> {
-      domain.dispose();
-      return new Promise((resolve, reject) => {
-        server.close((err) => (err ? reject(err) : resolve()));
-      });
+    async close(): Promise<void> {
+      try { await domain.shutdown(); }
+      finally {
+        for (const stream of streams) stream.end();
+        await new Promise<void>((resolve, reject) => {
+          server.close((err) => (err ? reject(err) : resolve()));
+        });
+      }
     },
     raw: server,
   };
@@ -85,16 +94,16 @@ async function handle(req: IncomingMessage, res: ServerResponse, domain: DomainS
       return json(res, 200, domain.health(), cors);
     }
     if (req.method === "GET" && url.pathname === "/v2/snapshot") {
-      const actor = trustedActor(req, serviceToken);
+      const actor = trustedActor(req, serviceToken, domain);
       const projectId = url.searchParams.get("projectId") ?? DEFAULT_PROJECT_ID;
-      return json(res, 200, { mode: "demo", snapshot: domain.snapshot(projectId, actor) }, cors);
+      return json(res, 200, { mode: domain.mode, snapshot: domain.snapshot(projectId, actor) }, cors);
     }
     if (req.method === "GET" && url.pathname === "/v2/events") {
       return streamEvents(req, res, url, domain, serviceToken);
     }
     if (req.method === "POST" && url.pathname === "/v2/command") {
       const body = await readJson(req);
-      const request = commandFromBody(body, req, serviceToken);
+      const request = commandFromBody(body, req, serviceToken, domain);
       const result = await domain.command(request);
       return json(res, result.settled ? 200 : 202, result, cors);
     }
@@ -104,7 +113,7 @@ async function handle(req: IncomingMessage, res: ServerResponse, domain: DomainS
         name: body.name as QueryName,
         projectId: typeof body.projectId === "string" ? body.projectId : undefined,
         input: (body.input as Record<string, unknown> | undefined) ?? {},
-        actor: trustedActor(req, serviceToken),
+        actor: trustedActor(req, serviceToken, domain),
       });
       return json(res, 200, result, cors);
     }
@@ -116,7 +125,7 @@ async function handle(req: IncomingMessage, res: ServerResponse, domain: DomainS
 }
 
 async function handleRest(req: IncomingMessage, res: ServerResponse, url: URL, domain: DomainService, serviceToken: string): Promise<boolean> {
-  const actor = trustedActor(req, serviceToken);
+  const actor = trustedActor(req, serviceToken, domain);
   const cors = corsHeaders(req);
   const projectId = url.searchParams.get("projectId") ?? DEFAULT_PROJECT_ID;
   const parts = url.pathname.split("/").filter(Boolean);
@@ -139,7 +148,7 @@ async function handleRest(req: IncomingMessage, res: ServerResponse, url: URL, d
   }
   if (req.method === "POST" && url.pathname === "/v2/tasks") {
     const input = await readJson(req);
-    const result = await domain.command(commandFromBody({ name: "task.create", projectId, input }, req, serviceToken));
+    const result = await domain.command(commandFromBody({ name: "task.create", projectId, input }, req, serviceToken, domain));
     json(res, 200, result, cors);
     return true;
   }
@@ -156,32 +165,32 @@ async function handleRest(req: IncomingMessage, res: ServerResponse, url: URL, d
         projectId,
         input: { ...input, trackerId: id },
         expectedRevision: input.expectedRevision,
-      }, req, serviceToken));
+      }, req, serviceToken, domain));
       json(res, 200, result, cors);
       return true;
     }
   }
   if (parts[0] === "v2" && parts[1] === "tasks" && parts[2] && parts[3] === "reorder" && req.method === "POST") {
     const input = await readJson(req);
-    const result = await domain.command(commandFromBody({ name: "task.reorder", projectId, input: { ...input, trackerId: parts[2] } }, req, serviceToken));
+    const result = await domain.command(commandFromBody({ name: "task.reorder", projectId, input: { ...input, trackerId: parts[2] } }, req, serviceToken, domain));
     json(res, 200, result, cors);
     return true;
   }
   if (parts[0] === "v2" && parts[1] === "tasks" && parts[2] && parts[3] === "archive" && req.method === "POST") {
     const input = await readJson(req).catch(() => ({}));
-    const result = await domain.command(commandFromBody({ name: "task.archive", projectId, input: { ...input, trackerId: parts[2] } }, req, serviceToken));
+    const result = await domain.command(commandFromBody({ name: "task.archive", projectId, input: { ...input, trackerId: parts[2] } }, req, serviceToken, domain));
     json(res, 200, result, cors);
     return true;
   }
   if (parts[0] === "v2" && parts[1] === "tasks" && parts[2] && parts[3] === "restore" && req.method === "POST") {
     const input = await readJson(req).catch(() => ({}));
-    const result = await domain.command(commandFromBody({ name: "task.restore", projectId, input: { ...input, trackerId: parts[2] } }, req, serviceToken));
+    const result = await domain.command(commandFromBody({ name: "task.restore", projectId, input: { ...input, trackerId: parts[2] } }, req, serviceToken, domain));
     json(res, 200, result, cors);
     return true;
   }
   if (parts[0] === "v2" && parts[1] === "tasks" && parts[2] && parts[3] === "runs" && req.method === "POST") {
     const input = await readJson(req).catch(() => ({}));
-    const result = await domain.command(commandFromBody({ name: "run.start", projectId, input: { ...input, trackerId: parts[2] } }, req, serviceToken));
+    const result = await domain.command(commandFromBody({ name: "run.start", projectId, input: { ...input, trackerId: parts[2] } }, req, serviceToken, domain));
     json(res, result.settled ? 200 : 202, result, cors);
     return true;
   }
@@ -195,20 +204,20 @@ async function handleRest(req: IncomingMessage, res: ServerResponse, url: URL, d
   }
   if (parts[0] === "v2" && parts[1] === "runs" && parts[2] && parts[3] === "messages" && req.method === "POST") {
     const input = await readJson(req);
-    const result = await domain.command(commandFromBody({ name: "run.message", projectId, input: { ...input, runId: parts[2] } }, req, serviceToken));
+    const result = await domain.command(commandFromBody({ name: "run.message", projectId, input: { ...input, runId: parts[2] } }, req, serviceToken, domain));
     json(res, 202, result, cors);
     return true;
   }
   if (parts[0] === "v2" && parts[1] === "runs" && parts[2] && parts[3] === "cancel" && req.method === "POST") {
     const input = await readJson(req).catch(() => ({}));
-    const result = await domain.command(commandFromBody({ name: "run.cancel", projectId, input: { ...input, runId: parts[2] } }, req, serviceToken));
+    const result = await domain.command(commandFromBody({ name: "run.cancel", projectId, input: { ...input, runId: parts[2] } }, req, serviceToken, domain));
     json(res, 202, result, cors);
     return true;
   }
   if (parts[0] === "v2" && parts[1] === "runs" && parts[2] && parts[3] === "review" && req.method === "POST") {
     const input = await readJson(req);
     const name: CommandName = String(input.decision ?? input.name) === "request_changes" ? "review.request_changes" : "review.accept";
-    const result = await domain.command(commandFromBody({ name, projectId, input: { ...input, runId: parts[2] } }, req, serviceToken));
+    const result = await domain.command(commandFromBody({ name, projectId, input: { ...input, runId: parts[2] } }, req, serviceToken, domain));
     json(res, 200, result, cors);
     return true;
   }
@@ -224,7 +233,7 @@ async function handleRest(req: IncomingMessage, res: ServerResponse, url: URL, d
 }
 
 function streamEvents(req: IncomingMessage, res: ServerResponse, url: URL, domain: DomainService, serviceToken: string): void {
-  const actor = trustedActor(req, serviceToken);
+  const actor = trustedActor(req, serviceToken, domain);
   const cors = corsHeaders(req);
   const projectId = url.searchParams.get("projectId") ?? DEFAULT_PROJECT_ID;
   const lastEventId = req.headers["last-event-id"];
@@ -235,6 +244,7 @@ function streamEvents(req: IncomingMessage, res: ServerResponse, url: URL, domai
     "cache-control": "no-cache",
     connection: "keep-alive",
   });
+  res.flushHeaders();
   const send = (event: { eventId: string; cursor: string }) => {
     res.write(`id: ${event.cursor}\n`);
     res.write(`event: babel\n`);
@@ -259,9 +269,9 @@ function streamEvents(req: IncomingMessage, res: ServerResponse, url: URL, domai
   });
 }
 
-function commandFromBody(body: Record<string, unknown>, req: IncomingMessage, serviceToken: string): CommandRequest {
+function commandFromBody(body: Record<string, unknown>, req: IncomingMessage, serviceToken: string, domain: DomainService): CommandRequest {
   const headers = req.headers;
-  const actor = trustedActor(req, serviceToken);
+  const actor = trustedActor(req, serviceToken, domain);
   const name = body.name as CommandName;
   if (name === "hook.register" && actor.kind !== "system") {
     throw new BabelError("PERMISSION", "登记可执行进程 Hook 需要服务令牌");
@@ -277,8 +287,14 @@ function commandFromBody(body: Record<string, unknown>, req: IncomingMessage, se
   };
 }
 
-function trustedActor(req: IncomingMessage, serviceToken: string): Actor {
+function trustedActor(req: IncomingMessage, serviceToken: string, domain: DomainService): Actor {
   const presented = tokenFromHeaders(req.headers as Record<string, string | string[] | undefined>);
+  if (domain.mode === "local") {
+    if (!presented || presented !== serviceToken || !isAllowedBrowserOrigin(header(req.headers.origin))) {
+      throw new BabelError("PERMISSION", "本地 Pi 服务需要有效令牌和受信任来源");
+    }
+    return { ...SERVICE_ACTOR, projectIds: domain.store.data.projects.map((project) => project.id) };
+  }
   if (presented && presented === serviceToken) return { ...SERVICE_ACTOR };
   return { ...DEMO_ACTOR };
 }

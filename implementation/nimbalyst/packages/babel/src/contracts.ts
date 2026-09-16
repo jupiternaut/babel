@@ -5,7 +5,7 @@ export const PROTOCOL_VERSION = "2.3.0-m0";
 export const DEFAULT_PROJECT_ID = "fixture-project-babel";
 export const DEFAULT_ENDPOINT = "http://127.0.0.1:7780";
 
-export type Mode = "demo";
+export type Mode = "demo" | "local";
 export type Stage = "TODO" | "RUNNING" | "DONE" | "ARCHIVED";
 export type Outcome = "not_started" | "unresolved" | "succeeded";
 export type CompletionPolicy = "verified_auto" | "verified_and_reviewed";
@@ -210,7 +210,14 @@ export interface DiffFile {
   patch: string;
 }
 
+export interface ExecutionTarget {
+  workdir: string;
+  provider: string;
+  model: string;
+}
+
 export interface RunRecord {
+  execution?: ExecutionTarget & { kind: "pi"; sessionFile?: string };
   id: string;
   projectId: string;
   taskId: string;

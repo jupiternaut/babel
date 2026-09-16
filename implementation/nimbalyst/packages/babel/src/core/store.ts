@@ -1,7 +1,9 @@
-import { mkdirSync, readFileSync, renameSync, writeFileSync, existsSync } from "node:fs";
+import { mkdirSync, readFileSync, renameSync, writeFileSync, existsSync, unlinkSync } from "node:fs";
+import { randomUUID } from "node:crypto";
 import path from "node:path";
 import type {
   BabelEvent,
+  Mode,
   DeviceRecord,
   ExecutionBinding,
   HookConfig,
@@ -18,6 +20,7 @@ export interface IdempotencyRow {
   command: string;
   payloadHash: string;
   resultJson: string;
+  effectError?: string;
 }
 
 export interface OutboxItem {
@@ -42,7 +45,7 @@ export interface HookDeliveryLog {
 
 export interface Snapshot {
   schemaVersion: 1;
-  mode: "demo";
+  mode: Mode;
   clock: string;
   seqByStream: Record<string, number>;
   cursor: number;
@@ -85,21 +88,38 @@ export function emptySnapshot(clock: string): Snapshot {
 export class FileStore {
   readonly file: string;
   data: Snapshot;
+  private lock?: { file: string; identity: string };
 
-  constructor(profileDir: string) {
+  constructor(profileDir: string, mode: Mode = "demo") {
     mkdirSync(path.join(profileDir, "state"), { recursive: true });
-    this.file = path.join(profileDir, "state", "demo-store.json");
-    if (existsSync(this.file)) {
-      this.data = JSON.parse(readFileSync(this.file, "utf8")) as Snapshot;
-    } else {
-      this.data = emptySnapshot("2026-09-14T07:00:00Z");
-      this.persist();
+    if (mode === "local") {
+      const file = path.join(profileDir, "state", "local-writer.lock");
+      const identity = JSON.stringify({ pid: process.pid, id: randomUUID() });
+      try { writeFileSync(file, identity, { flag: "wx", mode: 0o600 }); }
+      catch { throw new Error(`本地 profile 已锁定：${file}；请先确认原服务与 Pi 已停止，不会自动抢占锁`); }
+      this.lock = { file, identity };
     }
+    this.file = path.join(profileDir, "state", `${mode}-store.json`);
+    try {
+      if (existsSync(this.file)) {
+        this.data = JSON.parse(readFileSync(this.file, "utf8")) as Snapshot;
+      } else {
+        this.data = emptySnapshot("2026-09-14T07:00:00Z");
+        this.data.mode = mode;
+        this.persist();
+      }
+    } catch (error) { this.close(); throw error; }
+  }
+
+  close(): void {
+    if (!this.lock) return;
+    if (existsSync(this.lock.file) && readFileSync(this.lock.file, "utf8") === this.lock.identity) unlinkSync(this.lock.file);
+    this.lock = undefined;
   }
 
   persist(): void {
     const tmp = `${this.file}.tmp`;
-    writeFileSync(tmp, JSON.stringify(this.data, null, 2), "utf8");
+    writeFileSync(tmp, JSON.stringify(this.data, null, 2), { encoding: "utf8", mode: this.data.mode === "local" ? 0o600 : 0o644 });
     renameSync(tmp, this.file);
   }
 

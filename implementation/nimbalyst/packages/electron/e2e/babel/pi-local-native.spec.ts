@@ -3,14 +3,13 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { createRequire } from 'node:module';
 import { readFileSync, realpathSync, writeFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
 // One serial spec against an explicitly started, isolated native instance.
 // The executable guard below is mandatory: this test never authorizes a model call.
 test.describe.configure({ mode: 'serial' });
 const exec = promisify(execFile);
-const source = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
+const source = path.resolve('.');
 const cwd = path.join(source, 'packages/babel');
 const loadModule = createRequire(path.join(source, 'package.json'));
 const stripAnsi = (value: string) => value.replace(/\x1b\[[0-9;?]*[A-Za-z]/g, '');
@@ -99,7 +98,6 @@ test('local Pi protocol double: native start, real PTY session, CLI identity and
   let output = '';
   let history = '';
   let page: Page | undefined;
-  let previousTheme: string | undefined;
   let id = '';
   let runId = '';
   let read: (() => Promise<Task>) | undefined;
@@ -188,10 +186,14 @@ test('local Pi protocol double: native start, real PTY session, CLI identity and
     expect(shown.mode).toBe('local');
     expect(shown.run.id).toBe(runId);
     expect(shown.run.sessionId).toBe(sessionId);
+    await detail.getByLabel('补充消息（发给当前执行，不是任务讨论）').fill('来自 GUI 的补充消息');
+    await detail.getByRole('button', { name: '发送补充消息', exact: true }).click();
+    await expect.poll(async () => (await read!()).latestRun!.messages.filter(message => message.role === 'user' && message.text === '来自 GUI 的补充消息').length).toBe(1);
+    await expect(detail.getByLabel('补充消息（发给当前执行，不是任务讨论）')).toHaveValue('');
 
-    previousTheme = await page.evaluate(() => (window as unknown as { electronAPI: { getTheme(): Promise<string> } }).electronAPI.getTheme());
     for (const theme of ['light', 'dark']) {
-      await page.evaluate(value => (window as unknown as { electronAPI: { setTheme(value: string): Promise<void> } }).electronAPI.setTheme(value), theme);
+      await page.getByRole('button', { name: 'Change theme', exact: true }).click();
+      await page.getByRole('menu', { name: 'Theme selection' }).getByText(theme === 'light' ? 'Light' : 'Dark', { exact: true }).click();
       await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
       await page.screenshot({ path: info.outputPath(`pi-protocol-${theme}.png`) });
     }
@@ -224,7 +226,7 @@ test('local Pi protocol double: native start, real PTY session, CLI identity and
       projectId, trackerId: id, runId, sessionId, workspace,
       initial, started, settled, stopped,
       verified: ['native-create', 'cancel-start-confirmation-does-not-launch', 'native-confirmed-target', 'streamed-output',
-        'real-PTY-task-run-session-identity', 'PTY-message-to-same-run', 'authenticated-CLI-readback', 'native-confirmed-stop',
+        'real-PTY-task-run-session-identity', 'GUI-message-to-same-run', 'PTY-message-to-same-run', 'authenticated-CLI-readback', 'native-confirmed-stop',
         'no-fake-DONE-or-verification', 'light-dark-native-screenshots', 'PTY-alternate-screen-restored'],
       notVerified: ['real-provider-or-model-call', 'real-tool-edit', 'real-diff-and-test-evidence', 'independent-acceptance-session'],
     }, null, 2));
@@ -242,9 +244,7 @@ test('local Pi protocol double: native start, real PTY session, CLI identity and
         writeFileSync(info.outputPath('pi-protocol-cleanup-error.txt'), redact(String(error)));
       }
     }
-    if (page && previousTheme) {
-      await page.evaluate(value => (window as unknown as { electronAPI: { setTheme(value: string): Promise<void> } }).electronAPI.setTheme(value), previousTheme);
-    }
+    // The isolated profile retains the theme displayed in the final screenshot.
     await browser.close();
   }
 });

@@ -176,7 +176,7 @@ export class LocalPiRuntime {
     this.disposed = true;
     const results = await Promise.allSettled([...this.runs.keys()].map(runId => this.cancel(runId)));
     const failures = results.filter((result): result is PromiseRejectedResult => result.status === "rejected");
-    if (failures.length) throw new AggregateError(failures.map(result => result.reason), "Pi shutdown was not confirmed for every owned process group");
+    if (failures.length) throw new Error(`Pi shutdown was not confirmed for every owned process group: ${failures.map(result => String(result.reason)).join("; ")}`);
   }
 
   private getRun(runId: string): RunningPi {
