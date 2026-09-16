@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+import { stripVTControlCharacters } from "node:util";
 import { stdin, stdout } from "node:process";
 import {
   BabelError,
@@ -53,10 +55,20 @@ interface TaskCard extends CardView {
   readOnly?: boolean;
 }
 
+interface ExecutionTarget {
+  workdir: string;
+  provider: string;
+  model: string;
+}
+
+type TuiRun = RunRecord & { execution?: ExecutionTarget & { kind: "pi"; sessionFile?: string } };
+
 interface Detail {
+  mode?: "demo" | "local";
+  executionTarget?: ExecutionTarget;
   record: TrackerRecord;
   stage: Stage;
-  latestRun: RunRecord | null;
+  latestRun: TuiRun | null;
   card: TaskCard;
 }
 
@@ -89,7 +101,9 @@ type Overlay =
   | { kind: "edit"; title: string; body: string; field: "title" | "body"; revision: number; projectId: string; trackerId: string; saving: boolean }
   | { kind: "fields"; priority: string; owner: string; tags: string; field: "priority" | "owner" | "tags"; revision: number; projectId: string; trackerId: string; saving: boolean }
   | { kind: "create"; title: string; body: string; field: "title" | "body" }
-  | { kind: "message"; text: string; respondId?: string }
+  | { kind: "message"; text: string; respondId?: string; projectId: string; runId: string; revision: number; saving: boolean; idempotencyKey: string }
+  | { kind: "start"; projectId: string; trackerId: string; title: string; revision: number; target: ExecutionTarget; saving: boolean; idempotencyKey: string }
+  | { kind: "session"; run: TuiRun; offset: number; follow: boolean }
   | { kind: "search" }
   | { kind: "confirm"; action: "archive" | "cancel" | "restore" | "accept" | "changes" }
   | { kind: "reconcile"; projectId: string; trackerId: string; runId: string; title: string; revision: number; status: "lost" | "cancel_requested"; resolution: "cancelled" | "failed" }
@@ -122,6 +136,7 @@ export interface TuiInspect {
   viewId: string | null;
   projectId: string;
   connected: boolean;
+  serviceMode: "demo" | "local";
   status: string;
   error: string | null;
   cursor: string;
@@ -167,7 +182,8 @@ export class BabelTui {
   private detail: Detail | null = null;
   private cursor = "0";
   private connected = false;
-  private status = "正在连接演示服务…";
+  private serviceMode: "demo" | "local" = "demo";
+  private status = "正在连接服务…";
   private error: string | null = null;
   private overlay: Overlay = { kind: "none" };
   private search = "";
@@ -247,6 +263,7 @@ export class BabelTui {
       viewId: this.viewId,
       projectId: this.projectId,
       connected: this.connected,
+      serviceMode: this.serviceMode,
       status: this.status,
       error: this.error,
       cursor: this.cursor,
@@ -324,7 +341,7 @@ export class BabelTui {
       const [projects, devices, list] = await Promise.all([
         this.http.query<{ projects: ProjectRecord[] }>({ name: "project.list" }),
         this.http.query<{ devices: DeviceRecord[] }>({ name: "device.list", projectId: this.projectId }),
-        this.http.query<{ items: TaskCard[]; counts: Record<Stage, number>; cursor: string }>({
+        this.http.query<{ mode?: "demo" | "local"; items: TaskCard[]; counts: Record<Stage, number>; cursor: string }>({
           name: "task.list",
           projectId: this.projectId,
           input: this.listInput(),
@@ -332,20 +349,21 @@ export class BabelTui {
       ]);
       this.projects = projects.projects;
       this.devices = devices.devices;
+      if (list.mode) this.serviceMode = list.mode;
       this.items = list.items;
       this.counts = list.counts;
       this.cursor = String(list.cursor ?? this.cursor);
       this.connected = true;
       this.error = null;
       this.status = this.profileHint
-        ? `演示数据 · profile ${this.profileHint} 仅作提示，已连接 ${this.http.endpoint}`
-        : `演示数据 · ${this.http.endpoint}`;
+        ? `${this.modeLabel()} · profile ${this.profileHint} 仅作提示，已连接 ${this.http.endpoint}`
+        : `${this.modeLabel()} · ${this.http.endpoint}`;
       this.ensureSelection();
       await this.refreshDetail();
       await this.refreshCaps();
     } catch (error) {
       this.connected = false;
-      this.error = error instanceof BabelError ? `${error.code}: ${error.message}` : "无法连接演示服务";
+      this.error = error instanceof BabelError ? `${error.code}: ${error.message}` : "无法连接服务";
       this.status = "已断线，将重拉快照与游标，不会新开 run";
     }
     this.dirty = true;
@@ -406,6 +424,10 @@ export class BabelTui {
         projectId: this.projectId,
         input: { trackerId: this.selectedId },
       });
+      if (this.detail.mode) this.serviceMode = this.detail.mode;
+      if (this.overlay.kind === "session" && this.detail.latestRun?.id === this.overlay.run.id) {
+        this.overlay.run = this.detail.latestRun;
+      }
       this.selectedRunId = this.detail.latestRun?.id ?? this.detail.card.latestRunId ?? null;
     } catch (error) {
       if (error instanceof BabelError && error.code === "NOT_FOUND") {
@@ -457,12 +479,13 @@ export class BabelTui {
     const projectId = this.projectId;
     const input = this.listInput();
     try {
-      const list = await this.http.query<{ items: TaskCard[]; counts: Record<Stage, number>; cursor: string }>({
+      const list = await this.http.query<{ mode?: "demo" | "local"; items: TaskCard[]; counts: Record<Stage, number>; cursor: string }>({
         name: "task.list",
         projectId,
         input,
       });
       if (projectId !== this.projectId || JSON.stringify(input) !== JSON.stringify(this.listInput())) return;
+      if (list.mode) this.serviceMode = list.mode;
       this.items = list.items;
       this.counts = list.counts;
       if (list.cursor) this.cursor = String(list.cursor);
@@ -503,6 +526,7 @@ export class BabelTui {
       else if (ev.text === "F") this.beginFields();
       else if (ev.text === "s") void this.startRun();
       else if (ev.text === "m") this.beginMessage();
+      else if (ev.text === "S") this.showSession();
       else if (ev.text === "c") this.overlay = { kind: "confirm", action: "cancel" };
       else if (ev.text === "a") this.overlay = { kind: "confirm", action: "archive" };
       else if (ev.text === "r") this.overlay = { kind: "confirm", action: "restore" };
@@ -561,7 +585,7 @@ export class BabelTui {
 
   private handleOverlay(ev: KeyEvent): void {
     const o = this.overlay;
-    if ((o.kind === "edit" || o.kind === "fields" || o.kind === "relation") && o.saving) return;
+    if ((o.kind === "edit" || o.kind === "fields" || o.kind === "relation" || o.kind === "start" || o.kind === "message") && o.saving) return;
     if (ev.type === "key" && ev.name === "escape") {
       this.overlay = { kind: "none" };
       this.setCursorVisible(false);
@@ -580,6 +604,26 @@ export class BabelTui {
       if (ev.type === "text" && ev.text === "j") o.index = (o.index + 1) % items.length;
       if ((ev.type === "key" && ev.name === "enter") || (ev.type === "text" && ev.text === "\r")) {
         void this.runMenu(items[o.index]?.id ?? "");
+      }
+      this.dirty = true;
+      return;
+    }
+    if (o.kind === "start") {
+      if (ev.type === "key" && ev.name === "enter") void this.confirmStart(o);
+      else if (ev.type === "text" && (ev.text === "n" || ev.text === "N")) this.overlay = { kind: "none" };
+      this.dirty = true;
+      return;
+    }
+    if (o.kind === "session") {
+      if (ev.type === "key" && (ev.name === "up" || ev.name === "pageup")) {
+        o.follow = false;
+        o.offset = Math.max(0, o.offset - (ev.name === "pageup" ? 10 : 1));
+      } else if (ev.type === "key" && (ev.name === "down" || ev.name === "pagedown")) {
+        o.offset += ev.name === "pagedown" ? 10 : 1;
+      } else if (ev.type === "key" && ev.name === "end") o.follow = true;
+      else if (ev.type === "text" && ev.text === "m") {
+        if (o.run.id !== this.selectedRunId) this.error = "PRECONDITION: 历史会话只读，请重新打开当前会话";
+        else this.beginMessage();
       }
       this.dirty = true;
       return;
@@ -756,7 +800,10 @@ export class BabelTui {
       if (o.field === "title") o.title += text.replace(/\n/g, " ");
       else o.body += text;
     }
-    if (o.kind === "message") o.text += text;
+    if (o.kind === "message") {
+      o.text += text;
+      o.idempotencyKey = `tui-message-${randomUUID()}`;
+    }
   }
 
   private backspaceOverlay(): void {
@@ -765,7 +812,10 @@ export class BabelTui {
       if (o.field === "title") o.title = o.title.slice(0, -1);
       else o.body = o.body.slice(0, -1);
     }
-    if (o.kind === "message") o.text = o.text.slice(0, -1);
+    if (o.kind === "message") {
+      o.text = Array.from(o.text).slice(0, -1).join("");
+      o.idempotencyKey = `tui-message-${randomUUID()}`;
+    }
   }
 
   private handleMouse(ev: Extract<KeyEvent, { type: "mouse" }>): void {
@@ -958,9 +1008,34 @@ export class BabelTui {
 
   private beginMessage(): void {
     const run = this.detail?.latestRun;
-    const pending = run?.inputRequests.find((row) => !row.answered);
-    this.overlay = { kind: "message", text: "", respondId: pending?.id };
+    const rec = this.detail?.record;
+    if (!run || !rec || run.id !== this.selectedRunId || rec.id !== this.selectedId) {
+      this.error = "PRECONDITION: 请先选择当前执行";
+      return;
+    }
+    if (rec.system.readOnly) {
+      this.error = "READ_ONLY: 当前记录只读";
+      return;
+    }
+    const pending = run.inputRequests.find((row) => !row.answered);
+    this.overlay = {
+      kind: "message", text: "", respondId: pending?.id, projectId: this.projectId,
+      runId: run.id, revision: rec.revision, saving: false, idempotencyKey: `tui-message-${randomUUID()}`,
+    };
     this.setCursorVisible(true);
+  }
+
+  private showSession(): void {
+    const run = this.detail?.latestRun;
+    if (!run || run.id !== this.selectedRunId) {
+      this.error = "没有可查看的当前会话";
+      return;
+    }
+    this.overlay = { kind: "session", run, offset: 0, follow: true };
+  }
+
+  private modeLabel(): string {
+    return this.serviceMode === "local" ? "本地 Pi" : "演示数据";
   }
 
   private menuItems(): Array<{ id: string; label: string }> {
@@ -969,10 +1044,11 @@ export class BabelTui {
       { id: "edit", label: "e  编辑标题和正文" },
       { id: "fields", label: "F  编辑优先级、负责人和标签" },
       { id: "create", label: "n  新建条目" },
-      { id: "start", label: "s  开始模拟" },
+      { id: "start", label: this.serviceMode === "local" ? "s  开始 Pi 执行" : "s  开始模拟" },
+      { id: "session", label: "S  查看会话输入与输出" },
       { id: "message", label: run?.status === "waiting_input" ? "m  回答待答请求" : "m  发送消息" },
       { id: "cancel", label: "c  取消执行" },
-      ...(run?.status === "lost" || run?.status === "cancel_requested"
+      ...(this.serviceMode === "demo" && (run?.status === "lost" || run?.status === "cancel_requested")
         ? [{ id: "reconcile", label: `   终止核对（${runStatusText(run.status)}）` }] : []),
       { id: "archive", label: "a  归档" },
       { id: "restore", label: "r  恢复（不自动重跑）" },
@@ -1000,6 +1076,7 @@ export class BabelTui {
     else if (id === "create") this.beginCreate();
     else if (id === "start") await this.startRun();
     else if (id === "message") this.beginMessage();
+    else if (id === "session") this.showSession();
     else if (id === "cancel") this.overlay = { kind: "confirm", action: "cancel" };
     else if (id === "archive") this.overlay = { kind: "confirm", action: "archive" };
     else if (id === "restore") this.overlay = { kind: "confirm", action: "restore" };
@@ -1021,6 +1098,10 @@ export class BabelTui {
   }
 
   private beginReconcile(): void {
+    if (this.serviceMode === "local") {
+      this.error = "PRECONDITION: 本地 Pi 终止状态须由服务核实，不能用演示核对替代";
+      return;
+    }
     const record = this.detail?.record;
     const run = this.detail?.latestRun;
     if (!record || !run || record.id !== this.selectedId || run.id !== this.selectedRunId
@@ -1099,11 +1180,31 @@ export class BabelTui {
         this.setCursorVisible(true);
         return;
       }
-    } else if (o.kind === "message" && this.selectedRunId) {
-      if (o.respondId) {
-        await this.command("run.respond", { runId: this.selectedRunId, requestId: o.respondId, text: o.text });
-      } else {
-        await this.command("run.message", { runId: this.selectedRunId, text: o.text });
+    } else if (o.kind === "message") {
+      if (o.saving) return;
+      if (o.projectId !== this.projectId || o.runId !== this.selectedRunId || o.runId !== this.detail?.latestRun?.id) {
+        this.error = "PRECONDITION: 执行已改变，未发送；请保留输入并重新选择会话";
+        this.setCursorVisible(true);
+        return;
+      }
+      if (this.detail?.record.system.readOnly) {
+        this.error = "READ_ONLY: 当前记录只读，输入未发送";
+        this.setCursorVisible(true);
+        return;
+      }
+      if (!o.text.trim()) {
+        this.error = "USAGE: 消息不能为空";
+        this.setCursorVisible(true);
+        return;
+      }
+      o.saving = true;
+      const saved = await this.command(o.respondId ? "run.respond" : "run.message", {
+        runId: o.runId, ...(o.respondId ? { requestId: o.respondId } : {}), text: o.text,
+      }, o.revision, o.idempotencyKey);
+      o.saving = false;
+      if (!saved) {
+        this.setCursorVisible(true);
+        return;
       }
     }
     this.overlay = { kind: "none" };
@@ -1112,10 +1213,43 @@ export class BabelTui {
 
   private async startRun(): Promise<void> {
     if (!this.selectedId) return;
+    if (this.serviceMode === "local") {
+      const detail = this.detail;
+      if (!detail || detail.record.id !== this.selectedId || !detail.executionTarget) {
+        this.error = "PRECONDITION: 尚无当前任务的 Pi 执行配置";
+        return;
+      }
+      if (detail.record.system.readOnly || !this.actionAllowed("run.start")) {
+        this.error = detail.record.system.readOnly ? "READ_ONLY: 当前记录只读" : this.actionDenied("run.start");
+        return;
+      }
+      this.error = null;
+      this.overlay = {
+        kind: "start", projectId: this.projectId, trackerId: detail.record.id,
+        title: detail.record.fields.title, revision: detail.record.revision,
+        target: { ...detail.executionTarget }, saving: false, idempotencyKey: `tui-start-${randomUUID()}`,
+      };
+      return;
+    }
     await this.command("run.start", {
       trackerId: this.selectedId,
       ...(this.deviceFilter ? { deviceId: this.deviceFilter } : {}),
     }, this.detail?.record.revision, `tui-start-${this.selectedId}-${Date.now()}`);
+  }
+
+  private async confirmStart(o: Extract<Overlay, { kind: "start" }>): Promise<void> {
+    if (o.saving) return;
+    if (o.projectId !== this.projectId || o.trackerId !== this.selectedId || this.serviceMode !== "local") {
+      this.error = "PRECONDITION: 执行目标已改变，请关闭后重新确认";
+      return;
+    }
+    o.saving = true;
+    const saved = await this.command("run.start", {
+      trackerId: o.trackerId, executionTarget: o.target,
+    }, o.revision, o.idempotencyKey);
+    o.saving = false;
+    if (saved) this.overlay = { kind: "none" };
+    this.dirty = true;
   }
 
   private async showDiff(): Promise<void> {
@@ -1443,7 +1577,7 @@ export class BabelTui {
     const connText = this.connected ? "已连接" : "已断线";
     const viewLabel = this.viewId ? this.viewId : "默认";
     const parts = [
-      { action: "demo", label: "演示数据" },
+      { action: "demo", label: this.modeLabel() },
       { action: "project", label: `项目:${projectName}` },
       { action: "type", label: `类型:${typeText(this.typeFilter)}` },
       { action: "attention", label: attentionFilterText(this.attentionOnly) },
@@ -1464,8 +1598,8 @@ export class BabelTui {
     const left = labels.join("  ");
     const clipped = padWidth(sliceByWidth(`${left}  ${connText}`, cols), cols);
     const styled = this.connected
-      ? `${CYAN}演示数据${RST}${clipped.slice("演示数据".length)}`.replace(connText, `${GRN}${connText}${RST}`)
-      : `${CYAN}演示数据${RST}${clipped.slice("演示数据".length)}`.replace(connText, `${RED}${connText}${RST}`);
+      ? `${CYAN}${this.modeLabel()}${RST}${clipped.slice(this.modeLabel().length)}`.replace(connText, `${GRN}${connText}${RST}`)
+      : `${CYAN}${this.modeLabel()}${RST}${clipped.slice(this.modeLabel().length)}`.replace(connText, `${RED}${connText}${RST}`);
     return styled;
   }
 
@@ -1551,7 +1685,9 @@ export class BabelTui {
       `标签 ${(Array.isArray(rec.fields.tags) ? rec.fields.tags : []).join(", ") || "无"}`,
       `最后更新 ${this.detail?.card.lastUpdatedAt ?? "暂无记录"}`,
       run ? `执行 ${runStatusText(run.status)} ${run.id}` : "执行 尚未执行",
+      ...executionLines(run),
       pending ? `待答 ${pending.prompt}` : "",
+      run ? "S 查看会话输入与输出" : "",
       `依赖 ${(rec.fields.dependsOn ?? []).join(", ") || "无"}`,
       `阻塞 ${(rec.fields.blocks ?? []).join(", ") || "无"}`,
       rec.archived ? "已归档，恢复不自动重跑" : "",
@@ -1567,14 +1703,14 @@ export class BabelTui {
     const o = this.overlay;
     if (o.kind === "none") return base;
     const w = Math.min(cols - 2, Math.max(40, Math.floor(cols * 0.7)));
-    const h = Math.min(rows - 2, o.kind === "help" || o.kind === "hooks" || o.kind === "menu" || o.kind === "surface" ? 22 : 16);
+    const h = Math.min(rows - 2, o.kind === "help" || o.kind === "hooks" || o.kind === "menu" || o.kind === "surface" || o.kind === "session" ? 22 : 16);
     let title = "";
     let body: string[] = [];
     let footer = "Esc 关闭";
     let listCount = 0;
     if (o.kind === "help") {
       title = "帮助";
-      body = [...helpLines(), ...surfaceHelpLines()];
+      body = [...helpLines(this.serviceMode), ...surfaceHelpLines()];
     } else if (o.kind === "menu") {
       title = "操作菜单（替代拖拽）";
       body = this.menuItems().map((item, i) => (i === o.index ? `> ${item.label}` : `  ${item.label}`));
@@ -1598,11 +1734,38 @@ export class BabelTui {
       footer = o.kind === "edit" && o.saving ? "正在保存，请稍候" : "Tab 切换  Ctrl+S 保存  Esc 取消（丢弃草稿）";
     } else if (o.kind === "message") {
       title = o.respondId ? "回答待答请求" : "发送消息";
-      body = wrapByWidth(o.text || "（输入后 Enter 或 Ctrl+S 发送）", w - 4, 8);
-      footer = "Enter/Ctrl+S 发送  Esc 取消";
+      body = [
+        `会话 ${o.runId}`,
+        ...wrapByWidth(o.text || "（输入后 Enter 或 Ctrl+S 发送）", w - 4, 8),
+        this.error || "",
+      ];
+      footer = o.saving ? "正在发送，请稍候" : "Enter/Ctrl+S 发送  Esc 取消";
+    } else if (o.kind === "start") {
+      title = "确认启动本地 Pi";
+      body = [
+        ...wrapByWidth(`任务 ${o.title} (${o.trackerId})`, w - 4),
+        ...wrapByWidth(`目录 ${o.target.workdir}`, w - 4),
+        ...wrapByWidth(`Provider ${o.target.provider} · Model ${o.target.model}`, w - 4),
+        `revision ${o.revision}`,
+        "确认后将调用配置的模型，并允许 Pi 在该目录执行任务。",
+        this.error || "",
+      ];
+      footer = o.saving ? "正在提交，请稍候" : "Enter 确认启动  n/Esc 取消";
+    } else if (o.kind === "session") {
+      title = `会话 · ${o.run.execution?.kind === "pi" ? "本地 Pi" : "演示"}`;
+      const text = [
+        `run ${o.run.id} · ${runStatusText(o.run.status)}`,
+        ...executionLines(o.run),
+        ...o.run.messages.map(message => `[${message.role}] ${message.text}`),
+      ].join("\n");
+      const content = wrapByWidth(stripVTControlCharacters(text).replace(/[\x00-\x08\x0b-\x1f\x7f]/g, ""), w - 4, Infinity);
+      const max = Math.max(0, content.length - (h - 3));
+      o.offset = o.follow ? max : Math.min(o.offset, max);
+      body = content.slice(o.offset, o.offset + h - 3);
+      footer = `↑/↓ 滚动  End 跟随  m 输入  Esc 关闭 · ${o.follow ? "跟随输出" : "阅读历史"}`;
     } else if (o.kind === "confirm") {
       title = "确认";
-      body = [confirmText(o.action), "Enter 确认  n 取消"];
+      body = [confirmText(o.action, this.serviceMode), "Enter 确认  n 取消"];
     } else if (o.kind === "reconcile") {
       title = "核对演示执行";
       body = [
@@ -1703,7 +1866,16 @@ export class BabelTui {
   }
 }
 
-function confirmText(action: string): string {
+function executionLines(run: TuiRun | null | undefined): string[] {
+  if (!run?.execution) return [];
+  return [
+    `Pi 会话 ${run.sessionId || "等待绑定"}`,
+    `目录 ${run.execution.workdir}`,
+    `模型 ${run.execution.provider}/${run.execution.model}`,
+  ];
+}
+
+function confirmText(action: string, mode: "demo" | "local" = "demo"): string {
   switch (action) {
     case "archive":
       return "归档这条记录？历史会保留。";
@@ -1712,7 +1884,7 @@ function confirmText(action: string): string {
     case "cancel":
       return "请求取消当前执行？取消待确认前不能重试。";
     case "accept":
-      return "验收这次模拟结果？";
+      return mode === "local" ? "确认已人工检查本次 Pi 结果并通过验收？" : "验收这次模拟结果？";
     case "changes":
       return "要求修改并结束这次执行为失败？";
     default:

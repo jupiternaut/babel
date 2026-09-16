@@ -160,7 +160,7 @@ export class TuiHttp {
         req.destroy(new BabelError("WAIT_TIMEOUT", "请求超时", { endpoint: this.endpoint }, true));
       });
       req.on("error", (error) => {
-        reject(new BabelError("UNAVAILABLE", `无法连接演示服务 ${this.endpoint}`, { cause: String(error) }, true));
+        reject(new BabelError("UNAVAILABLE", `无法连接服务 ${this.endpoint}`, { cause: String(error) }, true));
       });
       if (payload) req.write(payload);
       req.end();
