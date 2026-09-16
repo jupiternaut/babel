@@ -1,0 +1,13 @@
+
+ RUN  v4.1.8 /Users/gengrf/Projects/babel/implementation/nimbalyst
+
+ ✓ |jsdom| packages/electron/src/renderer/components/TrackerMode/__tests__/babelLocalPiControls.test.tsx (7 tests) 171ms
+ ✓ |jsdom| packages/electron/src/renderer/components/TrackerMode/__tests__/babelRunActions.events.test.tsx (17 tests) 2604ms
+   ✓ isolates drafts and viewed runs by endpoint and restores a stable task identity  385ms
+   ✓ isolates drafts and viewed runs by projectId and restores a stable task identity  377ms
+
+ Test Files  2 passed (2)
+      Tests  24 passed (24)
+   Start at  08:42:49
+   Duration  3.38s (transform 211ms, setup 77ms, import 352ms, tests 2.78s, environment 637ms)
+

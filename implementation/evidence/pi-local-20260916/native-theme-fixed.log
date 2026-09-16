@@ -1,0 +1,10 @@
+
+Running 1 test using 1 worker
+
+(node:20158) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20158) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 [electron] › packages/electron/e2e/babel/pi-local-native.spec.ts:55:5 › local Pi protocol double: native start, real PTY session, CLI identity and confirmed stop (7.4s)
+
+  1 passed (8.5s)

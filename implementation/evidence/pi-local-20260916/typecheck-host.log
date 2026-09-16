@@ -1,0 +1,48 @@
+
+> nimbalyst-monorepo@0.33.1 typecheck
+> node scripts/run-workspace-script.mjs typecheck
+
+Running "typecheck" in 26 workspaces, 7 at a time
+ok   packages/tracker-core
+ok   packages/node
+ok   packages/cli
+ok   packages/collab-protocol
+ok   packages/extension-sdk
+ok   packages/collab-adapters
+ok   packages/extensions/animation
+ok   packages/extensions/browser
+ok   packages/extensions/calc-sheets
+ok   packages/collab-client
+ok   packages/extensions/datamodellm
+ok   packages/extensions/extension-dev-kit
+ok   packages/extensions/csv-spreadsheet
+ok   packages/extensions/excalidraw
+ok   packages/extensions/github-issues-importer
+ok   packages/extensions/math
+ok   packages/extensions/git
+ok   packages/extensions/media-viewer
+ok   packages/extensions/pdf-viewer
+ok   packages/extensions/playwright
+ok   packages/extensions/nimbalyst-memory
+ok   packages/extensions/rtl-support
+ok   packages/extensions/project-graph
+ok   packages/runtime
+ok   packages/collab-bundle
+FAIL packages/electron
+
+----- packages/electron -----
+
+> @nimbalyst/electron@0.77.5 typecheck
+> tsc --noEmit
+
+../babel/src/pi/runtime.ts(179,36): error TS2304: Cannot find name 'AggregateError'.
+npm error Lifecycle script `typecheck` failed with error:
+npm error code 2
+npm error path /Users/gengrf/Projects/babel/implementation/nimbalyst/packages/electron
+npm error workspace @nimbalyst/electron@0.77.5
+npm error location /Users/gengrf/Projects/babel/implementation/nimbalyst/packages/electron
+npm error command failed
+npm error command sh -c tsc --noEmit
+
+
+"typecheck" failed in 1 of 26 workspaces (40.0s)

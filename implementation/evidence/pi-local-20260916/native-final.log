@@ -1,0 +1,35 @@
+
+Running 1 test using 1 worker
+
+(node:30703) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:30703) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  1 [electron] › packages/electron/e2e/babel/pi-local-native.spec.ts:55:5 › local Pi protocol double: native start, real PTY session, CLI identity and confirmed stop (11.1s)
+[31mTesting stopped early after 1 maximum allowed failures.[39m
+
+
+  1) [electron] › packages/electron/e2e/babel/pi-local-native.spec.ts:55:5 › local Pi protocol double: native start, real PTY session, CLI identity and confirmed stop 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+    Expected: [32m"executing"[39m
+    Received: [31mundefined[39m
+
+    Call Log:
+    - Timeout 10000ms exceeded while waiting on the predicate
+
+      150 |     await start.click();
+      151 |     await confirmation.getByRole('button', { name: '确认开始执行', exact: true }).click();
+    > 152 |     await expect.poll(async () => {
+          |     ^
+      153 |       const task = await read!();
+      154 |       runId = task.latestRun?.id || '';
+      155 |       return task.latestRun?.status;
+        at /Users/gengrf/Projects/babel/implementation/nimbalyst/packages/electron/e2e/babel/pi-local-native.spec.ts:152:5
+
+    Error Context: ../evidence/pi-local-20260916/native-final/babel-pi-local-native-loca-c7f9d-identity-and-confirmed-stop-electron/error-context.md
+
+  1 failed
+    [electron] › packages/electron/e2e/babel/pi-local-native.spec.ts:55:5 › local Pi protocol double: native start, real PTY session, CLI identity and confirmed stop 
+  1 error was not a part of any test, see above for details

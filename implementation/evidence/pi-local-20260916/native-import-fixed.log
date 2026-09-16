@@ -1,0 +1,37 @@
+
+Running 1 test using 1 worker
+
+(node:13230) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:13230) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  1 [electron] › packages/electron/e2e/babel/pi-local-native.spec.ts:55:5 › local Pi protocol double: native start, real PTY session, CLI identity and confirmed stop (5.0s)
+[31mTesting stopped early after 1 maximum allowed failures.[39m
+
+
+  1) [electron] › packages/electron/e2e/babel/pi-local-native.spec.ts:55:5 › local Pi protocol double: native start, real PTY session, CLI identity and confirmed stop 
+
+    Error: page.evaluate: Error: Error invoking remote method 'set-theme': Error: No handler registered for 'set-theme'
+
+      243 |     }
+      244 |     if (page && previousTheme) {
+    > 245 |       await page.evaluate(value => (window as unknown as { electronAPI: { setTheme(value: string): Promise<void> } }).electronAPI.setTheme(value), previousTheme);
+          |                  ^
+      246 |     }
+      247 |     await browser.close();
+      248 |   }
+        at /Users/gengrf/Projects/babel/implementation/nimbalyst/packages/electron/e2e/babel/pi-local-native.spec.ts:245:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../evidence/pi-local-20260916/native-import-fixed/babel-pi-local-native-loca-c7f9d-identity-and-confirmed-stop-electron/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../evidence/pi-local-20260916/native-import-fixed/babel-pi-local-native-loca-c7f9d-identity-and-confirmed-stop-electron/test-failed-2.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../evidence/pi-local-20260916/native-import-fixed/babel-pi-local-native-loca-c7f9d-identity-and-confirmed-stop-electron/error-context.md
+
+  1 failed
+    [electron] › packages/electron/e2e/babel/pi-local-native.spec.ts:55:5 › local Pi protocol double: native start, real PTY session, CLI identity and confirmed stop 
+  1 error was not a part of any test, see above for details

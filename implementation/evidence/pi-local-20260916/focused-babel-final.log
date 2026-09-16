@@ -1,0 +1,17 @@
+
+> @nimbalyst/babel@0.1.0-m0 test
+> vitest run --environment node tests/local-pi-domain.test.ts tests/pi-runtime.test.ts
+
+
+ RUN  v3.2.7 /Users/gengrf/Projects/babel/implementation/nimbalyst/packages/babel
+
+ ✓ tests/pi-runtime.test.ts (6 tests) 16053ms
+   ✓ LocalPiRuntime (protocol subprocess double, no model calls) > never treats acknowledgement or low-level agent_end as completion, and never idles after errors  345ms
+   ✓ LocalPiRuntime (protocol subprocess double, no model calls) > rejects a mismatched handshake before any prompt and never replays a timed-out prompt  15192ms
+ ✓ tests/local-pi-domain.test.ts (7 tests) 55ms
+
+ Test Files  2 passed (2)
+      Tests  13 passed (13)
+   Start at  08:39:01
+   Duration  16.67s (transform 136ms, setup 0ms, collect 159ms, tests 16.11s, environment 0ms, prepare 90ms)
+

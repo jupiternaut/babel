@@ -1,0 +1,18 @@
+
+> @nimbalyst/babel@0.1.0-m0 test
+> vitest run --environment node tests/pi-runtime.test.ts
+
+
+ RUN  v3.2.7 /Users/gengrf/Projects/babel/implementation/nimbalyst/packages/babel
+
+ ✓ tests/pi-runtime.test.ts (8 tests) 20319ms
+   ✓ LocalPiRuntime (protocol subprocess double, no model calls) > never treats acknowledgement or low-level agent_end as completion, and never idles after errors  336ms
+   ✓ LocalPiRuntime (protocol subprocess double, no model calls) > rejects a mismatched handshake before any prompt and never replays a timed-out prompt  15277ms
+   ✓ LocalPiRuntime (protocol subprocess double, no model calls) > confirms the owned group is gone even when abort is acknowledged and descendants ignore termination  1161ms
+   ✓ LocalPiRuntime (protocol subprocess double, no model calls) > requires absence after EPERM during cancellation (persistent=true)  3096ms
+
+ Test Files  1 passed (1)
+      Tests  8 passed (8)
+   Start at  08:45:41
+   Duration  20.59s (transform 36ms, setup 0ms, collect 43ms, tests 20.32s, environment 0ms, prepare 88ms)
+

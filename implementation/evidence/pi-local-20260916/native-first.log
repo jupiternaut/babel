@@ -1,0 +1,16 @@
+ReferenceError: require is not defined in ES module scope, you can use import instead
+
+   at babel/pi-local-native.spec.ts:3
+
+  1 | import { test, expect, chromium, type Page } from '@playwright/test';
+  2 | import { execFile } from 'node:child_process';
+> 3 | import { promisify } from 'node:util';
+    |             ^
+  4 | import { createRequire } from 'node:module';
+  5 | import { readFileSync, realpathSync, writeFileSync } from 'node:fs';
+  6 | import { fileURLToPath } from 'node:url';
+    at /Users/gengrf/Projects/babel/implementation/nimbalyst/packages/electron/e2e/babel/pi-local-native.spec.ts:3:13
+Error: No tests found.
+Make sure that arguments are regular expressions matching test files.
+You may need to escape symbols like "$" or "*" and quote the arguments.
+

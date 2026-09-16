@@ -1,0 +1,35 @@
+
+Running 1 test using 1 worker
+
+(node:30962) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:30962) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  1 [electron] › packages/electron/e2e/babel/pi-local-native.spec.ts:55:5 › local Pi protocol double: native start, real PTY session, CLI identity and confirmed stop (15.1s)
+[31mTesting stopped early after 1 maximum allowed failures.[39m
+
+
+  1) [electron] › packages/electron/e2e/babel/pi-local-native.spec.ts:55:5 › local Pi protocol double: native start, real PTY session, CLI identity and confirmed stop 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+    Expected: [32m"cancel[7ml[27med"[39m
+    Received: [31m"cancel[7m_request[27med"[39m
+
+    Call Log:
+    - Timeout 10000ms exceeded while waiting on the predicate
+
+      213 |     expect(settled.latestRun!.review).toBeNull();
+      214 |     await detail.getByRole('button', { name: '请求取消', exact: true }).click();
+    > 215 |     await expect.poll(async () => (await read!()).latestRun?.status).toBe('cancelled');
+          |     ^
+      216 |     const stopped = await read();
+      217 |     expect(stopped.stage).not.toBe('DONE');
+      218 |     expect(stopped.latestRun!.id).toBe(runId);
+        at /Users/gengrf/Projects/babel/implementation/nimbalyst/packages/electron/e2e/babel/pi-local-native.spec.ts:215:5
+
+    Error Context: ../evidence/pi-local-20260916/native-confirmation-fixed/babel-pi-local-native-loca-c7f9d-identity-and-confirmed-stop-electron/error-context.md
+
+  1 failed
+    [electron] › packages/electron/e2e/babel/pi-local-native.spec.ts:55:5 › local Pi protocol double: native start, real PTY session, CLI identity and confirmed stop 
+  1 error was not a part of any test, see above for details
