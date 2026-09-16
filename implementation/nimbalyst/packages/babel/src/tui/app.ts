@@ -192,6 +192,7 @@ export class BabelTui {
   private running = false;
   private watch: { close: () => void } | null = null;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private escapeTimer: ReturnType<typeof setTimeout> | null = null;
   private hits: HitRegion[] = [];
   private dirty = true;
   private readonly profileHint?: string;
@@ -222,7 +223,17 @@ export class BabelTui {
   }
 
   feed(raw: string): void {
+    if (this.escapeTimer) clearTimeout(this.escapeTimer);
+    this.escapeTimer = null;
     for (const ev of this.decoder.push(raw)) this.handleEvent(ev);
+    // Escape also prefixes terminal key sequences; allow their next chunk first.
+    if (this.decoder.hasPendingEscape) {
+      this.escapeTimer = setTimeout(() => {
+        this.escapeTimer = null;
+        for (const ev of this.decoder.flushEscape()) this.handleEvent(ev);
+        this.paint();
+      }, 100);
+    }
     this.paint();
   }
 
@@ -243,6 +254,8 @@ export class BabelTui {
 
   dispose(): void {
     this.running = false;
+    if (this.escapeTimer) clearTimeout(this.escapeTimer);
+    this.escapeTimer = null;
     this.watch?.close();
     this.watch = null;
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
@@ -285,8 +298,7 @@ export class BabelTui {
     this.running = true;
     stdin.on("data", (chunk: string | Buffer) => {
       const text = typeof chunk === "string" ? chunk : chunk.toString("utf8");
-      for (const ev of this.decoder.push(text)) this.handleEvent(ev);
-      this.paint();
+      this.feed(text);
     });
     stdout.on("resize", () => {
       this.dirty = true;

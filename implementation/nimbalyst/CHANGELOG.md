@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 <!-- Bug fixes go here -->
+- Close Babel terminal dialogs with a single Escape and preserve fragmented arrow keys, mouse input, and Chinese paste.
 - Accepting large document rewrites preserves paragraph order, and rejecting them restores the original formatting.
 - The Git panel names the signal when a push is killed before it finishes, instead of showing the hook's output as the error.
 - The GitHub panel no longer shows an unrelated AI session when the selected PR or issue has no matching session.

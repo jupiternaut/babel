@@ -1,0 +1,58 @@
+{
+  "task": "M0-17a",
+  "baseCommit": "0d1ccef282143bb1358e47f2da5c610d8ca422da",
+  "sourceVersion": "Exact source hashes below; delivered by the commit containing this report",
+  "platform": {
+    "os": "macOS 27.0",
+    "arch": "arm64",
+    "hardware": "Apple M3",
+    "node": "24.15.0"
+  },
+  "scope": "TUI standalone Escape and fragmented terminal input; isolated demo POSIX PTY",
+  "checks": {
+    "babelTypecheck": "passed",
+    "babelTests": {
+      "passed": 371,
+      "skipped": 4,
+      "failed": 0
+    },
+    "hostTypecheckWorkspaces": 26,
+    "hostTests": {
+      "passed": 14214,
+      "skipped": 26,
+      "failed": 0
+    },
+    "pty": {
+      "passed": 1,
+      "coreMutations": 0,
+      "sttyRestored": true,
+      "containedInBabelSuite": true
+    }
+  },
+  "independentAcceptance": false,
+  "realModelCalled": false,
+  "electronPiTestRerun": false,
+  "sourceSha256": {
+    "implementation/nimbalyst/packages/babel/src/tui/app.ts": "3b611d848b72af6cb589a56da7562c89956dbe573dca61947bd7c11f268c9485",
+    "implementation/nimbalyst/packages/babel/src/tui/input.ts": "c77693e3c8bbc7dbc1fe997ae217c8d25e67e9be0450ba7c217da2fb8dbcbdc6",
+    "implementation/nimbalyst/packages/babel/tests/tui-input.test.ts": "fed40f3040024917d6d0887e6b1c97ca573be9c04510ddf036c45a250aafe0d7",
+    "implementation/nimbalyst/packages/babel/tests/tui-pty-input.test.ts": "e0f3fc38dac23a669ec36613c52a182ee4feafc525ae5f298ed2624897579d35",
+    "implementation/nimbalyst/packages/electron/e2e/babel/pi-local-native.spec.ts": "182310cf4748f540455584538ba8e9ceeac703a5cd4152573ff75b6e49300122"
+  },
+  "evidenceSha256": {
+    "babel-tests.log": "501287108da16f5916bd5c71dfa668c763c37ba8f5158f09b395d0444db51da8",
+    "babel-typecheck-first.log": "8169ad1d32632f9c29507dea1bee786206def4e12c2b068a2bb512a4eb970831",
+    "babel-typecheck.log": "b0783ec60d10eb74d253079a4d93c6dfc82d7b01195082a27654efcef12cfd87",
+    "before.log": "c90fee8a0e72d3ceb4980b87fc46562967ea6e83e0a5be2fde57874affdac856",
+    "host-tests.log": "5b36b8cdbc6a9760c24c4ad19ee99d7293ad331a2efb5777acfdc80161d94f3d",
+    "host-typecheck.log": "19b6353dc541b075eec7a331c08d8aa4ff6620f16dec2c617cd17d879b25e7ea",
+    "pty-first.json": "e4722db5ce9b672a26dae8fca9f39a4549ac466c218c9b3d9a2cdcd112fff0d0",
+    "pty-first.log": "7bb14afc9335fe5026c79b94dbed6a127a1632ec2139194bf3e6673d7222f8db",
+    "pty-second-raw.json": "e2e4781a8bfd6dd3482bff2d95421b9dff45f59ca6b7d4df2f117e5bb158f2b9",
+    "pty-second.log": "5590474cae1405b1c38eb345466f654f78c70dbb5c39a51115b201e8cf32b9bc",
+    "pty.json": "30d6b8b5dcbfb5a6cee4d8db7c702dfbe2f47e135b8445f9caa31e526f673a62",
+    "pty.log": "f569ebd083f748eb9cf28f784cc4ee43be55a5f5981d7c2153e45ef9db262291",
+    "targeted.log": "4b7d04f93adfeaf26316aa1cd96ffd48d275aa250a8023434335d14f02274e59"
+  },
+  "logFormat": "Text logs trim trailing whitespace; PTY JSON preserves terminal bytes; pty-second-raw.json preserves the raw failed assertion log."
+}

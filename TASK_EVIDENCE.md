@@ -291,3 +291,14 @@ Mac 平台 Apple M3 / macOS27 / Node24.15，profile `mac-glass-script-20260916`�
 本次模型提供方为协议替身，不调用真实模型或个人账号；真实 Pi 0.84.1 无凭据握手是上一片独立工程证据。M1-02b 开发列勾选，独立验收列保持空，完整 M1-02 仍不勾。真实 Diff/测试证据、worktree、PR、预览、恢复和计划交互已列入 TASKS 后续稳定 ID。
 
 最终测试实例已停止并保留数据，原演示实例未停止。真实 provider/model 验收等待用户指定专用账号配置。下一步优先工作目录/分支/worktree 与真实差异审查，不用模拟验收完成替代。
+
+
+## 2026-09-16：M0-17a 终端单键退出与分段输入
+
+基线 `0d1ccef282143bb1358e47f2da5c610d8ca422da`；cwd `/Users/gengrf/Projects/babel`，分支 `ui/macos-glass`，起始工作树干净。Nimbalyst 同仓源码、MIT；Mac M3 / macOS27 / Node24.15，无新增依赖。
+
+修复上一片真实 PTY 揭示的裸 Esc 卡住问题：100ms 消歧后关闭弹层，后续方向键/功能键/鼠标前缀与分段粘贴完整保留；dispose 清除计时器。真 PTY 取消字段输入不提交命令，重新打开无未保存内容；分段方向键不误关帮助，resize 后退出的 stty 属性与启动前一致，光标、鼠标、粘贴和备用屏幕恢复。Pi 原生测试移除额外空格绕行，但本片未重跑 Electron/Pi 三端测试。
+
+最终检查：26 工作区类型检查与 Babel 类型通过；宿主完整 14,214 通过 / 26 跳过 / 0 失败，Babel 完整 371 通过 / 4 跳过 / 0 失败（其中含真实 POSIX PTY）。新增单测先红，实际终端测试修正了帧边界及搜索完成条件；首次类型检查发现测试 fixture 缺 serviceToken，补齐后重跑通过。完整日志、失败原因、终端转义字节与精确源码 SHA-256 见 [证据索引](implementation/evidence/m0-17a-20260916/README.md)和 [validation](implementation/evidence/m0-17a-20260916/validation.json)。
+
+M0-17a 开发完成、验收留空；不宣称完整 M0-17/网络重连、异常强杀恢复、持久草稿、Windows/Ubuntu 或真实 Agent 完成。终端取消不应丢弃已保存内容；本片测试仅丢弃尚未提交的字段。未启动新 GUI、Pi、账号连接或设备写操作，原 demo 实例保持运行。下一步继续 M0 重连/草稿收口及 M1 任务工作区、真实 Diff 审查。

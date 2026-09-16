@@ -1,0 +1,14 @@
+
+> @nimbalyst/babel@0.1.0-m0 test
+> vitest run --environment node --run tests/tui-pty-input.test.ts
+
+
+ RUN  v3.2.7 /Users/gengrf/Projects/babel/implementation/nimbalyst/packages/babel
+
+ ✓ tests/tui-pty-input.test.ts (1 test) 944ms
+   ✓ POSIX PTY: single Escape discards fields, keeps split input intact and restores terminal modes  943ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  09:00:17
+   Duration  1.27s (transform 73ms, setup 0ms, collect 88ms, tests 944ms, environment 0ms, prepare 95ms)

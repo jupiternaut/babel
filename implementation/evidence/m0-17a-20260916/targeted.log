@@ -1,0 +1,14 @@
+
+> @nimbalyst/babel@0.1.0-m0 test
+> vitest run --environment node --run tests/tui-input.test.ts tests/tui-pi-session.test.ts
+
+
+ RUN  v3.2.7 /Users/gengrf/Projects/babel/implementation/nimbalyst/packages/babel
+
+ ✓ tests/tui-input.test.ts (9 tests) 6ms
+ ✓ tests/tui-pi-session.test.ts (7 tests) 728ms
+
+ Test Files  2 passed (2)
+      Tests  16 passed (16)
+   Start at  08:57:48
+   Duration  1.30s (transform 168ms, setup 0ms, collect 246ms, tests 734ms, environment 0ms, prepare 57ms)

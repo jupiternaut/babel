@@ -34,6 +34,16 @@ export class InputDecoder {
   private pasting = false;
   private pasteBuf = "";
 
+  get hasPendingEscape(): boolean {
+    return !this.pasting && this.buffer === "\x1b";
+  }
+
+  flushEscape(): KeyEvent[] {
+    if (!this.hasPendingEscape) return [];
+    this.buffer = "";
+    return [{ type: "key", name: "escape", raw: "\x1b", ctrl: false, shift: false }];
+  }
+
   push(chunk: string): KeyEvent[] {
     this.buffer += chunk;
     const events: KeyEvent[] = [];
@@ -48,7 +58,7 @@ export class InputDecoder {
 
   private next(): KeyEvent | "need-more" | null {
     if (!this.buffer) return null;
-    if (this.buffer.startsWith("\x1b[200~")) {
+    if (!this.pasting && this.buffer.startsWith("\x1b[200~")) {
       this.buffer = this.buffer.slice(6);
       this.pasting = true;
       this.pasteBuf = "";
@@ -57,8 +67,11 @@ export class InputDecoder {
     if (this.pasting) {
       const end = this.buffer.indexOf("\x1b[201~");
       if (end === -1) {
-        this.pasteBuf += this.buffer;
-        this.buffer = "";
+        // Keep a fragmented closing delimiter until the next input chunk.
+        let keep = Math.min(5, this.buffer.length);
+        while (keep > 0 && !"\x1b[201~".startsWith(this.buffer.slice(-keep))) keep--;
+        this.pasteBuf += this.buffer.slice(0, this.buffer.length - keep);
+        this.buffer = this.buffer.slice(this.buffer.length - keep);
         return "need-more";
       }
       this.pasteBuf += this.buffer.slice(0, end);
@@ -86,7 +99,8 @@ export class InputDecoder {
       }
       return { type: "mouse", kind: down ? "down" : "up", button: btn & 3, x, y, wheel: 0 };
     }
-    if (this.buffer.startsWith("\x1b[M") && this.buffer.length >= 6) {
+    if (this.buffer.startsWith("\x1b[M")) {
+      if (this.buffer.length < 6) return "need-more";
       const b = this.buffer.charCodeAt(3) - 32;
       const x = this.buffer.charCodeAt(4) - 32;
       const y = this.buffer.charCodeAt(5) - 32;
@@ -99,10 +113,13 @@ export class InputDecoder {
     if (this.buffer[0] === "\x1b") {
       if (this.buffer.length === 1) return "need-more";
       for (const [seq, name] of Object.entries(NAMED)) {
-        if (this.buffer.startsWith(seq) && seq.startsWith("\x1b")) {
+        if (seq.length > 1 && this.buffer.startsWith(seq) && seq.startsWith("\x1b")) {
           this.buffer = this.buffer.slice(seq.length);
           return { type: "key", name, raw: seq, ctrl: false, shift: name === "tab" && seq === "\x1b[Z" };
         }
+      }
+      if ([...Object.keys(NAMED), "\x1b[200~", "\x1b[M"].some(seq => seq.startsWith(this.buffer))) {
+        return "need-more";
       }
       const csi = this.buffer.match(/^\x1b\[[0-9;?]*[A-Za-z~]/);
       if (csi) {
@@ -111,8 +128,8 @@ export class InputDecoder {
         return { type: "key", name: mapped ?? "unknown", raw: csi[0], ctrl: false, shift: false };
       }
       if (this.buffer.length >= 2 && this.buffer[1] !== "[") {
-        const raw = this.buffer.slice(0, 2);
-        this.buffer = this.buffer.slice(2);
+        const raw = this.buffer.slice(0, 1);
+        this.buffer = this.buffer.slice(1);
         return { type: "key", name: "escape", raw, ctrl: false, shift: false };
       }
       return this.buffer.length > 16 ? this.dropOne() : "need-more";
