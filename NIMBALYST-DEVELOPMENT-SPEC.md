@@ -1,5 +1,9 @@
 # 巴别塔 × Nimbalyst：GUI / TUI / CLI 工作台与 Hooks 开发 SPEC
 
+## 当前开发方向（2026-09-16）
+
+后续主开发与原生桌面验收平台为 **MacBook M3 / macOS**，执行 [macOS 开发交接](MACOS-DEVELOPMENT-HANDOFF.md)。Windows 历史路径/阶段顺序不覆盖此决定；保留 Windows/Ubuntu 的适配与回归要求。Wayland 指 getwayland.com 的 AI 工作台，对标以 [Wayland / Devin 指标](WAYLAND-DEVIN-BENCHMARK.md) 为准。已有实现继续收口，不重新制作另一套独立看板；历史测试通过不代表 macOS 已验收。
+
 版本：v2.3 · 日期：2026-09-14 · 状态：待实施的开发规格。
 
 本文件落实用户确认的 UI v2、原生 Tracker 映射，以及新增能力必须具备 GUI/TUI/CLI 等价业务操作和 Hooks 的要求。Nimbalyst 是桌面宿主；领域核心、终端与自动化入口独立于图形窗口运行。本文不表示已完成改造，也不把独立 Cursor 演示算作 Nimbalyst 验收。旧版完整保留在 [v2.2 存档](reference/v2.2/README.md)。

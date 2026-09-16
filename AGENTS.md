@@ -1,5 +1,9 @@
 # 巴别塔开发 Agent 工作规则
 
+## 当前开发方向（2026-09-16）
+
+后续主开发与原生桌面验收平台为 **MacBook M3 / macOS**，执行 [macOS 开发交接](MACOS-DEVELOPMENT-HANDOFF.md)。Windows 历史路径/阶段顺序不覆盖此决定；保留 Windows/Ubuntu 的适配与回归要求。Wayland 指 getwayland.com 的 AI 工作台，对标以 [Wayland / Devin 指标](WAYLAND-DEVIN-BENCHMARK.md) 为准。已有实现继续收口，不重新制作另一套独立看板；历史测试通过不代表 macOS 已验收。
+
 ## 任务与读取顺序
 
 本目录包含 Nimbalyst 改造资料及 implementation/nimbalyst 候选源码。继续开发前先读 implementation/ACCEPTANCE.md、implementation/SYSTEM-CONSOLE-ACCEPTANCE.md 与 implementation/START.md；历史计划中的待办描述不能覆盖当前验收事实。当前规格 v2.3，先读 [README](README.md)、[Trackers 映射](NIMBALYST-TRACKER-MAPPING.md)、[开发 SPEC](NIMBALYST-DEVELOPMENT-SPEC.md)、[TUI/Hooks 契约](NIMBALYST-TUI-HOOKS-SPEC.md)、[功能对照表](CAPABILITY-MATRIX.md)。按需读视觉、源码和技能。旧版在 reference/v2.2，不作为当前实施入口。
@@ -23,7 +27,7 @@
 
 开发任务按 [并发编排方案](MULTI-AGENT-PLAN.md)组织：默认主控＋GUI、TUI/CLI、Hooks/测试三个工作角色。先稳定公共合同与文件归属，再并发独立模块；核心/Schema/lockfile与集成由唯一拥有者维护。工具不支持子Agent时保持同一依赖图顺序执行，不假称多Agent已运行。
 
-1. NB-00：固定源码基线，核实扩展点、许可、Electron 耦合与无头服务边界，补齐功能矩阵。在 `implementation/nimbalyst/` 准备独立源码检出和 D 盘独立 profile，保护已有数据。
+1. NB-00：固定源码基线，核实扩展点、许可、Electron 耦合与无头服务边界，补齐功能矩阵。在 `implementation/nimbalyst/` 准备独立源码检出和当前主开发平台的独立 profile，保护已有数据。
 2. NB-01：生成公共命令/查询/事件、CLI JSON/错误码、Hook 契约、正反例和新任务清单。旧 WB/Nextcloud/Deck 合同不能直接复用。
 3. NB-02～04：先共享核心、非图形 demo 服务和 CLI 纵向闭环，再接 Nimbalyst GUI 和 TUI。交付三端新建、编辑、模拟执行、差异、历史和恢复，以及 Hooks 的无 Key M0。
 4. 按后续授权继续 Gateway、Pi、Google Tasks、设备和 PDF；不得把 M0 演示状态作为真实后台证据。

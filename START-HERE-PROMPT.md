@@ -1,10 +1,15 @@
 # 发给开发 Agent 的提示词 · v2.3
 
+## 当前开发方向（2026-09-16）
+
+后续主开发与原生桌面验收平台为 **MacBook M3 / macOS**，执行 [macOS 开发交接](MACOS-DEVELOPMENT-HANDOFF.md)。Windows 历史路径/阶段顺序不覆盖此决定；保留 Windows/Ubuntu 的适配与回归要求。Wayland 指 getwayland.com 的 AI 工作台，对标以 [Wayland / Devin 指标](WAYLAND-DEVIN-BENCHMARK.md) 为准。已有实现继续收口，不重新制作另一套独立看板；历史测试通过不代表 macOS 已验收。
+
 本提示词与主 SPEC、Trackers 映射、TUI/Hooks 契约及功能矩阵同步。旧版在 reference/v2.2；本轮修改规格不代表已经开发应用。
 
 ```text
-请在 D:\Projects\babel-nimbalyst-dev-kit 实际开发巴别塔 M0。
-资料留在根目录，源码放 implementation/nimbalyst/，依赖与独立 profile 放 D 盘。
+请在 macOS 的巴别塔仓库检出目录继续开发现有产品，建议 ~/Projects/babel。
+先读 MACOS-DEVELOPMENT-HANDOFF.md 和 WAYLAND-DEVIN-BENCHMARK.md。资料留在根目录，源码在 implementation/nimbalyst/，依赖和独立 profile 使用本机配置路径。
+以当前验收记录确定缺口，不把下面历史 M0 的实施顺序当成重写现有功能的要求；目标是成品，演示验收与真实能力分别登记。
 
 先读 AGENTS.md、README.md、NIMBALYST-DEVELOPMENT-SPEC.md、NIMBALYST-TRACKER-MAPPING.md、NIMBALYST-TUI-HOOKS-SPEC.md、CAPABILITY-MATRIX.md，再按需读 design/ 和 skills/SKILLS-GUIDE.md。按当前 v2.3 开发，reference/v2.2 只是历史快照。
 

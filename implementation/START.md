@@ -1,5 +1,7 @@
 # Windows 原生 M0 启动与复验
 
+> 后续主开发环境已确定为 macOS，先读 [macOS 交接](../MACOS-DEVELOPMENT-HANDOFF.md)。本文保留 Windows 历史启动与复验方法，不是要求先在 Windows 完成开发。
+
 本分支包含候选源码，不是可发布安装包。先读 [验收边界](ACCEPTANCE.md)。本轮使用 Windows、Node 24.12、npm 11.6；macOS/Ubuntu 尚未复验。所有操作使用独立演示 profile，不登录真实账号，不启动真实 Pi。
 
 ## 准备源码

@@ -1,5 +1,9 @@
 # 巴别塔 × Nimbalyst：真实设备与服务控制
 
+## 当前开发方向（2026-09-16）
+
+后续主开发与原生桌面验收平台为 **MacBook M3 / macOS**，执行 [macOS 开发交接](MACOS-DEVELOPMENT-HANDOFF.md)。Windows 历史路径/阶段顺序不覆盖此决定；保留 Windows/Ubuntu 的适配与回归要求。Wayland 指 getwayland.com 的 AI 工作台，对标以 [Wayland / Devin 指标](WAYLAND-DEVIN-BENCHMARK.md) 为准。已有实现继续收口，不重新制作另一套独立看板；历史测试通过不代表 macOS 已验收。
+
 用户已授权直接实现可用产品能力。本模块不使用 M0 假设备数据，不替换原生 Trackers。实施代码与操作说明在 [SYSTEM-CONSOLE.md](implementation/nimbalyst/packages/babel/SYSTEM-CONSOLE.md)。
 
 ## 界面和职责
@@ -22,6 +26,6 @@ GUI / TUI / CLI → 公共控制合同 → 独立后台 → OS 适配器。GUI �
 | SYS-08 | Hooks | 前置拒绝/超时、观察游标/重试/重复投递去重语义 |
 | SYS-09 | 权限和发布 | 回环鉴权、IPC 来源、profile ACL、UAC 取消、全项目门禁 |
 
-本轮目标机器是 Windows/WSL；真实 GitLab、DUFS、局域网代理维持用户既定停用状态。需要写操作的验收使用隔离目标，不用重新开启这些服务来证明按钮有效。
+既有实现与证据来自 Windows/WSL；后续以 macOS 为主开发与验收环境，平台适配分别验证。真实 GitLab、DUFS、局域网代理维持用户既定停用状态。需要写操作的验收使用隔离目标，不用重新开启这些服务来证明按钮有效。
 
 完整产品路线仍包括远程设备、权限管理、实时磁盘 I/O 与更完整服务发现。这些不能被当前本机能力的“已实现”覆盖。验收报告必须区分实现、自动化测试、实机操作、权限阻塞和未验证。

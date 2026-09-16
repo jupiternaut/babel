@@ -1,5 +1,9 @@
 # 巴别塔 BABEL · Nimbalyst 开发规范
 
+## 当前开发方向（2026-09-16）
+
+后续主开发与原生桌面验收平台为 **MacBook M3 / macOS**，执行 [macOS 开发交接](MACOS-DEVELOPMENT-HANDOFF.md)。Windows 历史路径/阶段顺序不覆盖此决定；保留 Windows/Ubuntu 的适配与回归要求。Wayland 指 getwayland.com 的 AI 工作台，对标以 [Wayland / Devin 指标](WAYLAND-DEVIN-BENCHMARK.md) 为准。已有实现继续收口，不重新制作另一套独立看板；历史测试通过不代表 macOS 已验收。
+
 本仓库包含巴别塔开发 SPEC、Trackers 映射与 Nimbalyst 改造源码。新增执行视图、TUI、CLI 和 Hooks 共用领域服务，保留原生 Trackers。依赖、凭据与运行 profile 不入库。
 
 更新日期：2026-09-16，规格 v2.3。当前状态：**原生 M0 候选实现，部分闭环已验收；完整产品与全仓库发布门禁未通过**。第一阶段是无需 API Key、共用核心的 Nimbalyst GUI + 交互 TUI + JSON CLI + 应用 Hooks 原型 M0。旧版完整保留在 [v2.2 存档](reference/v2.2/README.md)。
