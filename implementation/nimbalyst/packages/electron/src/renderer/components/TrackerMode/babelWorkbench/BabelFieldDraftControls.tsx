@@ -3,7 +3,7 @@ import type { useBabelFieldDraft } from './useBabelFieldDraft';
 
 export function BabelFieldDraftControls({ fields }: { fields: ReturnType<typeof useBabelFieldDraft> }) {
   return <section className="babel-field-draft-controls min-w-0 space-y-2 text-xs text-nim-muted" aria-label="Babel 字段保存">
-    <p className="m-0">优先级、负责人和标签需显式保存；状态、关系、类型标签及其他字段暂为只读。</p>
+    <p className="m-0">优先级、负责人和标签需显式保存；依赖与阻塞在关系区单独保存，状态、类型标签及其他字段暂为只读。</p>
     {!fields.writable && <p className="m-0">字段只读；已有草稿保留在当前会话。</p>}
     {!fields.validRevision && <p className="m-0" role="alert">缺少有效版本号，字段暂不可编辑或保存。</p>}
     {fields.conflict && <div role="alert" data-testid="babel-fields-conflict" className="rounded border border-nim p-2 space-y-2">

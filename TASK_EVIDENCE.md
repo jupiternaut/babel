@@ -219,3 +219,43 @@ Mac 使用现有隔离 profile `mac-glass-script-20260916`，Apple M3 / macOS 27
 本轮是开发者自测，独立验收保持空。未覆盖完整 CAP-04/05/16、自定义字段/关系/类型、退出应用后的草稿持久化、全部主题/窄窗/200% 字体/系统中文输入法/VoiceOver、Windows/Ubuntu 或真实执行。下一切片为关系与依赖的统一写路由。
 
 本片最终代码冻结后再次运行原生三端闭环通过（native-frozen.log）；最终 Babel 全包测试包含 tags 数组收窄修正。TASKS 共 51 个唯一任务 ID，M0-04b 开发完成，独立验收未勾选。
+
+
+## M0-05a：双向依赖与阻塞的三端编辑
+
+日期：2026-09-16；基线 `89c26060fd1c1c5cb8100c649621246d15bea06c`；cwd `/Users/gengrf/Projects/babel`，分支 `ui/macos-glass`，起始工作树干净。沿用 MIT / Node24 / npm 工作区与原生 Nimbalyst，没有新增依赖。TASKS 共 52 个唯一任务 ID；本片只勾开发完成，独立验收留空。
+
+### 实现
+
+- 公共 relation.set 先在副本计算双向变化，再检查版本、目标 ID、同项目、自关联、循环及全部实际变化端点的只读权限。拒绝不改记录/版本/事件/outbox；增删同时同步 dependsOn 和 blocks，变化端点各更新 record/binding revision、时间与关联 task.updated。无变化保存不递增版本或事件，幂等重放不重复写入。
+- 原生详情复用关系 pill 和候选选择器，仅启用 dependsOn/blocks；草稿按 authority/project/tracker 保留，明确保存，冲突可查看远端标题和 ID，再选择采用远端或重定版本后重新提交。保存只发送有变化的关系字段。适配器主动刷新所有变化端点，无 SSE 也能读到反向版本。
+- TUI l 表单冻结原项目、trackerId、revision，重复 Ctrl+S 只发一次；旧版本、循环、只读等拒绝后保留输入和错误。Esc 取消，q 退出恢复备用屏幕。CLI 帮助明确 expectedRevision，非法 JSON ID 数组不再静默转字符串；辅助 GUI 的既有关系保存同步补传草稿版本。
+- 修复关系输入缺少可访问名称、关闭添加输入后焦点未回到 Add link 的缺陷；沿用 better-accessibility 与宿主样式。普通宿主关系业务保持原路由。
+- 只读复查发现创建命令可直接注入单向关系。已明确拒绝 task.create 的非空 dependsOn/blocks（含 fields），以及 task.update 的关系字段；需先创建记录，再经专用命令建立依赖。创建时关系编排仍是未完成能力，不将拒绝入口算完整创建功能。
+
+### 验证
+
+日志根：`/Users/gengrf/Library/Logs/Babel-Dev/task-relations-20260916/`。
+
+| 检查 | 结果 | 日志 |
+|---|---|---|
+| 核心回归 | 6 个新增密集用例：双向增删/无变化/反向版本/幂等、循环/自关联/跨项目、只读端点、输入类型/版本与旁路注入；初始 5/5 失败，新增旁路用例也先红 | core-before.log、bypass-before.log、babel-frozen.log |
+| CLI / HTTP | 12 通过，新增真实临时 HTTP 依赖设置、双端读回、幂等/版本、清空及非法 JSON；初次非法数组错误码为 NOT_FOUND，修正为 USAGE | cli-before.log、core-cli-corrected.log |
+| 适配器 / HTTP / CLI | 28 通过；双向增删、无 SSE 主动双端刷新、事件、无变化和拒绝 | adapter-frozen.log |
+| 原生组件/hook/关系选择器 | 37 通过；标签/焦点先红后绿，冲突保稿、原生 picker 与无宿主写入 IPC | gui-a11y-before.log、gui-final.log |
+| TUI / HTTP headless | 19 通过（新增关系 7，原正文/字段 12）；冻结目标/版本、pending、循环/只读/旧版本、取消 | tui-before.log、tui-final.log |
+| Babel 类型与全包 | 类型通过；63 文件，322 通过 / 4 跳过 / 0 失败 | babel-typecheck-final.log、babel-frozen.log |
+| 宿主全仓类型与测试 | 26 工作区类型通过；1673 文件通过 / 7 跳过，14195 项通过 / 26 跳过 / 0 失败，199.64 秒 | typecheck.log、test-prepush.log |
+| Mac 原生 + 真实 PTY + CLI | 1 条闭环通过：原生建立依赖/双端版本、键盘焦点、CLI 制造冲突/保稿重定、GUI 循环拒绝、PTY 删除反向关系/循环拒绝保稿、终端恢复、无 run | native-frozen.log |
+
+宿主全仓门禁启动后，复查又补了核心创建/普通更新的关系旁路拒绝；最终 Babel 类型/全包、适配器 28 项及原生闭环在该修正后重跑通过。其他宿主代码冻结未再变化，不重复不受影响的完整宿主测试。
+
+核心测试中，兼具只读与循环的负例起初命中循环错误，随后统一先检查实际变化端点只读。用于模拟缺少执行 binding 的负例发现测试 helper 的 task.get 自身会创建 binding，改为直接读取测试状态 revision 后验证命令拒绝；未放松无部分写入断言。初次完整 Babel 运行加载了旧 helper，1 项失败；修正后最终 322 项通过。
+
+原生首轮在终端详情窄栏断言完整长 ID，显示正确但按栏宽省略而超时；调整为可见前缀，仍通过 CLI 校验完整 ID。第二轮重新搜索时未清除保留的旧查询，修正输入步骤后通过。最终在封住创建旁路后重启同一隔离 profile 并再次通过，无需登录或真实模型调用。
+
+Mac 平台 Apple M3 / macOS27 / Node24.15，profile `mac-glass-script-20260916`，浅色默认 CSS 磨砂、折射关闭。仅重启该隔离开发实例；没有 Pi、OAuth、SSH 或 GitLab/DUFS/代理操作。截图由主控实际查看，冲突远端空值、保留草稿提示、明确选择与禁用保存可见；不把此单图算完整视觉验收。
+
+[原生结果](implementation/evidence/m0-05a-20260916/relations-evidence.json)、[冲突截图](implementation/evidence/m0-05a-20260916/relations-conflict-native.png)、[PTY 原始字节的 JSON 转义记录](implementation/evidence/m0-05a-20260916/relations-pty.json)、[源码与检查哈希](implementation/evidence/m0-05a-20260916/validation.json)。PTY JSON 可按 UTF-8 解码还原 raw 并校验 rawSha256；避免把终端补齐空格误当源码空白错误。
+
+未验证：独立验收会话、任意关系词汇/类型、创建时关系编排、终端完整冲突选择、应用退出后的持久草稿、所有主题/窄窗/200% 字体/系统 IME/VoiceOver、Windows/Ubuntu 与真实 Agent/生产服务。完整 M0-05/16/19 不勾完成；下一片接终端冲突选择与草稿恢复。

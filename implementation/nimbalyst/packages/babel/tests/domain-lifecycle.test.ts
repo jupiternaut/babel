@@ -228,7 +228,7 @@ describe("CAP-05/06/15 relation, reorder, history", () => {
     const updated = await command(d, "relation.set", {
       trackerId: "fixture-tracker-pdf",
       dependsOn: ["fixture-tracker-research"],
-    });
+    }, { expectedRevision: query<TaskDetail>(d, "task.get", { trackerId: "fixture-tracker-pdf" }).record.revision });
     expect(updated.ok).toBe(true);
     expect(relatedEvents(d, PROJECT, cursor, updated.correlationId).some((event) => event.payload.action === "relation")).toBe(true);
     const pdf = query<TaskDetail>(d, "task.get", { trackerId: "fixture-tracker-pdf" });

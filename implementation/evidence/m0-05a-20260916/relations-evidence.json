@@ -1,0 +1,831 @@
+{
+  "projectId": "fixture-project-babel",
+  "trackerIds": [
+    "trk-33dba795-56ba-495f-8c15-6be195840fe8",
+    "trk-64e7c9f0-1a61-4654-87de-eb79162653e0",
+    "trk-0828d059-e409-48c8-afd6-04d6631e64f8"
+  ],
+  "mode": "demo",
+  "guiSaved": [
+    {
+      "mode": "demo",
+      "demoLabel": "演示数据",
+      "record": {
+        "id": "trk-33dba795-56ba-495f-8c15-6be195840fe8",
+        "projectId": "fixture-project-babel",
+        "primaryType": "task",
+        "typeTags": [
+          "task"
+        ],
+        "source": "native",
+        "archived": false,
+        "syncStatus": "local",
+        "content": {
+          "format": "markdown",
+          "markdown": ""
+        },
+        "system": {
+          "workspace": "fixture-project-babel",
+          "createdAt": "2026-09-14T07:12:34.000Z",
+          "updatedAt": "2026-09-14T07:12:46.000Z",
+          "comments": [],
+          "activity": [
+            {
+              "id": "act-5d49f54d-2395-492d-9172-13e62c852f68",
+              "at": "2026-09-14T07:12:36.000Z",
+              "actorId": "demo-operator",
+              "kind": "created",
+              "detail": "创建条目"
+            }
+          ],
+          "linkedSessions": [],
+          "origin": {
+            "kind": "manual"
+          }
+        },
+        "fields": {
+          "title": "关系甲-1789559480589",
+          "status": "to-do",
+          "description": "",
+          "priority": "normal",
+          "acceptance": [],
+          "dependsOn": [
+            "trk-64e7c9f0-1a61-4654-87de-eb79162653e0"
+          ],
+          "blocks": []
+        },
+        "revision": 2,
+        "orderKey": "o:000620"
+      },
+      "binding": {
+        "projectId": "fixture-project-babel",
+        "trackerId": "trk-33dba795-56ba-495f-8c15-6be195840fe8",
+        "targetDeviceId": null,
+        "providerId": null,
+        "latestRunId": null,
+        "completionPolicy": "verified_and_reviewed",
+        "revision": 2,
+        "archivedAt": null,
+        "outcome": "not_started",
+        "restoreStage": null,
+        "executionEnabled": true
+      },
+      "stage": "TODO",
+      "latestRun": null,
+      "runs": [],
+      "card": {
+        "projectId": "fixture-project-babel",
+        "trackerId": "trk-33dba795-56ba-495f-8c15-6be195840fe8",
+        "title": "关系甲-1789559480589",
+        "description": "",
+        "primaryType": "task",
+        "status": "to-do",
+        "stage": "TODO",
+        "outcome": "not_started",
+        "archived": false,
+        "revision": 2,
+        "orderKey": "o:000620",
+        "latestRunId": null,
+        "runStatus": null,
+        "lastUpdatedAt": "2026-09-14T07:12:46.000Z",
+        "deviceId": null,
+        "attention": false,
+        "originKind": "manual",
+        "executionEnabled": true,
+        "readOnly": false,
+        "priority": "normal"
+      }
+    },
+    {
+      "mode": "demo",
+      "demoLabel": "演示数据",
+      "record": {
+        "id": "trk-64e7c9f0-1a61-4654-87de-eb79162653e0",
+        "projectId": "fixture-project-babel",
+        "primaryType": "task",
+        "typeTags": [
+          "task"
+        ],
+        "source": "native",
+        "archived": false,
+        "syncStatus": "local",
+        "content": {
+          "format": "markdown",
+          "markdown": ""
+        },
+        "system": {
+          "workspace": "fixture-project-babel",
+          "createdAt": "2026-09-14T07:12:38.000Z",
+          "updatedAt": "2026-09-14T07:12:48.000Z",
+          "comments": [],
+          "activity": [
+            {
+              "id": "act-795aa482-6f63-43e0-ad52-1f7117874c40",
+              "at": "2026-09-14T07:12:40.000Z",
+              "actorId": "demo-operator",
+              "kind": "created",
+              "detail": "创建条目"
+            }
+          ],
+          "linkedSessions": [],
+          "origin": {
+            "kind": "manual"
+          }
+        },
+        "fields": {
+          "title": "关系乙-1789559480589",
+          "status": "to-do",
+          "description": "",
+          "priority": "normal",
+          "acceptance": [],
+          "dependsOn": [],
+          "blocks": [
+            "trk-33dba795-56ba-495f-8c15-6be195840fe8"
+          ]
+        },
+        "revision": 2,
+        "orderKey": "o:000630"
+      },
+      "binding": {
+        "projectId": "fixture-project-babel",
+        "trackerId": "trk-64e7c9f0-1a61-4654-87de-eb79162653e0",
+        "targetDeviceId": null,
+        "providerId": null,
+        "latestRunId": null,
+        "completionPolicy": "verified_and_reviewed",
+        "revision": 2,
+        "archivedAt": null,
+        "outcome": "not_started",
+        "restoreStage": null,
+        "executionEnabled": true
+      },
+      "stage": "TODO",
+      "latestRun": null,
+      "runs": [],
+      "card": {
+        "projectId": "fixture-project-babel",
+        "trackerId": "trk-64e7c9f0-1a61-4654-87de-eb79162653e0",
+        "title": "关系乙-1789559480589",
+        "description": "",
+        "primaryType": "task",
+        "status": "to-do",
+        "stage": "TODO",
+        "outcome": "not_started",
+        "archived": false,
+        "revision": 2,
+        "orderKey": "o:000630",
+        "latestRunId": null,
+        "runStatus": null,
+        "lastUpdatedAt": "2026-09-14T07:12:48.000Z",
+        "deviceId": null,
+        "attention": false,
+        "originKind": "manual",
+        "executionEnabled": true,
+        "readOnly": false,
+        "priority": "normal"
+      }
+    },
+    {
+      "mode": "demo",
+      "demoLabel": "演示数据",
+      "record": {
+        "id": "trk-0828d059-e409-48c8-afd6-04d6631e64f8",
+        "projectId": "fixture-project-babel",
+        "primaryType": "task",
+        "typeTags": [
+          "task"
+        ],
+        "source": "native",
+        "archived": false,
+        "syncStatus": "local",
+        "content": {
+          "format": "markdown",
+          "markdown": ""
+        },
+        "system": {
+          "workspace": "fixture-project-babel",
+          "createdAt": "2026-09-14T07:12:42.000Z",
+          "updatedAt": "2026-09-14T07:12:43.000Z",
+          "comments": [],
+          "activity": [
+            {
+              "id": "act-7540a7ee-05b0-407b-bd73-a4e13f6673d2",
+              "at": "2026-09-14T07:12:44.000Z",
+              "actorId": "demo-operator",
+              "kind": "created",
+              "detail": "创建条目"
+            }
+          ],
+          "linkedSessions": [],
+          "origin": {
+            "kind": "manual"
+          }
+        },
+        "fields": {
+          "title": "关系丙-1789559480589",
+          "status": "to-do",
+          "description": "",
+          "priority": "normal",
+          "acceptance": [],
+          "dependsOn": [],
+          "blocks": []
+        },
+        "revision": 1,
+        "orderKey": "o:000640"
+      },
+      "binding": {
+        "projectId": "fixture-project-babel",
+        "trackerId": "trk-0828d059-e409-48c8-afd6-04d6631e64f8",
+        "targetDeviceId": null,
+        "providerId": null,
+        "latestRunId": null,
+        "completionPolicy": "verified_and_reviewed",
+        "revision": 1,
+        "archivedAt": null,
+        "outcome": "not_started",
+        "restoreStage": null,
+        "executionEnabled": true
+      },
+      "stage": "TODO",
+      "latestRun": null,
+      "runs": [],
+      "card": {
+        "projectId": "fixture-project-babel",
+        "trackerId": "trk-0828d059-e409-48c8-afd6-04d6631e64f8",
+        "title": "关系丙-1789559480589",
+        "description": "",
+        "primaryType": "task",
+        "status": "to-do",
+        "stage": "TODO",
+        "outcome": "not_started",
+        "archived": false,
+        "revision": 1,
+        "orderKey": "o:000640",
+        "latestRunId": null,
+        "runStatus": null,
+        "lastUpdatedAt": "2026-09-14T07:12:43.000Z",
+        "deviceId": null,
+        "attention": false,
+        "originKind": "manual",
+        "executionEnabled": true,
+        "readOnly": false,
+        "priority": "normal"
+      }
+    }
+  ],
+  "beforeCycle": [
+    {
+      "mode": "demo",
+      "demoLabel": "演示数据",
+      "record": {
+        "id": "trk-33dba795-56ba-495f-8c15-6be195840fe8",
+        "projectId": "fixture-project-babel",
+        "primaryType": "task",
+        "typeTags": [
+          "task"
+        ],
+        "source": "native",
+        "archived": false,
+        "syncStatus": "local",
+        "content": {
+          "format": "markdown",
+          "markdown": ""
+        },
+        "system": {
+          "workspace": "fixture-project-babel",
+          "createdAt": "2026-09-14T07:12:34.000Z",
+          "updatedAt": "2026-09-14T07:12:54.000Z",
+          "comments": [],
+          "activity": [
+            {
+              "id": "act-5d49f54d-2395-492d-9172-13e62c852f68",
+              "at": "2026-09-14T07:12:36.000Z",
+              "actorId": "demo-operator",
+              "kind": "created",
+              "detail": "创建条目"
+            }
+          ],
+          "linkedSessions": [],
+          "origin": {
+            "kind": "manual"
+          }
+        },
+        "fields": {
+          "title": "关系甲-1789559480589",
+          "status": "to-do",
+          "description": "",
+          "priority": "normal",
+          "acceptance": [],
+          "dependsOn": [
+            "trk-64e7c9f0-1a61-4654-87de-eb79162653e0",
+            "trk-0828d059-e409-48c8-afd6-04d6631e64f8"
+          ],
+          "blocks": []
+        },
+        "revision": 4,
+        "orderKey": "o:000620"
+      },
+      "binding": {
+        "projectId": "fixture-project-babel",
+        "trackerId": "trk-33dba795-56ba-495f-8c15-6be195840fe8",
+        "targetDeviceId": null,
+        "providerId": null,
+        "latestRunId": null,
+        "completionPolicy": "verified_and_reviewed",
+        "revision": 4,
+        "archivedAt": null,
+        "outcome": "not_started",
+        "restoreStage": null,
+        "executionEnabled": true
+      },
+      "stage": "TODO",
+      "latestRun": null,
+      "runs": [],
+      "card": {
+        "projectId": "fixture-project-babel",
+        "trackerId": "trk-33dba795-56ba-495f-8c15-6be195840fe8",
+        "title": "关系甲-1789559480589",
+        "description": "",
+        "primaryType": "task",
+        "status": "to-do",
+        "stage": "TODO",
+        "outcome": "not_started",
+        "archived": false,
+        "revision": 4,
+        "orderKey": "o:000620",
+        "latestRunId": null,
+        "runStatus": null,
+        "lastUpdatedAt": "2026-09-14T07:12:54.000Z",
+        "deviceId": null,
+        "attention": false,
+        "originKind": "manual",
+        "executionEnabled": true,
+        "readOnly": false,
+        "priority": "normal"
+      }
+    },
+    {
+      "mode": "demo",
+      "demoLabel": "演示数据",
+      "record": {
+        "id": "trk-64e7c9f0-1a61-4654-87de-eb79162653e0",
+        "projectId": "fixture-project-babel",
+        "primaryType": "task",
+        "typeTags": [
+          "task"
+        ],
+        "source": "native",
+        "archived": false,
+        "syncStatus": "local",
+        "content": {
+          "format": "markdown",
+          "markdown": ""
+        },
+        "system": {
+          "workspace": "fixture-project-babel",
+          "createdAt": "2026-09-14T07:12:38.000Z",
+          "updatedAt": "2026-09-14T07:12:56.000Z",
+          "comments": [],
+          "activity": [
+            {
+              "id": "act-795aa482-6f63-43e0-ad52-1f7117874c40",
+              "at": "2026-09-14T07:12:40.000Z",
+              "actorId": "demo-operator",
+              "kind": "created",
+              "detail": "创建条目"
+            }
+          ],
+          "linkedSessions": [],
+          "origin": {
+            "kind": "manual"
+          }
+        },
+        "fields": {
+          "title": "关系乙-1789559480589",
+          "status": "to-do",
+          "description": "",
+          "priority": "normal",
+          "acceptance": [],
+          "dependsOn": [],
+          "blocks": [
+            "trk-33dba795-56ba-495f-8c15-6be195840fe8"
+          ]
+        },
+        "revision": 4,
+        "orderKey": "o:000630"
+      },
+      "binding": {
+        "projectId": "fixture-project-babel",
+        "trackerId": "trk-64e7c9f0-1a61-4654-87de-eb79162653e0",
+        "targetDeviceId": null,
+        "providerId": null,
+        "latestRunId": null,
+        "completionPolicy": "verified_and_reviewed",
+        "revision": 4,
+        "archivedAt": null,
+        "outcome": "not_started",
+        "restoreStage": null,
+        "executionEnabled": true
+      },
+      "stage": "TODO",
+      "latestRun": null,
+      "runs": [],
+      "card": {
+        "projectId": "fixture-project-babel",
+        "trackerId": "trk-64e7c9f0-1a61-4654-87de-eb79162653e0",
+        "title": "关系乙-1789559480589",
+        "description": "",
+        "primaryType": "task",
+        "status": "to-do",
+        "stage": "TODO",
+        "outcome": "not_started",
+        "archived": false,
+        "revision": 4,
+        "orderKey": "o:000630",
+        "latestRunId": null,
+        "runStatus": null,
+        "lastUpdatedAt": "2026-09-14T07:12:56.000Z",
+        "deviceId": null,
+        "attention": false,
+        "originKind": "manual",
+        "executionEnabled": true,
+        "readOnly": false,
+        "priority": "normal"
+      }
+    },
+    {
+      "mode": "demo",
+      "demoLabel": "演示数据",
+      "record": {
+        "id": "trk-0828d059-e409-48c8-afd6-04d6631e64f8",
+        "projectId": "fixture-project-babel",
+        "primaryType": "task",
+        "typeTags": [
+          "task"
+        ],
+        "source": "native",
+        "archived": false,
+        "syncStatus": "local",
+        "content": {
+          "format": "markdown",
+          "markdown": ""
+        },
+        "system": {
+          "workspace": "fixture-project-babel",
+          "createdAt": "2026-09-14T07:12:42.000Z",
+          "updatedAt": "2026-09-14T07:12:58.000Z",
+          "comments": [],
+          "activity": [
+            {
+              "id": "act-7540a7ee-05b0-407b-bd73-a4e13f6673d2",
+              "at": "2026-09-14T07:12:44.000Z",
+              "actorId": "demo-operator",
+              "kind": "created",
+              "detail": "创建条目"
+            }
+          ],
+          "linkedSessions": [],
+          "origin": {
+            "kind": "manual"
+          }
+        },
+        "fields": {
+          "title": "关系丙-1789559480589",
+          "status": "to-do",
+          "description": "",
+          "priority": "normal",
+          "acceptance": [],
+          "dependsOn": [],
+          "blocks": [
+            "trk-33dba795-56ba-495f-8c15-6be195840fe8"
+          ]
+        },
+        "revision": 2,
+        "orderKey": "o:000640"
+      },
+      "binding": {
+        "projectId": "fixture-project-babel",
+        "trackerId": "trk-0828d059-e409-48c8-afd6-04d6631e64f8",
+        "targetDeviceId": null,
+        "providerId": null,
+        "latestRunId": null,
+        "completionPolicy": "verified_and_reviewed",
+        "revision": 2,
+        "archivedAt": null,
+        "outcome": "not_started",
+        "restoreStage": null,
+        "executionEnabled": true
+      },
+      "stage": "TODO",
+      "latestRun": null,
+      "runs": [],
+      "card": {
+        "projectId": "fixture-project-babel",
+        "trackerId": "trk-0828d059-e409-48c8-afd6-04d6631e64f8",
+        "title": "关系丙-1789559480589",
+        "description": "",
+        "primaryType": "task",
+        "status": "to-do",
+        "stage": "TODO",
+        "outcome": "not_started",
+        "archived": false,
+        "revision": 2,
+        "orderKey": "o:000640",
+        "latestRunId": null,
+        "runStatus": null,
+        "lastUpdatedAt": "2026-09-14T07:12:58.000Z",
+        "deviceId": null,
+        "attention": false,
+        "originKind": "manual",
+        "executionEnabled": true,
+        "readOnly": false,
+        "priority": "normal"
+      }
+    }
+  ],
+  "tuiSaved": [
+    {
+      "mode": "demo",
+      "demoLabel": "演示数据",
+      "record": {
+        "id": "trk-33dba795-56ba-495f-8c15-6be195840fe8",
+        "projectId": "fixture-project-babel",
+        "primaryType": "task",
+        "typeTags": [
+          "task"
+        ],
+        "source": "native",
+        "archived": false,
+        "syncStatus": "local",
+        "content": {
+          "format": "markdown",
+          "markdown": ""
+        },
+        "system": {
+          "workspace": "fixture-project-babel",
+          "createdAt": "2026-09-14T07:12:34.000Z",
+          "updatedAt": "2026-09-14T07:13:00.000Z",
+          "comments": [],
+          "activity": [
+            {
+              "id": "act-5d49f54d-2395-492d-9172-13e62c852f68",
+              "at": "2026-09-14T07:12:36.000Z",
+              "actorId": "demo-operator",
+              "kind": "created",
+              "detail": "创建条目"
+            }
+          ],
+          "linkedSessions": [],
+          "origin": {
+            "kind": "manual"
+          }
+        },
+        "fields": {
+          "title": "关系甲-1789559480589",
+          "status": "to-do",
+          "description": "",
+          "priority": "normal",
+          "acceptance": [],
+          "dependsOn": [
+            "trk-0828d059-e409-48c8-afd6-04d6631e64f8"
+          ],
+          "blocks": []
+        },
+        "revision": 5,
+        "orderKey": "o:000620"
+      },
+      "binding": {
+        "projectId": "fixture-project-babel",
+        "trackerId": "trk-33dba795-56ba-495f-8c15-6be195840fe8",
+        "targetDeviceId": null,
+        "providerId": null,
+        "latestRunId": null,
+        "completionPolicy": "verified_and_reviewed",
+        "revision": 5,
+        "archivedAt": null,
+        "outcome": "not_started",
+        "restoreStage": null,
+        "executionEnabled": true
+      },
+      "stage": "TODO",
+      "latestRun": null,
+      "runs": [],
+      "card": {
+        "projectId": "fixture-project-babel",
+        "trackerId": "trk-33dba795-56ba-495f-8c15-6be195840fe8",
+        "title": "关系甲-1789559480589",
+        "description": "",
+        "primaryType": "task",
+        "status": "to-do",
+        "stage": "TODO",
+        "outcome": "not_started",
+        "archived": false,
+        "revision": 5,
+        "orderKey": "o:000620",
+        "latestRunId": null,
+        "runStatus": null,
+        "lastUpdatedAt": "2026-09-14T07:13:00.000Z",
+        "deviceId": null,
+        "attention": false,
+        "originKind": "manual",
+        "executionEnabled": true,
+        "readOnly": false,
+        "priority": "normal"
+      }
+    },
+    {
+      "mode": "demo",
+      "demoLabel": "演示数据",
+      "record": {
+        "id": "trk-64e7c9f0-1a61-4654-87de-eb79162653e0",
+        "projectId": "fixture-project-babel",
+        "primaryType": "task",
+        "typeTags": [
+          "task"
+        ],
+        "source": "native",
+        "archived": false,
+        "syncStatus": "local",
+        "content": {
+          "format": "markdown",
+          "markdown": ""
+        },
+        "system": {
+          "workspace": "fixture-project-babel",
+          "createdAt": "2026-09-14T07:12:38.000Z",
+          "updatedAt": "2026-09-14T07:13:02.000Z",
+          "comments": [],
+          "activity": [
+            {
+              "id": "act-795aa482-6f63-43e0-ad52-1f7117874c40",
+              "at": "2026-09-14T07:12:40.000Z",
+              "actorId": "demo-operator",
+              "kind": "created",
+              "detail": "创建条目"
+            }
+          ],
+          "linkedSessions": [],
+          "origin": {
+            "kind": "manual"
+          }
+        },
+        "fields": {
+          "title": "关系乙-1789559480589",
+          "status": "to-do",
+          "description": "",
+          "priority": "normal",
+          "acceptance": [],
+          "dependsOn": [],
+          "blocks": []
+        },
+        "revision": 5,
+        "orderKey": "o:000630"
+      },
+      "binding": {
+        "projectId": "fixture-project-babel",
+        "trackerId": "trk-64e7c9f0-1a61-4654-87de-eb79162653e0",
+        "targetDeviceId": null,
+        "providerId": null,
+        "latestRunId": null,
+        "completionPolicy": "verified_and_reviewed",
+        "revision": 5,
+        "archivedAt": null,
+        "outcome": "not_started",
+        "restoreStage": null,
+        "executionEnabled": true
+      },
+      "stage": "TODO",
+      "latestRun": null,
+      "runs": [],
+      "card": {
+        "projectId": "fixture-project-babel",
+        "trackerId": "trk-64e7c9f0-1a61-4654-87de-eb79162653e0",
+        "title": "关系乙-1789559480589",
+        "description": "",
+        "primaryType": "task",
+        "status": "to-do",
+        "stage": "TODO",
+        "outcome": "not_started",
+        "archived": false,
+        "revision": 5,
+        "orderKey": "o:000630",
+        "latestRunId": null,
+        "runStatus": null,
+        "lastUpdatedAt": "2026-09-14T07:13:02.000Z",
+        "deviceId": null,
+        "attention": false,
+        "originKind": "manual",
+        "executionEnabled": true,
+        "readOnly": false,
+        "priority": "normal"
+      }
+    },
+    {
+      "mode": "demo",
+      "demoLabel": "演示数据",
+      "record": {
+        "id": "trk-0828d059-e409-48c8-afd6-04d6631e64f8",
+        "projectId": "fixture-project-babel",
+        "primaryType": "task",
+        "typeTags": [
+          "task"
+        ],
+        "source": "native",
+        "archived": false,
+        "syncStatus": "local",
+        "content": {
+          "format": "markdown",
+          "markdown": ""
+        },
+        "system": {
+          "workspace": "fixture-project-babel",
+          "createdAt": "2026-09-14T07:12:42.000Z",
+          "updatedAt": "2026-09-14T07:12:58.000Z",
+          "comments": [],
+          "activity": [
+            {
+              "id": "act-7540a7ee-05b0-407b-bd73-a4e13f6673d2",
+              "at": "2026-09-14T07:12:44.000Z",
+              "actorId": "demo-operator",
+              "kind": "created",
+              "detail": "创建条目"
+            }
+          ],
+          "linkedSessions": [],
+          "origin": {
+            "kind": "manual"
+          }
+        },
+        "fields": {
+          "title": "关系丙-1789559480589",
+          "status": "to-do",
+          "description": "",
+          "priority": "normal",
+          "acceptance": [],
+          "dependsOn": [],
+          "blocks": [
+            "trk-33dba795-56ba-495f-8c15-6be195840fe8"
+          ]
+        },
+        "revision": 2,
+        "orderKey": "o:000640"
+      },
+      "binding": {
+        "projectId": "fixture-project-babel",
+        "trackerId": "trk-0828d059-e409-48c8-afd6-04d6631e64f8",
+        "targetDeviceId": null,
+        "providerId": null,
+        "latestRunId": null,
+        "completionPolicy": "verified_and_reviewed",
+        "revision": 2,
+        "archivedAt": null,
+        "outcome": "not_started",
+        "restoreStage": null,
+        "executionEnabled": true
+      },
+      "stage": "TODO",
+      "latestRun": null,
+      "runs": [],
+      "card": {
+        "projectId": "fixture-project-babel",
+        "trackerId": "trk-0828d059-e409-48c8-afd6-04d6631e64f8",
+        "title": "关系丙-1789559480589",
+        "description": "",
+        "primaryType": "task",
+        "status": "to-do",
+        "stage": "TODO",
+        "outcome": "not_started",
+        "archived": false,
+        "revision": 2,
+        "orderKey": "o:000640",
+        "latestRunId": null,
+        "runStatus": null,
+        "lastUpdatedAt": "2026-09-14T07:12:58.000Z",
+        "deviceId": null,
+        "attention": false,
+        "originKind": "manual",
+        "executionEnabled": true,
+        "readOnly": false,
+        "priority": "normal"
+      }
+    }
+  ],
+  "verified": [
+    "native-explicit-save",
+    "reverse-fields-and-revisions",
+    "native-picker-keyboard-focus",
+    "GUI-conflict-draft-rebase",
+    "GUI-cycle-rejection",
+    "real-PTY-reverse-removal",
+    "duplicate-save-once",
+    "GUI-refresh-after-PTY",
+    "real-PTY-cycle-draft-preserved",
+    "terminal-restored",
+    "no-run-started"
+  ],
+  "notVerified": [
+    "independent acceptance",
+    "arbitrary relationship types",
+    "all platform/theme/IME/VoiceOver combinations"
+  ]
+}

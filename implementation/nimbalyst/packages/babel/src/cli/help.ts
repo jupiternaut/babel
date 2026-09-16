@@ -24,7 +24,7 @@ export const HELP_TEXT = `babel — 巴别塔 M0 非交互 CLI（演示数据，
   babel view list --project <id> --json
   babel view save --project <id> --name <name> [--view-id <id>] [--input definition.json] --json
   babel ready list --project <id> --json
-  babel relation set --project <id> --id <trackerId> --depends-on <id[,id]> [--blocks <id[,id]>] --json
+  babel relation set --project <id> --id <trackerId> [--depends-on <id[,id]>] [--blocks <id[,id]>] [--input relations.json] --expected-revision <n> --json
   babel hook list --project <id> --json
   babel hook register --project <id> --input hook.json --json
   babel hook retry --project <id> --delivery <deliveryId> --json

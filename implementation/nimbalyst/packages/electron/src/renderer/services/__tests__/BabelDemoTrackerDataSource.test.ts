@@ -329,3 +329,89 @@ describe('demo editable fields', () => {
     }
   });
 });
+
+
+describe('demo dependency relation writes', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('rejects malformed relation patches, missing revisions and generic relation writes before transport', async () => {
+    const fetchSpy = vi.fn();
+    vi.stubGlobal('fetch', fetchSpy);
+    const source = new BabelDemoTrackerDataSource({ workspacePath: '/isolated/babel' });
+    try {
+      for (const revision of [undefined, null, 0, -1, 1.5, Infinity, NaN, '2']) {
+        await expect(source.setRelations('a', { dependsOn: ['b'] }, revision as number))
+          .rejects.toMatchObject({ code: 'VALIDATION' });
+      }
+      for (const patch of [null, [], {}, { dependsOn: undefined }, { blocks: null }, { dependsOn: 'b' },
+        { blocks: [2] }, { dependsOn: [''] }, { blocks: ['  '] }, { dependsOn: [], trackerId: 'b' }]) {
+        await expect(source.setRelations('a', patch as never, 1)).rejects.toMatchObject({ code: 'VALIDATION' });
+      }
+      for (const key of ['dependsOn', 'blocks']) {
+        await expect(source.command({ type: 'update-item', input: { itemId: 'a', updates: { [key]: ['b'], revision: 1 } } }))
+          .rejects.toMatchObject({ code: BABEL_DEMO_UNIMPLEMENTED_CODE });
+      }
+      expect(fetchSpy).not.toHaveBeenCalled();
+    } finally {
+      source.dispose();
+    }
+  });
+
+  it('refreshes both dependency endpoints without SSE and exposes adds/removes to host projections, events and CLI', async () => {
+    vi.stubGlobal('EventSource', undefined);
+    const opened = openDomain('off');
+    const server = createDemoServer({ host: '127.0.0.1', port: 0, domain: opened.domain, serviceToken: 'relations-test' });
+    await server.listen();
+    const source = new BabelDemoTrackerDataSource({ workspacePath: '/isolated/babel', endpoint: server.endpoint, projectId: PROJECT });
+    const changes: TrackerDataChange[] = [];
+    source.subscribe(change => changes.push(change));
+    try {
+      const a = (await command(opened.domain, 'task.create', { title: '中文依赖任务' })).trackerId!;
+      const b = (await command(opened.domain, 'task.create', { title: '前置任务' })).trackerId!;
+      const revision = (await source.getTask(a)).record.revision!;
+      const bRevision = (await source.getTask(b)).record.revision!;
+      const cursor = opened.domain.store.data.cursor;
+      const result = await source.setRelations(a, { dependsOn: [b] }, revision);
+      expect(result.result).toMatchObject({ changedTrackerIds: expect.arrayContaining([a, b]) });
+      const projected = changes.flatMap(change => change.type === 'items-upserted' ? change.items : []);
+      expect(projected).toHaveLength(2);
+      expect(projected.find(item => item.id === a)?.customFields).toMatchObject({ dependsOn: [b], revision: revision + 1 });
+      const reverse = projected.find(item => item.id === b)!;
+      expect(reverse.customFields).toMatchObject({ blocks: [a], revision: bRevision + 1 });
+      expect(trackerItemToRecord(reverse).fields.blocks).toEqual([a]);
+      expect(opened.domain.eventsSince(PROJECT, cursor)).toEqual(expect.arrayContaining([
+        expect.objectContaining({ type: 'task.updated', trackerId: a, revision: revision + 1 }),
+        expect.objectContaining({ type: 'task.updated', trackerId: b, revision: bRevision + 1 }),
+      ]));
+      const cli = await executeCli(['task', 'get', '--id', b, '--project', PROJECT, '--endpoint', server.endpoint]);
+      expect(cli.exitCode).toBe(0);
+      expect(JSON.parse(cli.stdout).record.fields.blocks).toEqual([a]);
+      changes.length = 0;
+      const noOpCursor = opened.domain.store.data.cursor;
+      const noOp = await source.setRelations(a, { dependsOn: [b] }, revision + 1);
+      expect(noOp).toMatchObject({ revision: revision + 1, result: { changedTrackerIds: [] } });
+      expect(changes).toEqual([]);
+      expect(opened.domain.eventsSince(PROJECT, noOpCursor)).toEqual([]);
+      const guardCursor = opened.domain.store.data.cursor;
+      await expect(source.setRelations(a, { dependsOn: [] }, revision)).rejects.toMatchObject({ code: 'REVISION_CONFLICT' });
+      await expect(source.setRelations(b, { dependsOn: [a] }, bRevision + 1)).rejects.toMatchObject({ code: 'VALIDATION' });
+      const readOnly = opened.domain.store.data.records.find(record => record.system.readOnly)!;
+      await expect(source.setRelations(a, { dependsOn: [readOnly.id] }, revision + 1)).rejects.toMatchObject({ code: 'READ_ONLY' });
+      expect(opened.domain.eventsSince(PROJECT, guardCursor)).toEqual([]);
+      expect(changes.some(change => change.type === 'items-upserted')).toBe(false);
+      await source.setRelations(b, { blocks: [] }, bRevision + 1);
+      const removal = changes.flatMap(change => change.type === 'items-upserted' ? change.items : []);
+      expect(removal.find(item => item.id === a)?.customFields).toMatchObject({ dependsOn: [], revision: revision + 2 });
+      expect(removal.find(item => item.id === b)?.customFields).toMatchObject({ blocks: [], revision: bRevision + 2 });
+      changes.length = 0;
+      await source.setRelations(a, { blocks: [b] }, revision + 2);
+      expect((await source.getTask(b)).record.fields.dependsOn).toEqual([a]);
+      await source.setRelations(b, { dependsOn: [] }, bRevision + 3);
+      expect((await source.getTask(a)).record.fields.blocks).toEqual([]);
+    } finally {
+      source.dispose();
+      await server.close();
+      opened.dispose();
+    }
+  });
+});

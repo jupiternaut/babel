@@ -136,6 +136,7 @@ describe("CLI LR-03 command/query against demo HTTP", () => {
       "relation", "set", ...common,
       "--id", "fixture-tracker-pdf",
       "--depends-on", "fixture-tracker-research",
+      "--expected-revision", String(query<TaskDetail>(domain, "task.get", { trackerId: "fixture-tracker-pdf" }).record.revision),
     ]);
     expect(related.exitCode).toBe(0);
     const pdf = query<TaskDetail>(domain, "task.get", { trackerId: "fixture-tracker-pdf" });
@@ -308,4 +309,32 @@ describe("CLI basic field patches", () => {
     expect(query<TaskDetail>(domain, "task.get", { trackerId }).record).toEqual(before.record);
     expect(domain.eventsSince(PROJECT, beforeReject)).toHaveLength(0);
   });
+});
+
+it('edits dependency edges with revision and idempotency, clears reverse edges, and rejects malformed JSON before transport', async () => {
+  const { endpoint, domain } = await startServer();
+  const a = (await command(domain, 'task.create', { title: 'CLI 依赖甲' })).trackerId!;
+  const b = (await command(domain, 'task.create', { title: 'CLI 依赖乙' })).trackerId!;
+  const common = ['--project', PROJECT, '--endpoint', endpoint, '--id', a];
+  const dir = mkdtempSync(path.join(tmpdir(), 'babel-relations-cli-'));
+  sessions.push({ dispose: () => rmSync(dir, { recursive: true, force: true }) });
+  const file = path.join(dir, 'relations.json');
+  const before = domain.store.data.cursor;
+  const missing = await executeCli(['relation', 'set', ...common, '--depends-on', b]);
+  expect(parseStdout(missing.stdout)).toMatchObject({ ok: false, code: 'VALIDATION' });
+  const args = ['relation', 'set', ...common, '--depends-on', b, '--expected-revision', '1', '--idempotency-key', 'cli-relations'];
+  expect((await executeCli(args)).exitCode).toBe(0);
+  expect(parseStdout((await executeCli(args)).stdout)).toMatchObject({ commandStatus: 'replayed' });
+  expect(domain.eventsSince(PROJECT, before).filter(e => e.payload.action === 'relation')).toHaveLength(2);
+  const reverse = await executeCli(['task', 'get', '--project', PROJECT, '--endpoint', endpoint, '--id', b]);
+  expect(parseStdout(reverse.stdout)).toMatchObject({ record: { revision: 2, fields: { blocks: [a] } } });
+  expect(parseStdout((await executeCli([...args.slice(0,-2)])).stdout)).toMatchObject({ code: 'REVISION_CONFLICT' });
+  writeFileSync(file, JSON.stringify({ dependsOn: [7] }));
+  const snapshot = JSON.stringify(domain.store.data);
+  const invalid = await executeCli(['relation', 'set', ...common, '--input', file, '--expected-revision', '2']);
+  expect(parseStdout(invalid.stdout)).toMatchObject({ ok: false, code: 'USAGE' });
+  expect(JSON.stringify(domain.store.data)).toBe(snapshot);
+  writeFileSync(file, JSON.stringify({ dependsOn: [] }));
+  expect((await executeCli(['relation', 'set', ...common, '--input', file, '--expected-revision', '2'])).exitCode).toBe(0);
+  expect(query<TaskDetail>(domain, 'task.get', { trackerId: b }).record.fields.blocks).toEqual([]);
 });

@@ -236,6 +236,33 @@ export class BabelDemoTrackerDataSource implements TrackerDataSource {
     }
   }
 
+  async setRelations(
+    itemId: string,
+    updates: { dependsOn?: string[]; blocks?: string[] },
+    expectedRevision: number,
+  ): Promise<Record<string, unknown>> {
+    this.assertActive();
+    try {
+      if (!Number.isSafeInteger(expectedRevision) || expectedRevision < 1) {
+        throw new BabelHostCommandError('VALIDATION', '关系保存需要有效的记录版本，请先刷新后再提交');
+      }
+      const entries = updates && typeof updates === 'object' && !Array.isArray(updates)
+        ? Object.entries(updates) : [];
+      if (entries.length === 0 || entries.some(([key, value]) =>
+        !['dependsOn', 'blocks'].includes(key) || !Array.isArray(value)
+        || value.some(id => typeof id !== 'string' || id.trim().length === 0))) {
+        throw new BabelHostCommandError('VALIDATION', '关系仅支持依赖与阻塞的记录 ID 列表');
+      }
+      const result = await this.postCommand('relation.set', { trackerId: itemId, ...updates }, undefined, expectedRevision);
+      const payload = result.result as { changedTrackerIds: string[] };
+      for (const trackerId of new Set(payload.changedTrackerIds)) await this.emitUpsert(trackerId);
+      return result;
+    } catch (error) {
+      if (error instanceof BabelHostCommandError) this.emitRejection(itemId, error);
+      throw error;
+    }
+  }
+
   async startRun(trackerId: string, idempotencyKey: string): Promise<Record<string, unknown>> {
     return this.postCommand('run.start', { trackerId }, idempotencyKey);
   }

@@ -60,7 +60,13 @@ export const RelationshipFieldEditor: React.FC<RelationshipFieldEditorProps> = (
   // The add control is collapsed to a "+" until the user opens it.
   const [adding, setAdding] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  useEffect(() => { if (adding) inputRef.current?.focus(); }, [adding]);
+  const addButtonRef = useRef<HTMLButtonElement>(null);
+  const wasAdding = useRef(false);
+  useEffect(() => {
+    if (adding) inputRef.current?.focus();
+    else if (wasAdding.current) addButtonRef.current?.focus();
+    wasAdding.current = adding;
+  }, [adding]);
   const current = useMemo(() => normalizeRelationshipValue(value), [value]);
   const currentIds = useMemo(() => new Set(current.map((v) => v.itemId)), [current]);
   const candidateById = useMemo(() => new Map(candidates.map((c) => [c.itemId, c])), [candidates]);
@@ -170,6 +176,7 @@ export const RelationshipFieldEditor: React.FC<RelationshipFieldEditorProps> = (
           type="button"
           className="relationship-add-toggle inline-flex w-fit items-center text-[var(--nim-text-faint)] hover:text-[var(--nim-text)]"
           title="Add link"
+          ref={addButtonRef}
           aria-label="Add link"
           onClick={() => setAdding(true)}
         >
@@ -183,13 +190,14 @@ export const RelationshipFieldEditor: React.FC<RelationshipFieldEditorProps> = (
             ref={inputRef}
             type="text"
             list={datalistId}
+            aria-label={`Link an item for ${relType?.displayName ?? field.name}`}
             value={draft}
             placeholder="Link an item…"
             className="flex-1 py-1 px-2 border border-[var(--nim-border)] rounded bg-[var(--nim-bg)] text-[var(--nim-text)] text-[12px] focus:outline-none focus:border-[var(--nim-primary)]"
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') { e.preventDefault(); handleAdd(); }
-              else if (e.key === 'Escape') { e.preventDefault(); closeAdd(); }
+              else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeAdd(); }
             }}
           />
           <datalist id={datalistId}>

@@ -98,7 +98,7 @@ type Overlay =
   | { kind: "ready"; index: number; items: TaskCard[] }
   | { kind: "views"; index: number; views: SavedView[] }
   | { kind: "viewsave"; name: string }
-  | { kind: "relation"; field: "dependsOn" | "blocks"; dependsOn: string; blocks: string }
+  | { kind: "relation"; field: "dependsOn" | "blocks"; dependsOn: string; blocks: string; revision: number; projectId: string; trackerId: string; saving: boolean }
   | {
     kind: "hooks";
     tab: "hooks" | "outbox";
@@ -241,7 +241,7 @@ export class BabelTui {
       overlay: overlay.kind,
       overlayIndex: "index" in overlay ? overlay.index : undefined,
       overlayTab: overlay.kind === "hooks" ? overlay.tab : undefined,
-      overlayRevision: (overlay.kind === "edit" || overlay.kind === "fields") ? overlay.revision : undefined,
+      overlayRevision: (overlay.kind === "edit" || overlay.kind === "fields" || overlay.kind === "relation") ? overlay.revision : undefined,
       selectedId: this.selectedId,
       selectedRunId: this.selectedRunId,
       viewId: this.viewId,
@@ -561,7 +561,7 @@ export class BabelTui {
 
   private handleOverlay(ev: KeyEvent): void {
     const o = this.overlay;
-    if ((o.kind === "edit" || o.kind === "fields") && o.saving) return;
+    if ((o.kind === "edit" || o.kind === "fields" || o.kind === "relation") && o.saving) return;
     if (ev.type === "key" && ev.name === "escape") {
       this.overlay = { kind: "none" };
       this.setCursorVisible(false);
@@ -639,7 +639,7 @@ export class BabelTui {
     if (o.kind === "relation") {
       this.setCursorVisible(true);
       if (ev.type === "key" && ev.name === "ctrl-s") {
-        void this.saveRelation();
+        void this.saveRelation(o);
         return;
       }
       if (ev.type === "key" && ev.name === "tab") {
@@ -1242,9 +1242,14 @@ export class BabelTui {
       this.error = "没有选中记录";
       return;
     }
+    if (rec.system.readOnly) {
+      this.error = "READ_ONLY: 当前记录只读，无法编辑依赖关系";
+      return;
+    }
+    this.error = null;
     this.overlay = {
-      kind: "relation",
-      field: "dependsOn",
+      kind: "relation", projectId: this.projectId, trackerId: rec.id,
+      revision: rec.revision, saving: false, field: "dependsOn",
       dependsOn: (rec.fields.dependsOn ?? []).join(", "),
       blocks: (rec.fields.blocks ?? []).join(", "),
     };
@@ -1252,17 +1257,31 @@ export class BabelTui {
     this.dirty = true;
   }
 
-  private async saveRelation(): Promise<void> {
-    const o = this.overlay;
-    if (o.kind !== "relation" || !this.selectedId) return;
+  private async saveRelation(o: Extract<Overlay, { kind: "relation" }>): Promise<void> {
+    if (o.saving) return;
+    if (o.projectId !== this.projectId) {
+      this.error = "PRECONDITION: 所属项目已改变，本次未保存；请复制草稿后重新选择原任务";
+      this.dirty = true;
+      return;
+    }
+    if (!Number.isSafeInteger(o.revision) || o.revision < 1) {
+      this.error = "USAGE: 保存需要当前 revision";
+      this.dirty = true;
+      return;
+    }
+    o.saving = true;
+    this.dirty = true;
     this.setCursorVisible(false);
     const split = (raw: string) => raw.split(/[,，\s]+/).map((id) => id.trim()).filter(Boolean);
-    await this.command("relation.set", {
-      trackerId: this.selectedId,
+    const saved = await this.command("relation.set", {
+      trackerId: o.trackerId,
       dependsOn: split(o.dependsOn),
       blocks: split(o.blocks),
-    }, this.detail?.record.revision);
-    this.overlay = { kind: "none" };
+    }, o.revision);
+    o.saving = false;
+    if (saved) this.overlay = { kind: "none" };
+    else this.setCursorVisible(true);
+    this.dirty = true;
   }
 
   private async reorderSelected(delta: -1 | 1): Promise<void> {
@@ -1620,15 +1639,18 @@ export class BabelTui {
       body = [`名称 ${o.name || "（输入中文名称后 Enter 保存）"}`];
       footer = "Enter/Ctrl+S 保存  Esc 取消";
     } else if (o.kind === "relation") {
-      title = "设置依赖关系";
+      title = `设置依赖关系 · revision ${o.revision}`;
       const markD = o.field === "dependsOn" ? ">" : " ";
       const markB = o.field === "blocks" ? ">" : " ";
       body = [
+        `记录 ${o.trackerId}`,
         `${markD}依赖 dependsOn ${o.dependsOn}`,
         `${markB}阻塞 blocks ${o.blocks}`,
-        "用逗号分隔 trackerId，保存走 relation.set",
+        "填写记录 ID，用逗号分隔；留空清除对应关系。",
+        "依赖：等待对方完成。阻塞：对方等待本记录完成。",
+        this.error || "",
       ];
-      footer = "Tab 切换  Ctrl+S 保存  Esc 取消";
+      footer = o.saving ? "正在保存，请稍候" : "Tab 切换  Ctrl+S 保存  Esc 取消（丢弃草稿）";
     } else if (o.kind === "hooks") {
       title = o.tab === "hooks" ? "Hook 配置" : "观察 Hook 投递";
       if (o.tab === "hooks") {

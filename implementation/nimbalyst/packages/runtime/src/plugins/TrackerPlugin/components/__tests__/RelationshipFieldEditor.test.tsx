@@ -23,6 +23,22 @@ describe('RelationshipFieldEditor', () => {
     screen.getByText('NIM-1');
   });
 
+  it('names the link input and restores focus when keyboard or button cancels adding', () => {
+    const onChange = vi.fn();
+    render(<RelationshipFieldEditor field={field} value={null} onChange={onChange} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Add link' }));
+    const input = screen.getByRole('combobox', { name: 'Link an item for Depends on' });
+    expect(document.activeElement).toBe(input);
+    fireEvent.change(input, { target: { value: 'unsaved' } });
+    fireEvent.keyDown(input, { key: 'Escape' });
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Add link' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Add link' }));
+    expect((screen.getByRole('combobox', { name: 'Link an item for Depends on' }) as HTMLInputElement).value).toBe('');
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel adding link' }));
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Add link' }));
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
   it('adds a typed candidate and emits the multi-value array', () => {
     const onChange = vi.fn();
     render(

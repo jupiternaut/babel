@@ -149,7 +149,7 @@ function splitIds(raw: string | undefined): string[] | undefined {
 
 function asStringArray(value: unknown): string[] | undefined {
   if (value == null) return undefined;
-  if (Array.isArray(value)) return value.map(String);
+  if (Array.isArray(value) && value.every(id => typeof id === "string" && id.trim())) return value;
   if (typeof value === "string") return splitIds(value);
   throw new BabelError("USAGE", "dependsOn/blocks 必须是字符串或字符串数组");
 }

@@ -5,7 +5,7 @@
  * focus still hides all of it.
  */
 import { Provider } from 'jotai';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act, within } from '@testing-library/react';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { store } from '@nimbalyst/runtime/store';
 
@@ -97,6 +97,42 @@ describe('Babel native detail title editing', () => {
     return command;
   }
 
+
+  it('edits native relationship pills as a scoped draft and explicitly saves after comparing remote values', async () => {
+    const command = useBabelSource();
+    const setRelations = vi.fn().mockResolvedValue({ ok: true });
+    const ds = store.get(trackerHostDataSourceAtom)!;
+    store.set(trackerHostDataSourceAtom, { ...ds, setRelations } as never);
+    const target = { ...babelItem('中文依赖任务', 1), id: 'native-target', issueKey: 'NIM-2' };
+    const remote = { ...target, id: 'native-remote', issueKey: 'NIM-3', fields: { ...target.fields, title: '远端依赖任务' } };
+    const original = { ...babelItem('原始标题', 1), fields: { ...babelItem('原始标题', 1).fields, dependsOn: [], blocks: [] } };
+    store.set(replaceAllTrackerItemsAtom, [original, target, remote]);
+    const view = renderDetail();
+    await act(async () => {});
+    fireEvent.click(screen.getByTestId('tracker-detail-field-pill-dependsOn'));
+    const editor = within(screen.getByTestId('relationship-field-dependsOn'));
+    fireEvent.click(editor.getByRole('button', { name: 'Add link' }));
+    const input = editor.getByPlaceholderText('Link an item…');
+    fireEvent.change(input, { target: { value: 'NIM-2' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    fireEvent.keyDown(input, { key: 'Escape' });
+    expect(setRelations).not.toHaveBeenCalled();
+    expect(command).not.toHaveBeenCalled();
+    await act(async () => { view.rerender(detailElement(target.id)); });
+    await act(async () => { view.rerender(detailElement(ITEM.id)); });
+    expect(screen.getByTestId('tracker-detail-field-pill-dependsOn').textContent).toContain('中文依赖任务');
+    act(() => store.set(replaceAllTrackerItemsAtom, [{ ...original, fields: { ...original.fields, revision: 2, dependsOn: ['native-remote'] } }, target, remote]));
+    expect((screen.getByTestId('babel-relations-save') as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByTestId('babel-relations-conflict').textContent).toContain('远端依赖任务 (native-remote)');
+    fireEvent.click(screen.getByTestId('babel-relations-continue'));
+    expect(setRelations).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByTestId('babel-relations-save'));
+    await waitFor(() => expect(setRelations).toHaveBeenCalledExactlyOnceWith(ITEM.id, { dependsOn: ['native-target'] }, 2));
+    expect(command).not.toHaveBeenCalled();
+    expect(updateTrackerItem).not.toHaveBeenCalled();
+    expect(window.electronAPI.documentService.updateTrackerItemInFile).not.toHaveBeenCalled();
+    expect(window.electronAPI.invoke).not.toHaveBeenCalledWith('document-service:tracker-item-reindex-relationships', expect.anything());
+  });
 
   it('stages Babel priority edits without host writes, then saves only changed fields after conflict review', async () => {
     const command = useBabelSource();

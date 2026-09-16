@@ -496,6 +496,13 @@ export class DomainService {
     const extraFields = request.input.fields && typeof request.input.fields === "object" && !Array.isArray(request.input.fields)
       ? { ...(request.input.fields as Record<string, unknown>) }
       : {};
+    for (const values of [request.input, extraFields]) {
+      for (const field of ["dependsOn", "blocks"]) {
+        if (field in values && (!Array.isArray(values[field]) || values[field].length > 0)) {
+          throw new BabelError("VALIDATION", "请先创建记录，再通过 relation.set 设置依赖关系");
+        }
+      }
+    }
     const markdown = String(request.input.description ?? request.input.markdown ?? extraFields.description ?? "");
     const record: TrackerRecord = {
       id: requestedId,
@@ -562,6 +569,11 @@ export class DomainService {
   private cmdUpdate(ctx: CmdCtx): CommandResult {
     const { data, request, actor, correlationId } = ctx;
     const trackerId = str(request.input.trackerId ?? request.input.id);
+    const nested = request.input.fields;
+    if ([request.input, ...(nested && typeof nested === "object" ? [nested] : [])]
+      .some(values => "dependsOn" in values || "blocks" in values)) {
+      throw new BabelError("VALIDATION", "关系字段必须通过 relation.set 保存");
+    }
     const { record, binding } = this.requireRecord(data, request.projectId, trackerId);
     this.assertWritable(record);
     if (["priority", "owner", "tags"].some(key => key in request.input)
@@ -999,24 +1011,68 @@ export class DomainService {
   private cmdRelation(ctx: CmdCtx): CommandResult {
     const { data, request, correlationId } = ctx;
     const trackerId = str(request.input.trackerId ?? request.input.id);
-    const { record, binding } = this.requireRecord(data, request.projectId, trackerId);
+    const record = data.records.find(row => row.projectId === request.projectId && row.id === trackerId);
+    if (!record) throw new BabelError("NOT_FOUND", "找不到这条 Tracker 记录", { trackerId });
     this.assertWritable(record);
-    const prevDepends = [...record.fields.dependsOn];
-    if (Array.isArray(request.input.dependsOn)) record.fields.dependsOn = request.input.dependsOn.map(String);
-    if (Array.isArray(request.input.blocks)) record.fields.blocks = request.input.blocks.map(String);
-    this.syncReverseRelations(data, record, prevDepends);
-    record.revision += 1;
-    binding.revision = record.revision;
-    this.emit(data, {
-      type: "task.updated",
-      projectId: request.projectId,
-      trackerId: record.id,
-      runId: null,
-      revision: record.revision,
-      correlationId,
-      payload: { action: "relation", dependsOn: record.fields.dependsOn, blocks: record.fields.blocks },
-    });
-    return this.ok(request, correlationId, record, null, { record });
+    if (!Number.isSafeInteger(request.expectedRevision) || request.expectedRevision! < 1) {
+      throw new BabelError("VALIDATION", "关系保存需要有效的记录版本");
+    }
+    this.assertRevision(record, request.expectedRevision);
+    const fields = ["dependsOn", "blocks"] as const;
+    const supplied = fields.filter(field => field in request.input);
+    if (!supplied.length) throw new BabelError("VALIDATION", "请提供依赖或阻塞关系");
+    const projectRecords = data.records.filter(row => row.projectId === record.projectId);
+    const planned = new Map(projectRecords.map(row => [row.id, {
+      dependsOn: [...row.fields.dependsOn], blocks: [...row.fields.blocks],
+    }]));
+    const next = planned.get(record.id)!;
+    for (const field of supplied) {
+      const ids = request.input[field];
+      if (!Array.isArray(ids) || ids.some(id => typeof id !== "string" || !id.trim())) {
+        throw new BabelError("VALIDATION", `${field} 必须是非空记录 ID 的数组`);
+      }
+      const unique = [...new Set(ids as string[])];
+      for (const id of unique) {
+        if (id === record.id) throw new BabelError("VALIDATION", "任务不能依赖或阻塞自己");
+        if (!planned.has(id)) throw new BabelError("NOT_FOUND", "找不到同项目的关联记录", { trackerId: id });
+      }
+      next[field] = unique;
+      const reverse = field === "dependsOn" ? "blocks" : "dependsOn";
+      for (const [id, other] of planned) {
+        if (id === record.id) continue;
+        other[reverse] = other[reverse].filter(value => value !== record.id);
+        if (unique.includes(id)) other[reverse].push(record.id);
+      }
+    }
+    const changed = projectRecords.filter(row => fields.some(field => {
+      const values = planned.get(row.id)![field];
+      return values.length !== row.fields[field].length || values.some(id => !row.fields[field].includes(id));
+    }));
+    // Validate every endpoint before mutation: FileStore transactions do not roll back throws.
+    for (const row of changed) this.assertWritable(row);
+    // Every newly added edge touches this record, so any new cycle must return here.
+    const pending = [...next.dependsOn];
+    const seen = new Set<string>();
+    while (pending.length) {
+      const id = pending.pop()!;
+      if (id === record.id) throw new BabelError("VALIDATION", "依赖关系会形成循环，请调整后再保存");
+      if (seen.has(id)) continue;
+      seen.add(id);
+      pending.push(...(planned.get(id)?.dependsOn ?? []));
+    }
+    for (const row of changed) {
+      Object.assign(row.fields, planned.get(row.id)!);
+      row.revision += 1;
+      row.system.updatedAt = this.now(data);
+      const related = this.requireRecord(data, request.projectId, row.id);
+      related.binding.revision = row.revision;
+      this.emit(data, {
+        type: "task.updated", projectId: request.projectId, trackerId: row.id,
+        runId: null, revision: row.revision, correlationId,
+        payload: { action: "relation", dependsOn: row.fields.dependsOn, blocks: row.fields.blocks },
+      });
+    }
+    return this.ok(request, correlationId, record, null, { record, changedTrackerIds: changed.map(row => row.id) });
   }
 
   private cmdViewSave(ctx: CmdCtx): CommandResult {
@@ -1428,22 +1484,6 @@ export class DomainService {
     }
     if (latest?.status === "lost") {
       throw new BabelError("LOST_UNRECONCILED", "失联执行尚未核对，不能当作已停止或重新启动", { runId: latest.id });
-    }
-  }
-
-  private syncReverseRelations(data: Snapshot, record: TrackerRecord, previousDepends: string[]): void {
-    for (const oldId of previousDepends) {
-      if (record.fields.dependsOn.includes(oldId)) continue;
-      const other = data.records.find((row) => row.id === oldId && row.projectId === record.projectId);
-      if (other) other.fields.blocks = other.fields.blocks.filter((id) => id !== record.id);
-    }
-    for (const depId of record.fields.dependsOn) {
-      const other = data.records.find((row) => row.id === depId && row.projectId === record.projectId);
-      if (other && !other.fields.blocks.includes(record.id)) other.fields.blocks.push(record.id);
-    }
-    for (const blockId of record.fields.blocks) {
-      const other = data.records.find((row) => row.id === blockId && row.projectId === record.projectId);
-      if (other && !other.fields.dependsOn.includes(record.id)) other.fields.dependsOn.push(record.id);
     }
   }
 

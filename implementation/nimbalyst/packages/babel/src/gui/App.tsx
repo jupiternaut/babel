@@ -447,7 +447,7 @@ export function App() {
   const saveRelations = async () => {
     if (!detail || !currentDraft) return;
     const dependsOn = currentDraft.dependsOnText.split(/[,，\s]+/).map((id) => id.trim()).filter(Boolean);
-    await runCommand("relation.set", { trackerId: detail.record.id, dependsOn });
+    await runCommand("relation.set", { trackerId: detail.record.id, dependsOn }, { expectedRevision: currentDraft.baseRevision });
   };
 
   const useBoard = viewMode === "execution" && nav.kind !== "ready";

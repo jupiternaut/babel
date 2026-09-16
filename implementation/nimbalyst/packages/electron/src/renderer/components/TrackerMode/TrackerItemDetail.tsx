@@ -62,6 +62,8 @@ import { trackerHostDataSourceAtom } from '../../store/atoms/trackers';
 import { resolveBabelDemoWriteSource } from '../../services/createWorkspaceTrackerDataSource';
 import { useBabelTitleDraft } from './babelWorkbench/useBabelTitleDraft';
 import { BabelBodyEditor } from './babelWorkbench/BabelBodyEditor';
+import { useBabelRelationDraft, babelEditableRelations } from './babelWorkbench/useBabelRelationDraft';
+import { BabelRelationDraftControls } from './babelWorkbench/BabelRelationDraftControls';
 import { useBabelFieldDraft, babelEditableFields } from './babelWorkbench/useBabelFieldDraft';
 import { BabelFieldDraftControls } from './babelWorkbench/BabelFieldDraftControls';
 import { createCollectionItem } from './createCollectionItem';
@@ -499,6 +501,7 @@ export const TrackerItemDetail: React.FC<TrackerItemDetailProps> = ({
   );
   const editable = item ? isEditable(item) && writeAccess.canWrite : false;
   const babelFields = useBabelFieldDraft(item, babelTitleSource, editable);
+  const babelRelations = useBabelRelationDraft(item, babelTitleSource, editable);
   const hasRichContent = item ? isNativeItem(item) : false; // Only native items have embedded Lexical content
 
   // Rich content editor state
@@ -1107,8 +1110,8 @@ export const TrackerItemDetail: React.FC<TrackerItemDetailProps> = ({
 
   /** Field values with any in-progress local edit applied. */
   const chipValues = useMemo(
-    () => babelTitleSource ? babelFields.values : ({ ...(item?.fields ?? {}), ...localCustomFields }),
-    [item?.fields, localCustomFields, babelTitleSource, babelFields.values],
+    () => babelTitleSource ? { ...babelFields.values, ...babelRelations.values } : ({ ...(item?.fields ?? {}), ...localCustomFields }),
+    [item?.fields, localCustomFields, babelTitleSource, babelFields.values, babelRelations.values],
   );
 
   /** Overflow fields that actually hold a value; empty ones add nothing. */
@@ -1133,14 +1136,18 @@ export const TrackerItemDetail: React.FC<TrackerItemDetailProps> = ({
 
   /** Determine whether a field change should be immediate or debounced */
   const handleFieldChange = useCallback((field: FieldDefinition, value: any) => {
-    if (babelTitleSource) { babelFields.change(field.name, value); return; }
+    if (babelTitleSource) {
+      if (babelEditableRelations.has(field.name)) babelRelations.change(field.name, value);
+      else babelFields.change(field.name, value);
+      return;
+    }
     const isTextLike = field.type === 'string' || field.type === 'text' || field.type === 'user';
     if (isTextLike) {
       handleTextFieldChange(field.name, value);
     } else {
       handleImmediateFieldChange(field.name, value);
     }
-  }, [handleTextFieldChange, handleImmediateFieldChange, babelTitleSource, babelFields.change]);
+  }, [handleTextFieldChange, handleImmediateFieldChange, babelTitleSource, babelFields.change, babelRelations.change]);
 
   /** Persist one chip edit through the ordinary field save path. */
   const handleChipSave = useCallback((fieldName: string, value: unknown) => {
@@ -1723,7 +1730,9 @@ export const TrackerItemDetail: React.FC<TrackerItemDetailProps> = ({
               <div className="tracker-field-pills tracker-detail-field-pills" data-testid="tracker-detail-field-pills">
                 {chipFields.filter((field) => field.name !== 'owner').map((field) => <TrackerFieldPill
                   key={`${babelFields.key}:${field.name}`} field={field} value={chipValues[field.name]}
-                  editable={babelFields.writable && babelFields.validRevision && !babelFields.saving && babelEditableFields.has(field.name)}
+                  editable={babelEditableRelations.has(field.name)
+                    ? babelRelations.writable && babelRelations.validRevision && !babelRelations.saving
+                    : babelFields.writable && babelFields.validRevision && !babelFields.saving && babelEditableFields.has(field.name)}
                   relationshipCandidates={relationshipCandidates.get(field.name)} onOpenItem={onOpenItem}
                   onSave={handleChipSave} testIdBase="tracker-detail-field" />)}
               </div>
@@ -1767,6 +1776,7 @@ export const TrackerItemDetail: React.FC<TrackerItemDetailProps> = ({
         )}
 
         {babelTitleSource && <BabelFieldDraftControls fields={babelFields} />}
+        {babelTitleSource && chipFields.some(field => babelEditableRelations.has(field.name)) && <BabelRelationDraftControls relations={babelRelations} candidates={relationshipCandidates} />}
 
         {/* Type tags editor (for native/editable items) */}
         {!babelTitleSource && editable && (

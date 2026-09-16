@@ -34,7 +34,7 @@
 | **02 原生类型、Saved Views、Ready** · 部分实现 | 原生类型树与保存视图保留；适配器 `share-saved-view → view.save`；`unshare-saved-view` 明确未实现 | `y` Ready、`w` 视图列表、菜单保存当前筛选 | `schema types`、`view list/save`、`ready list` | `babel/tests/semantic-stage.test.ts`、`domain-lifecycle.test.ts`、`cli-lr03.test.ts`、`tui-lr03.test.ts`。**下一步**：原生窗口保存/切换视图→PTY 应用→CLI 查回同一定义；核对取消共享/视图编辑路径，不把禁用算完成。 |
 | **03 创建条目** · demo 子路径通过 | `TrackerMainView` 快速新建，经共享数据源 `create-item → task.create` | `n`/新建菜单，标题、正文，按当前类型提交 | `task create --input` | `babel/tests/create-closed-loop.test.ts`、`cross-surface-identity.test.ts`；`electron/e2e/babel/three-surfaces.spec.ts` 有 Mac GUI 中文创建与 CLI 同 ID 证据。**下一步**：补当前类型、自定义字段、取消输入和重复提交的原生 GUI/PTY 交叉验收。 |
 | **04 标题、正文、字段编辑** · 部分实现 | 原生 `TrackerItemDetail`，适配器 `update-item`/`update-items → task.update`；`update-item-content` 携带草稿起始版本，原生正文复用富文本编辑器显式保存与冲突选择 | `e` 标题/正文，`F` 优先级/负责人/标签；冻结原目标与 revision，Ctrl+S 显式保存 | `task update --expected-revision` | `babel/tests/edit-revision-closed-loop.test.ts` 验证适配/HTTP/headless 输入及过期版本；本轮 `title-native.spec.ts` 原生中文标题保存、跨端更新与冲突不覆盖已通过。标题使用显式保存及草稿起始 revision。**本片**：正文适配拒绝无版本/未知 JSON 结构，TUI 旧版本失败保留编辑浮层、冻结原目标并阻止重复保存；见 [TASKS M0-04a](../TASKS.md)。**下一步**：独立 Mac/真实 PTY 富文本与冲突验收，基础字段已有 M0-04b 三端开发自测，继续补自定义字段及完整选区/断线恢复；完整 CAP-04 仍未通过。 |
-| **05 依赖、关联、优先级** · 部分实现 | 原生优先级已接共享字段显式保存；Babel 关系/类型控件目前只读，待接双向关系守卫 | `l` 依赖/blocks 表单→`relation.set`；`F` 支持优先级/负责人/标签，任意字段仍待补 | `relation set`、`task update` 字段 | `babel/tests/domain-lifecycle.test.ts`、`cli-lr03.test.ts`、`tui-lr03.test.ts` 覆盖关系正反向和命令。**下一步**：原生关系操作和优先级→PTY 编辑→CLI 验双向关系/revision；补循环/只读/冲突负例的实际输入。 |
+| **05 依赖、关联、优先级** · 部分实现 | 原生优先级已接共享字段显式保存；Babel dependsOn/blocks 已接专用 relation.set 显式保存及冲突选择；其他关系/类型控件仍只读 | `l` 依赖/blocks 表单→`relation.set`；`F` 支持优先级/负责人/标签，任意字段仍待补 | `relation set`、`task update` 字段 | `babel/tests/domain-lifecycle.test.ts`、`cli-lr03.test.ts`、`tui-lr03.test.ts` 覆盖关系正反向和命令。**下一步**：M0-05a 已补依赖/阻塞双向增删与核心循环/只读/版本守卫，原生 GUI/PTY/CLI 开发者实操见下节；独立复验及其他关系类型仍待补。 |
 | **06 手工排序** · 部分实现 | 原生看板拖拽仍需确认完整落到共享排序合同；尚无原生排序验收证明 | `u`/`i` 或菜单前后移动→`task.reorder` | `task reorder --before/--after` | `babel/tests/domain-lifecycle.test.ts`、`tui-lr03.test.ts`、`cli-lr03.test.ts` 有核心与 headless 证据。**下一步**：接实 GUI 排序路由，真实鼠标拖动和键盘替代后由 TUI/CLI 比较 orderKey；确认不改正文业务字段。 |
 | **07 启动摘要、执行** · demo 子路径通过 | 原生详情“开始模拟”→`useBabelRunActions.start`→共享 `run.start` | `s`/开始菜单→`run.start`，使用 revision 与幂等键 | `run start`、`--wait`；accepted 与 finished 分开 | `babel/tests/domain-lifecycle.test.ts`、`idempotency-auth.test.ts`；Mac `three-surfaces.spec.ts` 已交叉启动同一 run。**下一步**：补三端可检查的完整启动摘要与显式确认，真实输入验证连按/超时不双执行。Pi 仍为模拟器。 |
 | **08 会话、工具活动、进度** · 部分实现 | `BabelExecutionShell` 运行页、共享事件订阅；工具列表当前从 messages 的 tool/system role 派生 | 选中详情显示 run/会话；轮询/事件后刷新 | `run show`、`events list/watch` | `babel/tests/domain-lifecycle.test.ts`、`tui-lr03.test.ts`；宿主 `babelRunActions.events.test.tsx` 有跨端刷新和过期响应测试。**下一步**：将独立 `tool.started/tool.finished` 事件接成一致的可浏览工具轨迹；真实窗口/PTY 检查滚动、长日志、事件顺序与同一 run 身份。 |
@@ -86,3 +86,11 @@
 原生 GUI、真实 PTY 与 CLI 已完成优先级/中文负责人/标签同记录保存与读回的开发者实操。共享核心拒绝缺失/非法/旧版本和非法字段类型；适配器投影 owner/tags、拒绝未知字段，单条与批量基础字段命令均要求版本。批量预检只保证输入格式先检查，跨记录提交仍非原子操作。
 
 原生复用宿主字段控件，先保留会话草稿再明确保存，GUI 冲突需明确选择；其他关系/类型/自定义字段入口暂只读。精确范围、独立验收操作与最终检查见 [TASKS M0-04b](../TASKS.md) 和 [证据](evidence/m0-04b-20260916/validation.json)。本增量不把完整 CAP-04/05/16 标为通过。
+
+## M0-05a 双向依赖与阻塞增量（2026-09-16）
+
+relation.set 现在校验正整数版本、ID 数组、自关联、同项目目标、循环及每个实际受影响的只读端点；所有拒绝在关系变更前发生。dependsOn/blocks 增删同步两个方向，变化端点各递增记录/binding revision、更新时间并发出关联 task.updated；无变化不更新版本或事件。创建时注入非空关系及普通字段更新关系明确拒绝，需先创建记录再走专用关系命令。
+
+原生复用关系 pill/候选选择器，先保存会话草稿再明确提交，冲突显示远端标题与 ID。TUI l 固定原目标/版本，拒绝保留表单，重复保存受保护；CLI 明示版本参数。辅助独立 GUI 的原有依赖保存也补传草稿版本，但不拿它代替原生验收。适配器保存后主动刷新所有变化端点，不只依赖 SSE。
+
+具体边界、独立验收步骤与最终证据见 [TASKS M0-05a](../TASKS.md)、[validation](evidence/m0-05a-20260916/validation.json)。只覆盖依赖/阻塞，完整 CAP-05/16/19 与 M0 仍未宣告完成。
