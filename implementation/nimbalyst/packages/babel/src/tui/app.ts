@@ -87,6 +87,7 @@ type Overlay =
   | { kind: "help" }
   | { kind: "menu"; index: number }
   | { kind: "edit"; title: string; body: string; field: "title" | "body"; revision: number; projectId: string; trackerId: string; saving: boolean }
+  | { kind: "fields"; priority: string; owner: string; tags: string; field: "priority" | "owner" | "tags"; revision: number; projectId: string; trackerId: string; saving: boolean }
   | { kind: "create"; title: string; body: string; field: "title" | "body" }
   | { kind: "message"; text: string; respondId?: string }
   | { kind: "search" }
@@ -240,7 +241,7 @@ export class BabelTui {
       overlay: overlay.kind,
       overlayIndex: "index" in overlay ? overlay.index : undefined,
       overlayTab: overlay.kind === "hooks" ? overlay.tab : undefined,
-      overlayRevision: overlay.kind === "edit" ? overlay.revision : undefined,
+      overlayRevision: (overlay.kind === "edit" || overlay.kind === "fields") ? overlay.revision : undefined,
       selectedId: this.selectedId,
       selectedRunId: this.selectedRunId,
       viewId: this.viewId,
@@ -499,6 +500,7 @@ export class BabelTui {
       else if (ev.text === "k") this.move(-1);
       else if (ev.text === "n") this.beginCreate();
       else if (ev.text === "e") this.beginEdit();
+      else if (ev.text === "F") this.beginFields();
       else if (ev.text === "s") void this.startRun();
       else if (ev.text === "m") this.beginMessage();
       else if (ev.text === "c") this.overlay = { kind: "confirm", action: "cancel" };
@@ -559,7 +561,7 @@ export class BabelTui {
 
   private handleOverlay(ev: KeyEvent): void {
     const o = this.overlay;
-    if (o.kind === "edit" && o.saving) return;
+    if ((o.kind === "edit" || o.kind === "fields") && o.saving) return;
     if (ev.type === "key" && ev.name === "escape") {
       this.overlay = { kind: "none" };
       this.setCursorVisible(false);
@@ -615,6 +617,22 @@ export class BabelTui {
       if (ev.type === "key" && ev.name === "backspace") o.name = o.name.slice(0, -1);
       if (ev.type === "text") o.name += ev.text;
       if (ev.type === "paste") o.name += ev.text;
+      this.dirty = true;
+      return;
+    }
+    if (o.kind === "fields") {
+      this.setCursorVisible(true);
+      if (ev.type === "key" && ev.name === "ctrl-s") {
+        void this.saveFields(o);
+        return;
+      }
+      if (ev.type === "key" && (ev.name === "tab" || ev.name === "enter")) {
+        o.field = o.field === "priority" ? "owner" : o.field === "owner" ? "tags" : "priority";
+      } else if (ev.type === "key" && ev.name === "backspace") {
+        o[o.field] = Array.from(o[o.field]).slice(0, -1).join("");
+      } else if (ev.type === "text" || ev.type === "paste") {
+        o[o.field] += ev.text.replace(/[\r\n]/g, " ");
+      }
       this.dirty = true;
       return;
     }
@@ -896,6 +914,48 @@ export class BabelTui {
     this.setCursorVisible(true);
   }
 
+  private beginFields(): void {
+    const rec = this.detail?.record;
+    if (!rec) {
+      this.error = "没有选中记录";
+      return;
+    }
+    if (rec.system.readOnly) {
+      this.error = "READ_ONLY: 当前记录只读，无法编辑字段";
+      return;
+    }
+    this.error = null;
+    this.overlay = {
+      kind: "fields", projectId: this.projectId, trackerId: rec.id,
+      revision: rec.revision, saving: false, field: "priority",
+      priority: String(rec.fields.priority ?? ""), owner: String(rec.fields.owner ?? ""),
+      tags: Array.isArray(rec.fields.tags) ? rec.fields.tags.join(", ") : "",
+    };
+    this.setCursorVisible(true);
+  }
+
+  private async saveFields(o: Extract<Overlay, { kind: "fields" }>): Promise<void> {
+    if (o.saving) return;
+    if (o.projectId !== this.projectId) {
+      this.error = "PRECONDITION: 所属项目已改变，本次未保存；请复制草稿后重新选择原任务";
+      return;
+    }
+    if (!Number.isFinite(o.revision)) {
+      this.error = "USAGE: 保存需要当前 revision";
+      return;
+    }
+    o.saving = true;
+    this.setCursorVisible(false);
+    const saved = await this.command("task.update", {
+      trackerId: o.trackerId, priority: o.priority, owner: o.owner,
+      tags: o.tags.split(/[,，]/).map(tag => tag.trim()).filter(Boolean),
+    }, o.revision);
+    o.saving = false;
+    if (saved) this.overlay = { kind: "none" };
+    else this.setCursorVisible(true);
+    this.dirty = true;
+  }
+
   private beginMessage(): void {
     const run = this.detail?.latestRun;
     const pending = run?.inputRequests.find((row) => !row.answered);
@@ -907,6 +967,7 @@ export class BabelTui {
     const run = this.detail?.latestRun;
     const items = [
       { id: "edit", label: "e  编辑标题和正文" },
+      { id: "fields", label: "F  编辑优先级、负责人和标签" },
       { id: "create", label: "n  新建条目" },
       { id: "start", label: "s  开始模拟" },
       { id: "message", label: run?.status === "waiting_input" ? "m  回答待答请求" : "m  发送消息" },
@@ -935,6 +996,7 @@ export class BabelTui {
   private async runMenu(id: string): Promise<void> {
     this.overlay = { kind: "none" };
     if (id === "edit") this.beginEdit();
+    else if (id === "fields") this.beginFields();
     else if (id === "create") this.beginCreate();
     else if (id === "start") await this.startRun();
     else if (id === "message") this.beginMessage();
@@ -1466,6 +1528,8 @@ export class BabelTui {
       rec.fields.title,
       `${typeText(rec.primaryType)} · ${this.detail?.stage} · rev ${rec.revision}`,
       `状态 ${rec.fields.status}${rec.system.readOnly ? " · 只读" : ""}`,
+      `优先级 ${rec.fields.priority || "未设置"}  负责人 ${rec.fields.owner || "未分配"}`,
+      `标签 ${(Array.isArray(rec.fields.tags) ? rec.fields.tags : []).join(", ") || "无"}`,
       `最后更新 ${this.detail?.card.lastUpdatedAt ?? "暂无记录"}`,
       run ? `执行 ${runStatusText(run.status)} ${run.id}` : "执行 尚未执行",
       pending ? `待答 ${pending.prompt}` : "",
@@ -1496,6 +1560,17 @@ export class BabelTui {
       title = "操作菜单（替代拖拽）";
       body = this.menuItems().map((item, i) => (i === o.index ? `> ${item.label}` : `  ${item.label}`));
       footer = "j/k 移动  Enter 执行  Esc 关闭";
+    } else if (o.kind === "fields") {
+      title = `编辑字段 · revision ${o.revision}`;
+      body = [
+        `记录 ${o.trackerId}`,
+        `${o.field === "priority" ? ">" : " "}优先级 ${o.priority}`,
+        `${o.field === "owner" ? ">" : " "}负责人 ${o.owner || "（空值清除）"}`,
+        `${o.field === "tags" ? ">" : " "}标签 ${o.tags || "（空值清除）"}`,
+        "标签用逗号分隔；优先级保留自定义值。",
+        this.error || "",
+      ];
+      footer = o.saving ? "正在保存，请稍候" : "Tab 切换  Ctrl+S 保存  Esc 取消（丢弃草稿）";
     } else if (o.kind === "edit" || o.kind === "create") {
       title = o.kind === "edit" ? `编辑 · revision ${o.kind === "edit" ? o.revision : ""}` : "新建";
       const markT = o.field === "title" ? ">" : " ";

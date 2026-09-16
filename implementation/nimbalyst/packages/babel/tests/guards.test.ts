@@ -227,3 +227,58 @@ describe("CAP-19 cross-project permission", () => {
     );
   });
 });
+
+
+describe("CAP-04 base metadata updates", () => {
+  it("round-trips Unicode owner and ordered tags, allows clears, and rejects stale or readonly edits without events", async () => {
+    const d = domain();
+    const created = await command(d, "task.create", { title: "基础字段" });
+    const trackerId = created.trackerId!;
+    const initial = structuredClone(query<TaskDetail>(d, "task.get", { trackerId }));
+    const cursor = d.store.data.cursor;
+    const updated = await command(d, "task.update", { trackerId, owner: "中文负责人", priority: "high", tags: ["界面", "待复核"] }, { expectedRevision: initial.record.revision });
+    const saved = structuredClone(query<TaskDetail>(d, "task.get", { trackerId }));
+    expect(saved.record.fields).toMatchObject({ owner: "中文负责人", priority: "high", tags: ["界面", "待复核"] });
+    expect(saved.record.revision).toBe(initial.record.revision + 1);
+    expect(saved.binding.latestRunId).toBeNull();
+    expect(d.eventsSince(PROJECT, cursor).filter(e => e.type === "task.updated")).toEqual([expect.objectContaining({ trackerId, revision: updated.revision })]);
+    const beforeConflict = d.store.data.cursor;
+    await expectCode(() => command(d, "task.update", { trackerId, tags: ["旧草稿"] }, { expectedRevision: initial.record.revision }), "REVISION_CONFLICT");
+    expect(query<TaskDetail>(d, "task.get", { trackerId }).record).toEqual(saved.record);
+    expect(d.eventsSince(PROJECT, beforeConflict)).toHaveLength(0);
+    await command(d, "task.update", { trackerId, owner: "", tags: [] }, { expectedRevision: saved.record.revision });
+    expect(query<TaskDetail>(d, "task.get", { trackerId }).record.fields).toMatchObject({ owner: "", tags: [], priority: "high" });
+    const readonly = structuredClone(query<TaskDetail>(d, "task.get", { trackerId: "fixture-tracker-readonly" }));
+    const beforeReadonly = d.store.data.cursor;
+    await expectCode(() => command(d, "task.update", { trackerId: readonly.record.id, tags: ["不可写"] }, { expectedRevision: readonly.record.revision }), "READ_ONLY");
+    expect(query<TaskDetail>(d, "task.get", { trackerId: readonly.record.id }).record).toEqual(readonly.record);
+    expect(d.eventsSince(PROJECT, beforeReadonly)).toHaveLength(0);
+  });
+
+  it.each([{ owner: 7 }, { owner: null }, { priority: {} }, { priority: null }, { tags: "错" }, { tags: ["有效", 7] }, { tags: null }])(
+    "rejects malformed metadata atomically: %j", async invalid => {
+      const d = domain();
+      const created = await command(d, "task.create", { title: "原始任务" });
+      const trackerId = created.trackerId!;
+      const before = structuredClone(query<TaskDetail>(d, "task.get", { trackerId }));
+      const cursor = d.store.data.cursor;
+      await expectCode(() => command(d, "task.update", { trackerId, title: "也不能改", ...invalid }, { expectedRevision: before.record.revision }), "VALIDATION");
+      expect(query<TaskDetail>(d, "task.get", { trackerId }).record).toEqual(before.record);
+      expect(d.eventsSince(PROJECT, cursor)).toHaveLength(0);
+    },
+  );
+});
+
+
+describe("base field revision requirement", () => {
+  it.each([undefined, 0, 1.5])("rejects missing or invalid revision %s before changing fields", async expectedRevision => {
+    const d = domain();
+    const created = await command(d, "task.create", { title: "需要版本" });
+    const trackerId = created.trackerId!;
+    const before = structuredClone(query<TaskDetail>(d, "task.get", { trackerId }));
+    const cursor = d.store.data.cursor;
+    await expectCode(() => command(d, "task.update", { trackerId, owner: "拒绝无版本写入" }, { expectedRevision }), "VALIDATION");
+    expect(query<TaskDetail>(d, "task.get", { trackerId }).record).toEqual(before.record);
+    expect(d.eventsSince(PROJECT, cursor)).toHaveLength(0);
+  });
+});

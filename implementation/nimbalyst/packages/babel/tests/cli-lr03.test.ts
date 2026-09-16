@@ -1,3 +1,6 @@
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { DEFAULT_PROJECT_ID, EXIT_BY_CODE } from "../src/contracts.ts";
 import { executeCli } from "../src/cli/run.ts";
@@ -267,5 +270,42 @@ describe("CAP-10 CLI reconciliation against demo HTTP", () => {
     expect(after.binding.outcome).toBe("unresolved");
     expect(after.stage).not.toBe("DONE");
     expect(domain.eventsSince(PROJECT, cursor).filter(event => event.type === "run.finished")).toHaveLength(1);
+  });
+});
+
+
+describe("CLI basic field patches", () => {
+  it("writes Unicode fields from JSON once, reads them back, and rejects stale or malformed patches without events", async () => {
+    const { endpoint, domain } = await startServer();
+    const dir = mkdtempSync(path.join(tmpdir(), "babel-cli-fields-"));
+    sessions.push({ dispose: () => rmSync(dir, { recursive: true, force: true }) });
+    const inputPath = path.join(dir, "fields.json");
+    const created = await command(domain, "task.create", { title: "CLI 字段" });
+    const trackerId = created.trackerId!;
+    const revision = query<TaskDetail>(domain, "task.get", { trackerId }).record.revision;
+    writeFileSync(inputPath, JSON.stringify({ owner: "产品同事", priority: "high", tags: ["玻璃界面", "待验收"] }));
+    const args = ["task", "update", "--endpoint", endpoint, "--project", PROJECT, "--id", trackerId, "--input", inputPath, "--expected-revision", String(revision), "--idempotency-key", "cli-fields-once"];
+    const cursor = domain.store.data.cursor;
+    const first = await executeCli(args);
+    const replay = await executeCli(args);
+    expect(first.exitCode).toBe(0);
+    expect(replay.exitCode).toBe(0);
+    expect(first.stdout).not.toMatch(ANSI);
+    expect(JSON.parse(replay.stdout).commandStatus).toBe("replayed");
+    const get = await executeCli(["task", "get", "--endpoint", endpoint, "--project", PROJECT, "--id", trackerId]);
+    expect(get.exitCode).toBe(0);
+    expect(JSON.parse(get.stdout).record.fields).toMatchObject({ owner: "产品同事", priority: "high", tags: ["玻璃界面", "待验收"] });
+    expect(domain.eventsSince(PROJECT, cursor).filter(e => e.type === "task.updated")).toHaveLength(1);
+    const before = structuredClone(query<TaskDetail>(domain, "task.get", { trackerId }));
+    const beforeReject = domain.store.data.cursor;
+    const stale = await executeCli(args.slice(0, -2));
+    expect(stale.exitCode).toBe(EXIT_BY_CODE.REVISION_CONFLICT);
+    writeFileSync(inputPath, JSON.stringify({ owner: "不能部分写入", tags: [7] }));
+    const invalidArgs = args.slice(0, -2);
+    invalidArgs[invalidArgs.length - 1] = String(before.record.revision);
+    const invalid = await executeCli(invalidArgs);
+    expect(invalid.exitCode).toBe(EXIT_BY_CODE.VALIDATION);
+    expect(query<TaskDetail>(domain, "task.get", { trackerId }).record).toEqual(before.record);
+    expect(domain.eventsSince(PROJECT, beforeReject)).toHaveLength(0);
   });
 });

@@ -198,7 +198,7 @@ export function helpLines(): string[] {
   return [
     "演示数据 · 键盘",
     "j/k 或方向  移动    Enter 选中/菜单    Esc 关闭",
-    "n 新建  e 编辑  s 开始模拟  m 发消息/回答",
+    "n 新建  e 正文  F 字段  s 开始模拟  m 发消息/回答",
     "c 取消  a 归档  r 恢复  v 验收  o 操作菜单",
     "y 就绪  w 视图  l 关系  u/i 排序  g Hook",
     "x Google Tasks  z 合成节点  b 运维说明  f 本地 PDF（未接入/演示）",

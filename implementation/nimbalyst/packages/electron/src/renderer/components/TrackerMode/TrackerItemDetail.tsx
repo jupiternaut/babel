@@ -33,7 +33,7 @@ import { TrackerPublicationChip } from '@nimbalyst/runtime/plugins/TrackerPlugin
 import { resolveTrackerWriteAccess, TRACKER_LOCAL_ISSUE_KEY_MESSAGE, TRACKER_UNASSIGNED_ISSUE_KEY_MESSAGE } from '@nimbalyst/runtime/plugins/TrackerPlugin/models/trackerLifecycle';
 import { isLocalIssueKey } from '../../../shared/localIssueKey';
 import { TrackerFieldEditor, type TeamMemberOption } from '@nimbalyst/runtime/plugins/TrackerPlugin/components/TrackerFieldEditor';
-import { TrackerFieldPills } from '@nimbalyst/runtime/plugins/TrackerPlugin/components/TrackerFieldPills';
+import { TrackerFieldPills, TrackerFieldPill } from '@nimbalyst/runtime/plugins/TrackerPlugin/components/TrackerFieldPills';
 import { getTrackerTagsField, useTrackerChipFieldSections } from '@nimbalyst/runtime/plugins/TrackerPlugin/components/trackerChipFields';
 import { isTrackerFieldEmpty } from '@nimbalyst/runtime/plugins/TrackerPlugin/components/trackerFieldLayout';
 import { useTrackerRelationshipCandidates } from '@nimbalyst/runtime/plugins/TrackerPlugin/components/useTrackerRelationshipCandidates';
@@ -62,6 +62,8 @@ import { trackerHostDataSourceAtom } from '../../store/atoms/trackers';
 import { resolveBabelDemoWriteSource } from '../../services/createWorkspaceTrackerDataSource';
 import { useBabelTitleDraft } from './babelWorkbench/useBabelTitleDraft';
 import { BabelBodyEditor } from './babelWorkbench/BabelBodyEditor';
+import { useBabelFieldDraft, babelEditableFields } from './babelWorkbench/useBabelFieldDraft';
+import { BabelFieldDraftControls } from './babelWorkbench/BabelFieldDraftControls';
 import { createCollectionItem } from './createCollectionItem';
 import { TabEditor } from '../TabEditor/TabEditor';
 import { FeedbackBacklinkSection } from '../FeedbackRequest/FeedbackBacklinks';
@@ -496,6 +498,7 @@ export const TrackerItemDetail: React.FC<TrackerItemDetailProps> = ({
     [item?.primaryType],
   );
   const editable = item ? isEditable(item) && writeAccess.canWrite : false;
+  const babelFields = useBabelFieldDraft(item, babelTitleSource, editable);
   const hasRichContent = item ? isNativeItem(item) : false; // Only native items have embedded Lexical content
 
   // Rich content editor state
@@ -900,7 +903,7 @@ export const TrackerItemDetail: React.FC<TrackerItemDetailProps> = ({
 
   /** Save a field update -- routes to file-based save for file-backed items, DB for native */
   const saveField = useCallback(async (updates: Record<string, any>) => {
-    if (!editable || !item) return;
+    if (!editable || !item || babelTitleSource) return;
     try {
       if ((item.source === 'frontmatter' || item.source === 'import' || item.source === 'inline') && item.system.documentPath) {
         // File-backed items with a real document path: update in source file
@@ -925,7 +928,7 @@ export const TrackerItemDetail: React.FC<TrackerItemDetailProps> = ({
     } catch (err) {
       console.error('[TrackerItemDetail] Failed to save field:', err);
     }
-  }, [item?.id, item?.source, editable, sharing]);
+  }, [item?.id, item?.source, editable, sharing, babelTitleSource]);
 
   /** Debounced save for a single text field. Per-field timers + pending-field
    *  tracking let the reconciliation effect distinguish "user is editing this
@@ -1104,8 +1107,8 @@ export const TrackerItemDetail: React.FC<TrackerItemDetailProps> = ({
 
   /** Field values with any in-progress local edit applied. */
   const chipValues = useMemo(
-    () => ({ ...(item?.fields ?? {}), ...localCustomFields }),
-    [item?.fields, localCustomFields],
+    () => babelTitleSource ? babelFields.values : ({ ...(item?.fields ?? {}), ...localCustomFields }),
+    [item?.fields, localCustomFields, babelTitleSource, babelFields.values],
   );
 
   /** Overflow fields that actually hold a value; empty ones add nothing. */
@@ -1119,23 +1122,25 @@ export const TrackerItemDetail: React.FC<TrackerItemDetailProps> = ({
   /** Get field value -- use in-progress local state for text fields, atom for select/etc */
   const getFieldValue = useCallback((fieldName: string): any => {
     if (!item) return undefined;
+    if (babelTitleSource) return babelFields.values[fieldName];
     // For text-like fields being edited, localCustomFields holds the in-progress value.
     // handleTextFieldChange stores owner (and other string fields) in localCustomFields,
     // so we must check it first to avoid resetting input on each keystroke.
     if (fieldName in localCustomFields) return localCustomFields[fieldName];
     // All fields are now in record.fields (schema-driven)
     return item.fields[fieldName];
-  }, [item, localCustomFields]);
+  }, [item, localCustomFields, babelTitleSource, babelFields.values]);
 
   /** Determine whether a field change should be immediate or debounced */
   const handleFieldChange = useCallback((field: FieldDefinition, value: any) => {
+    if (babelTitleSource) { babelFields.change(field.name, value); return; }
     const isTextLike = field.type === 'string' || field.type === 'text' || field.type === 'user';
     if (isTextLike) {
       handleTextFieldChange(field.name, value);
     } else {
       handleImmediateFieldChange(field.name, value);
     }
-  }, [handleTextFieldChange, handleImmediateFieldChange]);
+  }, [handleTextFieldChange, handleImmediateFieldChange, babelTitleSource, babelFields.change]);
 
   /** Persist one chip edit through the ordinary field save path. */
   const handleChipSave = useCallback((fieldName: string, value: unknown) => {
@@ -1714,7 +1719,15 @@ export const TrackerItemDetail: React.FC<TrackerItemDetailProps> = ({
         {/* Metadata chips -- the canonical presentation of a tracker's fields */}
         {chipFields.length > 0 && (
           <div className="tracker-detail-fields pt-1 border-t border-nim">
-            <TrackerFieldPills
+            {babelTitleSource ? (
+              <div className="tracker-field-pills tracker-detail-field-pills" data-testid="tracker-detail-field-pills">
+                {chipFields.filter((field) => field.name !== 'owner').map((field) => <TrackerFieldPill
+                  key={`${babelFields.key}:${field.name}`} field={field} value={chipValues[field.name]}
+                  editable={babelFields.writable && babelFields.validRevision && !babelFields.saving && babelEditableFields.has(field.name)}
+                  relationshipCandidates={relationshipCandidates.get(field.name)} onOpenItem={onOpenItem}
+                  onSave={handleChipSave} testIdBase="tracker-detail-field" />)}
+              </div>
+            ) : <TrackerFieldPills
               fields={chipFields}
               values={chipValues}
               editable={editable}
@@ -1725,15 +1738,24 @@ export const TrackerItemDetail: React.FC<TrackerItemDetailProps> = ({
               onCreateCollection={workspacePath ? handleCreateCollection : undefined}
               className="tracker-detail-field-pills"
               testIdBase="tracker-detail-field"
-            />
+            />}
           </div>
         )}
+
+        {babelTitleSource && chipFields.filter((field) => field.name === 'owner').map((field) => (
+          <div key={`${babelFields.key}:owner`} className="babel-owner-field" data-testid="babel-owner-field">
+            {babelFields.writable && babelFields.validRevision && !babelFields.saving
+              ? <TrackerFieldEditor field={field} value={getFieldValue(field.name)} onChange={(value) => handleFieldChange(field, value)} />
+              : <ReadOnlyField field={field} value={getFieldValue(field.name)} />}
+          </div>
+        ))}
 
         {/* Tags stay open: they're edited far more often than they're read */}
         {tagsField && (
           <div className="tracker-detail-tags" data-testid="tracker-detail-tags">
-            {editable ? (
+            {(babelTitleSource ? babelFields.writable && babelFields.validRevision && !babelFields.saving : editable) ? (
               <TrackerFieldEditor
+                key={babelTitleSource ? babelFields.key : undefined}
                 field={tagsField}
                 value={getFieldValue(tagsField.name)}
                 onChange={(value) => handleFieldChange(tagsField, value)}
@@ -1744,8 +1766,10 @@ export const TrackerItemDetail: React.FC<TrackerItemDetailProps> = ({
           </div>
         )}
 
+        {babelTitleSource && <BabelFieldDraftControls fields={babelFields} />}
+
         {/* Type tags editor (for native/editable items) */}
-        {editable && (
+        {!babelTitleSource && editable && (
           <TypeTagsEditor
             typeTags={item.typeTags}
             primaryType={item.primaryType}

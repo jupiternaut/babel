@@ -142,29 +142,30 @@ export class BabelDemoTrackerDataSource implements TrackerDataSource {
           updates: Record<string, unknown>;
           expectedRevision?: number;
         };
+        const expectedRevision = input.expectedRevision ?? revisionFromUpdates(input.updates);
+        const updates = editableUpdates(input.updates, expectedRevision);
         const result = await this.postCommand(
           'task.update',
-          {
-            trackerId: input.itemId,
-            ...withoutHostMeta(input.updates),
-          },
+          { trackerId: input.itemId, ...updates },
           undefined,
-          input.expectedRevision ?? revisionFromUpdates(input.updates),
+          expectedRevision,
         );
         await this.emitUpsert(input.itemId);
         return { ok: true, result };
       }
       if (command.type === 'update-items') {
-        for (const entry of command.input.entries) {
-          const updates = {
-            ...(entry.storeUpdates ?? {}),
-            ...(entry.fileUpdates ?? {}),
-          };
+        // Reject malformed patches before the first write; remote conflicts remain per-entry.
+        const entries = command.input.entries.map(entry => {
+          const patch = { ...(entry.storeUpdates ?? {}), ...(entry.fileUpdates ?? {}) };
+          const expectedRevision = revisionFromUpdates(patch);
+          return { itemId: entry.itemId, expectedRevision, updates: editableUpdates(patch, expectedRevision) };
+        });
+        for (const entry of entries) {
           await this.postCommand(
             'task.update',
-            { trackerId: entry.itemId, ...withoutHostMeta(updates) },
+            { trackerId: entry.itemId, ...entry.updates },
             undefined,
-            revisionFromUpdates(updates),
+            entry.expectedRevision,
           );
           await this.emitUpsert(entry.itemId);
         }
@@ -373,6 +374,9 @@ function toTrackerItem(detail: BabelDetail, workspacePath: string): TrackerItem 
     description: String(record.fields.description ?? ''),
     status: String(record.fields.status ?? 'to-do') as TrackerItem['status'],
     priority: typeof record.fields.priority === 'string' ? record.fields.priority as TrackerItem['priority'] : undefined,
+    owner: typeof record.fields.owner === 'string' ? record.fields.owner : undefined,
+    tags: Array.isArray(record.fields.tags) && record.fields.tags.every(tag => typeof tag === 'string')
+      ? [...record.fields.tags] : undefined,
     workspace: record.system.workspace || workspacePath,
     module: record.system.documentPath ?? `babel:${record.projectId}/${record.id}`,
     lastIndexed: new Date(record.system.updatedAt),
@@ -412,6 +416,19 @@ function withoutHostMeta(updates: Record<string, unknown>): Record<string, unkno
   delete next.demoScene;
   delete next.executionEnabled;
   return next;
+}
+
+function editableUpdates(updates: Record<string, unknown>, expectedRevision?: number): Record<string, unknown> {
+  const patch = withoutHostMeta(updates);
+  const supported = new Set(['title', 'description', 'markdown', 'priority', 'owner', 'tags', 'acceptance', 'status']);
+  if (Object.keys(patch).some(key => !supported.has(key))) {
+    throw unimplementedCommandError('update-item-field');
+  }
+  if (['priority', 'owner', 'tags'].some(key => Object.prototype.hasOwnProperty.call(patch, key))
+    && (!Number.isSafeInteger(expectedRevision) || expectedRevision! < 1)) {
+    throw new BabelHostCommandError('VALIDATION', '字段保存需要有效的记录版本，请先刷新后再提交');
+  }
+  return patch;
 }
 
 function revisionFromUpdates(updates: Record<string, unknown>): number | undefined {

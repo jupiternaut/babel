@@ -182,3 +182,40 @@ Mac 使用现有明确隔离的 `mac-glass-script-20260916` 开发 profile，Nod
 最终独立 Babel 类型检查发现新增保存中提示的文本替换误触原有 relation 帮助分支（TS2367/TS2339），已把该行恢复原文；未改关系业务行为。之后重新执行 Babel 类型检查与全包测试。宿主整仓门禁在此单行恢复前通过；该恢复只影响 Babel TUI，其最终版本由独立 Babel 门禁覆盖，不重复运行不受影响的宿主全仓测试。
 
 最终 Babel 独立门禁：类型检查通过，61 文件、291 项通过 / 4 跳过 / 0 失败（`babel-typecheck-corrected.log`、`babel-full-final.log`）；最终原生操作与截图日志 `native-evidence-final.log`。本片源码哈希及结果见 [M0-04a validation](implementation/evidence/m0-04a-20260916/validation.json)。
+
+
+## M0-04b：优先级、负责人、标签三端显式保存
+
+日期：2026-09-16；基线 `e8af8c8cd19bafbea8e1b0bb16b866410c2dbdb0`；cwd `/Users/gengrf/Projects/babel`，分支 `ui/macos-glass`，开始时工作树干净。沿用 MIT 许可、npm 工作区与现有 Electron/React/TUI/CLI，不新增依赖。本片仅覆盖三个基础字段；TASKS 新增稳定子项，开发与独立验收分开。
+
+### 行为与边界
+
+- GUI 复用原生优先级、负责人和标签控件，先存 endpoint/project/tracker 作用域的会话草稿，再明确保存。切任务/详情重挂保留草稿，远端冲突展示远端字段，可采用远端或重定版本后再次保存；只提交修改字段，不覆盖未编辑的远端值。
+- Babel 字段写入经共享适配与 task.update，不走宿主文件/数据库/reindex。未适配的关系、类型和自定义字段只读；普通宿主编辑保留。适配器补齐 owner/tags 投影，拒绝未知写字段，单条与批量基础字段必须携带有效版本；批量先检查格式，远端仍逐条提交，不宣称原子事务。
+- 公共核心在任何字段变更前校验只读、版本及 priority/owner 文本和 tags 文本数组；null/非法输入拒绝，空负责人和空标签可明确清除。保留已有自定义优先级文本，不把旧 normal 值擅自改成枚举。
+- TUI 大写 F / 菜单打开字段表单，Tab 切换，Ctrl+S 保存；冻结原项目/记录/版本，防重复提交，冲突/拒绝保留输入，Escape 明确取消。标签使用英文/中文逗号分隔；完整终端冲突选择及持久草稿仍待 M0-16。
+- CLI 复用 task update --input 的 JSON 输入、expectedRevision 和幂等合同。中文字段、清空、旧版本、非法类型、事件和查询的测试均通过真实临时 HTTP；不启动真实 Agent。
+
+### 检查与运行证据
+
+日志根：`/Users/gengrf/Library/Logs/Babel-Dev/task-fields-20260916/`。
+
+| 检查 | 结果 | 日志 |
+|---|---|---|
+| 核心与 CLI 定向 | 40 通过（核心 29、CLI 11）；先复现 tags 未保存、非法字段/缺失版本未拒绝 | core-before.log、core-revision-before.log、core-cli-final.log |
+| 共享宿主适配 | 26 通过；HTTP→事件→查询→宿主投影→CLI、清空、只读/旧版本 | adapter-before.log、adapter-final.log |
+| GUI 草稿及原详情 | 25 通过；包含真实宿主控件、目标切换、旧回调/权限变化与冲突 | gui-final.log |
+| TUI 定向及已有入口 | 33 通过；5 个新增字段保存/拒绝/只读/选中变化/取消行为 | tui-fields-before.log、tui-fields-after.log |
+| Babel 类型与全包 | 类型通过；61 文件，308 通过 / 4 跳过 / 0 失败 | babel-typecheck-final.log、babel-full.log |
+| Mac 原生 + 实际 POSIX PTY + CLI | 1 条跨端闭环通过；中文字段读写、双 Ctrl+S 单次 revision、GUI 冲突保稿/明确重定版本、仅改字段保存、退出恢复备用屏幕 | native-frozen.log |
+| 宿主全仓类型与测试 | 26 工作区类型通过；1672 文件通过 / 7 跳过，14179 项通过 / 26 跳过 / 0 失败，178.92 秒 | typecheck.log、test-prepush.log |
+
+Mac 使用现有隔离 profile `mac-glass-script-20260916`，Apple M3 / macOS 27.0 / Node 24.15.0；因公共核心新增 tags 与版本守卫，明确重启该隔离开发实例，启动记录基于 e8af8c8 的本片工作树。未接账号、Pi、OAuth、SSH，未更改 GitLab/DUFS/代理。原生截图使用浅色默认 CSS 磨砂，折射关闭；这是实际 Electron 页面，非浏览器设计稿。
+
+首轮原生测试对 High 选项使用完全匹配，未计入图标的无障碍文本而超时；读取实际 DOM 后改用选项内可见 High 标签，通过闭环。CLI 新测试首轮错误假设 replayed 字段，按既有 commandStatus=replayed 合同修正。类型检查发现 Object.hasOwn 与宿主 TS target 不兼容、测试额外属性写法及 TUI 动态 tags 类型缺少数组判断，均修复后重验；不把这些初次失败隐藏为全程通过。
+
+结构化结果、截图及真实终端录制：[三端结果](implementation/evidence/m0-04b-20260916/fields-evidence.json)、[冲突窗口](implementation/evidence/m0-04b-20260916/fields-conflict-native.png)、[PTY 记录](implementation/evidence/m0-04b-20260916/fields-pty.txt)。主控实际查看了截图，确认冲突说明和远端负责人可见；未据此宣称完整 UI/UX 通过。具体源码哈希与门禁见 [validation](implementation/evidence/m0-04b-20260916/validation.json)。
+
+本轮是开发者自测，独立验收保持空。未覆盖完整 CAP-04/05/16、自定义字段/关系/类型、退出应用后的草稿持久化、全部主题/窄窗/200% 字体/系统中文输入法/VoiceOver、Windows/Ubuntu 或真实执行。下一切片为关系与依赖的统一写路由。
+
+本片最终代码冻结后再次运行原生三端闭环通过（native-frozen.log）；最终 Babel 全包测试包含 tags 数组收窄修正。TASKS 共 51 个唯一任务 ID，M0-04b 开发完成，独立验收未勾选。

@@ -564,8 +564,20 @@ export class DomainService {
     const trackerId = str(request.input.trackerId ?? request.input.id);
     const { record, binding } = this.requireRecord(data, request.projectId, trackerId);
     this.assertWritable(record);
+    if (["priority", "owner", "tags"].some(key => key in request.input)
+      && (!Number.isSafeInteger(request.expectedRevision) || request.expectedRevision! < 1)) {
+      throw new BabelError("VALIDATION", "字段保存需要有效的记录版本");
+    }
     this.assertRevision(record, request.expectedRevision);
     this.forbidLifecyclePatches(request.input);
+    for (const key of ["priority", "owner"] as const) {
+      if (key in request.input && typeof request.input[key] !== "string") {
+        throw new BabelError("VALIDATION", `${key} 必须是文本`);
+      }
+    }
+    if ("tags" in request.input && (!Array.isArray(request.input.tags) || !request.input.tags.every(tag => typeof tag === "string"))) {
+      throw new BabelError("VALIDATION", "tags 必须是文本数组");
+    }
     if (request.input.title != null) record.fields.title = String(request.input.title);
     if (request.input.description != null) {
       record.fields.description = String(request.input.description);
@@ -577,6 +589,7 @@ export class DomainService {
     }
     if (request.input.priority != null) record.fields.priority = String(request.input.priority);
     if (request.input.owner != null) record.fields.owner = String(request.input.owner);
+    if (Array.isArray(request.input.tags)) record.fields.tags = [...request.input.tags];
     if (Array.isArray(request.input.acceptance)) {
       record.fields.acceptance = request.input.acceptance as TrackerRecord["fields"]["acceptance"];
     }

@@ -97,6 +97,60 @@ describe('Babel native detail title editing', () => {
     return command;
   }
 
+
+  it('stages Babel priority edits without host writes, then saves only changed fields after conflict review', async () => {
+    const command = useBabelSource();
+    await act(async () => { renderDetail(); });
+    fireEvent.click(screen.getByTestId('tracker-detail-field-pill-priority'));
+    fireEvent.click(screen.getByText('Low'));
+    expect(command).not.toHaveBeenCalled();
+    expect(updateTrackerItem).not.toHaveBeenCalled();
+    act(() => store.set(replaceAllTrackerItemsAtom, [{ ...babelItem('原始标题', 2), fields: { ...babelItem('原始标题', 2).fields, priority: 'critical' } }]));
+    expect((screen.getByTestId('babel-fields-save') as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByTestId('babel-fields-conflict').textContent).toContain('critical');
+    fireEvent.click(screen.getByTestId('babel-fields-continue'));
+    fireEvent.click(screen.getByTestId('babel-fields-save'));
+    await waitFor(() => expect(command).toHaveBeenCalledExactlyOnceWith({ type: 'update-item', input: { itemId: ITEM.id, updates: { priority: 'low' }, expectedRevision: 2 } }));
+    expect(updateTrackerItem).not.toHaveBeenCalled();
+    expect(window.electronAPI.documentService.updateTrackerItemInFile).not.toHaveBeenCalled();
+    expect(window.electronAPI.invoke).not.toHaveBeenCalledWith('document-service:tracker-item-reindex-relationships', expect.anything());
+  });
+
+
+  it('stages owner and tags through the native editors and preserves them when switching tasks', async () => {
+    const command = useBabelSource();
+    const other = { ...babelItem('另一个任务', 1), id: 'item-b' };
+    store.set(replaceAllTrackerItemsAtom, [babelItem('原始标题', 1), other]);
+    const view = renderDetail();
+    await act(async () => {});
+    const owner = screen.getByTestId('babel-owner-field').querySelector('input')!;
+    fireEvent.change(owner, { target: { value: '中文负责人' } });
+    const tags = screen.getByTestId('tracker-detail-tags').querySelector('input')!;
+    fireEvent.change(tags, { target: { value: '新增标签' } });
+    fireEvent.keyDown(tags, { key: 'Enter' });
+    expect(command).not.toHaveBeenCalled();
+    expect(updateTrackerItem).not.toHaveBeenCalled();
+    await act(async () => { view.rerender(detailElement(other.id)); });
+    expect((screen.getByTestId('babel-owner-field').querySelector('input') as HTMLInputElement).value).toBe('');
+    await act(async () => { view.rerender(detailElement(ITEM.id)); });
+    expect((screen.getByTestId('babel-owner-field').querySelector('input') as HTMLInputElement).value).toBe('中文负责人');
+    fireEvent.click(screen.getByTestId('babel-fields-save'));
+    await waitFor(() => expect(command).toHaveBeenCalledExactlyOnceWith({ type: 'update-item', input: { itemId: ITEM.id, updates: { owner: '中文负责人', tags: ['auth', '新增标签'] }, expectedRevision: 1 } }));
+    expect(window.electronAPI.documentService.updateTrackerItemInFile).not.toHaveBeenCalled();
+    expect(updateTrackerItem).not.toHaveBeenCalled();
+  });
+
+  it('withdraws unadapted Babel metadata writes and read-only field editors', async () => {
+    const command = useBabelSource();
+    store.set(replaceAllTrackerItemsAtom, [{ ...babelItem('只读', 1), fields: { ...babelItem('只读', 1).fields, babelReadOnly: true } }]);
+    await act(async () => { renderDetail(); });
+    expect((screen.getByTestId('tracker-detail-field-pill-status') as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByTestId('tracker-detail-field-pill-priority') as HTMLButtonElement).disabled).toBe(true);
+    expect(document.querySelector('.type-tags-editor')).toBeNull();
+    expect(command).not.toHaveBeenCalled();
+    expect(updateTrackerItem).not.toHaveBeenCalled();
+  });
+
   it('reads Babel body from the record without host content IPC or collaboration bootstrap', async () => {
     useBabelSource();
     store.set(replaceAllTrackerItemsAtom, [{ ...babelItem('任务正文', 1), content: '来自 Babel 的权威正文' }]);

@@ -4,6 +4,7 @@ import type { TrackerDataCommand, TrackerDataChange } from '@nimbalyst/collab-cl
 import { createDemoServer } from '../../../../../babel/src/server/http.ts';
 import { executeCli } from '../../../../../babel/src/cli/run.ts';
 import { command, openDomain, PROJECT } from '../../../../../babel/tests/helpers.ts';
+import { trackerItemToRecord } from '@nimbalyst/runtime/core/TrackerRecord';
 import { BabelDemoTrackerDataSource } from '../BabelDemoTrackerDataSource';
 import { BABEL_DEMO_UNIMPLEMENTED_CODE, BABEL_DEMO_UNIMPLEMENTED_MESSAGE } from '../babelDemoErrors';
 
@@ -208,6 +209,117 @@ describe('demo Markdown body writes', () => {
       await expect(source.command({
         type: 'update-item-content', itemId: readOnly.id, content: '禁止覆盖', expectedRevision: readOnly.revision,
       })).rejects.toMatchObject({ code: 'READ_ONLY' });
+      expect(opened.domain.eventsSince(PROJECT, beforeReadOnly)).toEqual([]);
+      expect(changes.some(change => change.type === 'items-upserted')).toBe(false);
+    } finally {
+      source.dispose();
+      await server.close();
+      opened.dispose();
+    }
+  });
+});
+
+describe('demo editable fields', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it.each(['priority', 'owner', 'tags'])(
+    'requires a valid revision for single and batch %s edits before transport', async field => {
+      const fetchSpy = vi.fn();
+      vi.stubGlobal('fetch', fetchSpy);
+      const source = new BabelDemoTrackerDataSource({ workspacePath: '/isolated/babel' });
+      try {
+        for (const revision of [undefined, 0, -1, 1.5, Infinity, NaN, '7', Number.MAX_SAFE_INTEGER + 1]) {
+          const updates = { [field]: field === 'tags' ? ['中文标签'] : '中文字段', revision };
+          await expect(source.command({
+            type: 'update-item', input: { itemId: 'fields', updates },
+          })).rejects.toMatchObject({ code: 'VALIDATION' });
+          await expect(source.command({
+            type: 'update-items', input: { entries: [{ itemId: 'fields', storeUpdates: updates }] },
+          })).rejects.toMatchObject({ code: 'VALIDATION' });
+        }
+        expect(fetchSpy).not.toHaveBeenCalled();
+      } finally {
+        source.dispose();
+      }
+    },
+  );
+
+  it('rejects unsupported patches and validates a whole batch before writing any entry', async () => {
+    const fetchSpy = vi.fn();
+    vi.stubGlobal('fetch', fetchSpy);
+    const source = new BabelDemoTrackerDataSource({ workspacePath: '/isolated/babel' });
+    try {
+      for (const unsupported of ['system', 'trackerId', 'unknownField']) {
+        await expect(source.command({
+          type: 'update-item', input: { itemId: 'fields', updates: { owner: '设计同事', revision: 2, [unsupported]: '不得写入' } },
+        })).rejects.toMatchObject({ code: BABEL_DEMO_UNIMPLEMENTED_CODE });
+      }
+      await expect(source.command({
+        type: 'update-items', input: { entries: [
+          { itemId: 'first', storeUpdates: { owner: '合法', revision: 2 } },
+          { itemId: 'second', storeUpdates: { tags: ['无版本'] } },
+        ] },
+      })).rejects.toMatchObject({ code: 'VALIDATION' });
+      expect(fetchSpy).not.toHaveBeenCalled();
+    } finally {
+      source.dispose();
+    }
+  });
+
+  it('round-trips Chinese owner/tags through HTTP, host projection and CLI while protecting revisions and system metadata', async () => {
+    const opened = openDomain('off');
+    const server = createDemoServer({ host: '127.0.0.1', port: 0, domain: opened.domain, serviceToken: 'fields-test' });
+    await server.listen();
+    const source = new BabelDemoTrackerDataSource({ workspacePath: '/isolated/babel', endpoint: server.endpoint, projectId: PROJECT });
+    const changes: TrackerDataChange[] = [];
+    source.subscribe(change => changes.push(change));
+    try {
+      const created = await command(opened.domain, 'task.create', { title: '字段跨端核验' });
+      const trackerId = created.trackerId!;
+      const initial = await source.getTask(trackerId);
+      const patch = { priority: 'high', owner: '设计同事 王', tags: ['界面', '中文 标签'] };
+      const before = opened.domain.store.data.cursor;
+      const fieldInput = { itemId: trackerId, expectedRevision: initial.record.revision, updates: {
+        ...patch, revision: -99, projectId: 'wrong-project', babelReadOnly: true, babelStage: 'DONE',
+      } };
+      await source.command({ type: 'update-item', input: fieldInput });
+      const saved = await source.getTask(trackerId);
+      expect(saved.record.fields).toMatchObject(patch);
+      expect(saved.record.revision).toBe(initial.record.revision! + 1);
+      expect(saved.record.projectId).toBe(initial.record.projectId);
+      expect(saved.record.system.workspace).toBe(initial.record.system.workspace);
+      expect(saved.record.system.readOnly).toBe(initial.record.system.readOnly);
+      expect(saved.stage).toBe(initial.stage);
+      expect(opened.domain.eventsSince(PROJECT, before)).toEqual(expect.arrayContaining([
+        expect.objectContaining({ type: 'task.updated', trackerId, revision: saved.record.revision }),
+      ]));
+      const item = (await source.snapshot()).items.find(item => item.id === trackerId)!;
+      expect(item).toMatchObject(patch);
+      expect(item.customFields).toMatchObject({ revision: saved.record.revision, babelReadOnly: false });
+      expect(trackerItemToRecord(item).fields).toMatchObject(patch);
+      const cli = await executeCli(['task', 'get', '--id', trackerId, '--project', PROJECT, '--endpoint', server.endpoint]);
+      expect(cli.exitCode).toBe(0);
+      expect(JSON.parse(cli.stdout).record.fields).toMatchObject(patch);
+      changes.length = 0;
+      const beforeConflict = opened.domain.store.data.cursor;
+      const staleInput = { itemId: trackerId, expectedRevision: initial.record.revision, updates: { owner: '旧版本覆盖' } };
+      await expect(source.command({ type: 'update-item', input: staleInput }))
+        .rejects.toMatchObject({ code: 'REVISION_CONFLICT' });
+      expect((await source.getTask(trackerId)).record).toEqual(saved.record);
+      expect(opened.domain.eventsSince(PROJECT, beforeConflict)).toEqual([]);
+      expect(changes.some(change => change.type === 'items-upserted')).toBe(false);
+      await source.command({ type: 'update-items', input: { entries: [{
+        itemId: trackerId, storeUpdates: { owner: '', revision: saved.record.revision }, fileUpdates: { tags: [] },
+      }] } });
+      expect((await source.getTask(trackerId)).record.fields).toMatchObject({ owner: '', tags: [] });
+      const readOnly = opened.domain.store.data.records.find(record => record.system.readOnly)!;
+      const originalReadOnly = structuredClone(readOnly);
+      const beforeReadOnly = opened.domain.store.data.cursor;
+      changes.length = 0;
+      const readOnlyInput = { itemId: readOnly.id, expectedRevision: readOnly.revision, updates: { ...patch, babelReadOnly: false } };
+      await expect(source.command({ type: 'update-item', input: readOnlyInput }))
+        .rejects.toMatchObject({ code: 'READ_ONLY' });
+      expect((await source.getTask(readOnly.id)).record).toEqual(originalReadOnly);
       expect(opened.domain.eventsSince(PROJECT, beforeReadOnly)).toEqual([]);
       expect(changes.some(change => change.type === 'items-upserted')).toBe(false);
     } finally {

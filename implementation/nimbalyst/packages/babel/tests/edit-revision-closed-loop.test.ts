@@ -488,3 +488,108 @@ describe("TUI body draft safety", () => {
     expect(domain.eventsSince(PROJECT, cursor).filter(e => e.type === "task.updated")).toHaveLength(1);
   });
 });
+
+describe("TUI field draft safety", () => {
+  const key = (tui: BabelTui, name: string) => tui.feedEvent({ type: "key", name, raw: "", ctrl: name.startsWith("ctrl-"), shift: false });
+  async function fieldSession() {
+    const shared = await startSharedHttp();
+    const task = await createEditable(shared.domain, "字段草稿目标", "保持正文");
+    const http = new TuiHttp({ endpoint: shared.endpoint });
+    const tui = new BabelTui({ endpoint: shared.endpoint, projectId: PROJECT, http, headless: true, cols: 130, rows: 40 });
+    sessions.push({ dispose: () => tui.dispose() });
+    await tui.boot();
+    tui.feed("/字段草稿目标");
+    key(tui, "enter");
+    await waitUntil(() => tui.inspect().selectedId === task.trackerId);
+    await waitUntil(() => {
+      if (tui.inspect().overlay === "fields") return true;
+      tui.feed("F");
+      return tui.inspect().overlay === "fields";
+    });
+    return { ...shared, ...task, tui, http };
+  }
+  function enterFields(tui: BabelTui) {
+    for (let i = 0; i < "normal".length; i++) key(tui, "backspace");
+    tui.feedEvent({ type: "paste", text: "critical" });
+    key(tui, "tab");
+    tui.feedEvent({ type: "paste", text: "中文负责人" });
+    key(tui, "tab");
+    tui.feedEvent({ type: "paste", text: "前端, 玻璃， 可读性" });
+  }
+
+  it("saves only explicit fields once over HTTP and clears owner/tags without touching Markdown", async () => {
+    const { domain, tui, trackerId, expectedRevision, cli, http } = await fieldSession();
+    const send = vi.spyOn(http, "command");
+    enterFields(tui);
+    const cursor = domain.store.data.cursor;
+    key(tui, "ctrl-s");
+    key(tui, "ctrl-s");
+    await waitUntil(() => tui.inspect().overlay === "none");
+    expect(tui.inspect().error).toBeNull();
+    expect(send).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
+      name: "task.update", projectId: PROJECT, expectedRevision,
+      input: { trackerId, priority: "critical", owner: "中文负责人", tags: ["前端", "玻璃", "可读性"] },
+    }));
+    const read = await cli.query<EditDetail>({ name: "task.get", projectId: PROJECT, input: { trackerId } });
+    expect(read.record.fields).toMatchObject({ priority: "critical", owner: "中文负责人", tags: ["前端", "玻璃", "可读性"] });
+    expect(read.record.content?.markdown).toBe("保持正文");
+    expect(read.record.revision).toBe(expectedRevision + 1);
+    expect(domain.eventsSince(PROJECT, cursor).filter(e => e.type === "task.updated")).toHaveLength(1);
+    tui.feed("F");
+    key(tui, "tab");
+    for (let i = 0; i < "中文负责人".length; i++) key(tui, "backspace");
+    key(tui, "tab");
+    for (let i = 0; i < "前端, 玻璃, 可读性".length; i++) key(tui, "backspace");
+    key(tui, "ctrl-s");
+    await waitUntil(() => tui.inspect().overlay === "none");
+    expect(query<EditDetail>(domain, "task.get", { trackerId }).record.fields).toMatchObject({ priority: "critical", owner: "", tags: [] });
+  });
+
+  it("cancels without any command and offers the same editor from the menu", async () => {
+    const { domain, tui, trackerId, http, expectedRevision } = await fieldSession();
+    const send = vi.spyOn(http, "command");
+    enterFields(tui);
+    key(tui, "escape");
+    expect(send).not.toHaveBeenCalled();
+    expect(query<EditDetail>(domain, "task.get", { trackerId }).record.revision).toBe(expectedRevision);
+    tui.feed("o");
+    const index = tui.inspect().menuItems.findIndex(item => item.id === "fields");
+    expect(index).toBeGreaterThanOrEqual(0);
+    for (let i = 0; i < index; i++) key(tui, "down");
+    key(tui, "enter");
+    expect(tui.inspect().overlay).toBe("fields");
+  });
+
+  it.each(["READ_ONLY", "REVISION_CONFLICT"])("keeps the refused field draft and frozen revision for %s", async code => {
+    const { domain, tui, trackerId, expectedRevision } = await fieldSession();
+    enterFields(tui);
+    if (code === "READ_ONLY") domain.store.transaction(data => { data.records.find(row => row.id === trackerId)!.system.readOnly = true; });
+    else await command(domain, "task.update", { trackerId, owner: "另一客户端" }, { expectedRevision });
+    const before = structuredClone(query<EditDetail>(domain, "task.get", { trackerId }));
+    const cursor = domain.store.data.cursor;
+    key(tui, "ctrl-s");
+    await waitUntil(() => Boolean(tui.inspect().error));
+    expect(tui.inspect().error).toContain(code);
+    expect(tui.inspect().overlay).toBe("fields");
+    expect(tui.inspect().overlayRevision).toBe(expectedRevision);
+    expect(tui.inspect().frame).toContain("中文负责人");
+    expect(query<EditDetail>(domain, "task.get", { trackerId })).toEqual(before);
+    expect(domain.eventsSince(PROJECT, cursor).filter(e => e.type === "task.updated")).toHaveLength(0);
+  });
+
+  it("never retargets a field draft when an event changes the selection", async () => {
+    const { domain, tui, trackerId, expectedRevision, http } = await fieldSession();
+    enterFields(tui);
+    const other = await createEditable(domain, "字段草稿目标另一个任务", "保持不变");
+    await command(domain, "task.update", { trackerId, title: "离开搜索结果" }, { expectedRevision });
+    await tui.reconnectNow();
+    expect(tui.inspect().selectedId).toBe(other.trackerId);
+    const send = vi.spyOn(http, "command");
+    key(tui, "ctrl-s");
+    await waitUntil(() => Boolean(tui.inspect().error));
+    expect(send.mock.calls[0]?.[0]).toMatchObject({ input: { trackerId }, expectedRevision });
+    expect(tui.inspect().error).toContain("REVISION_CONFLICT");
+    expect(tui.inspect().overlay).toBe("fields");
+    expect(query<EditDetail>(domain, "task.get", { trackerId: other.trackerId }).record.revision).toBe(other.expectedRevision);
+  });
+});
