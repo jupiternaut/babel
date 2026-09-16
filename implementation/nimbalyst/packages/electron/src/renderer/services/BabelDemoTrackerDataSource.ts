@@ -190,12 +190,22 @@ export class BabelDemoTrackerDataSource implements TrackerDataSource {
         return { ok: true, result };
       }
       if (command.type === 'update-item-content') {
+        if (!Number.isSafeInteger(command.expectedRevision) || command.expectedRevision! < 1) {
+          throw new BabelHostCommandError('VALIDATION', '正文保存需要有效的记录版本，请先刷新后再提交');
+        }
+        const content = command.content;
+        const markdown = typeof content === 'string'
+          ? content
+          : content && typeof content === 'object' && !Array.isArray(content) && 'markdown' in content
+            ? content.markdown
+            : undefined;
+        if (typeof markdown !== 'string') {
+          throw new BabelHostCommandError('VALIDATION', '正文仅支持 Markdown 文本，无法保存此编辑器格式');
+        }
         const result = await this.postCommand('task.update', {
           trackerId: command.itemId,
-          markdown: typeof command.content === 'string'
-            ? command.content
-            : JSON.stringify(command.content),
-        });
+          markdown,
+        }, undefined, command.expectedRevision);
         await this.emitUpsert(command.itemId);
         return { ok: true, result };
       }
@@ -376,6 +386,7 @@ function toTrackerItem(detail: BabelDetail, workspacePath: string): TrackerItem 
     customFields: {
       projectId: record.projectId,
       revision: record.revision,
+      babelReadOnly: record.system.readOnly === true,
       babelStage: stage,
       babelOutcome: detail.binding?.outcome,
       babelRunId: detail.binding?.latestRunId ?? null,
@@ -392,6 +403,7 @@ function withoutHostMeta(updates: Record<string, unknown>): Record<string, unkno
   const next = { ...updates };
   delete next.revision;
   delete next.expectedRevision;
+  delete next.babelReadOnly;
   delete next.babelStage;
   delete next.babelOutcome;
   delete next.babelRunId;

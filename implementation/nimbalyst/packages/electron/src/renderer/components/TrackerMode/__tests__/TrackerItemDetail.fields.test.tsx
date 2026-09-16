@@ -17,7 +17,7 @@ vi.mock('../../TabEditor/TabEditor', () => ({ TabEditor: () => null }));
 // metadata region doesn't depend on it: a dormant collab result is enough.
 vi.mock('../../../hooks/useTrackerContentCollab', () => ({
   trackerContentCollabKey: (itemId: string) => `tracker-body:${itemId}`,
-  useTrackerContentCollab: () => ({
+  useTrackerContentCollab: vi.fn(() => ({
     collaboration: null,
     loading: false,
     status: 'disconnected',
@@ -25,7 +25,7 @@ vi.mock('../../../hooks/useTrackerContentCollab', () => ({
     commentsConfig: null,
     providerEpoch: 0,
     bodyCacheMarkdown: null,
-  }),
+  })),
 }));
 import type { TrackerRecord } from '@nimbalyst/runtime/core/TrackerRecord';
 import { loadBuiltinTrackers } from '@nimbalyst/runtime/plugins/TrackerPlugin/models';
@@ -33,6 +33,7 @@ import { replaceAllTrackerItemsAtom } from '@nimbalyst/runtime/plugins/TrackerPl
 import { TrackerItemDetail } from '../TrackerItemDetail';
 import { trackerHostDataSourceAtom } from '../../../store/atoms/trackers';
 import { BabelHostCommandError } from '../../../services/babelDemoErrors';
+import { useTrackerContentCollab } from '../../../hooks/useTrackerContentCollab';
 
 const ITEM = {
   id: 'item-a',
@@ -79,6 +80,7 @@ beforeEach(() => {
       updateTrackerItemInFile: vi.fn().mockResolvedValue({ success: true }),
       getTrackerItemContent: vi.fn().mockResolvedValue({ success: true, content: '' }),
       saveTrackerItemContent: vi.fn().mockResolvedValue({ success: true }),
+      updateTrackerItemContent: vi.fn().mockResolvedValue({ success: true }),
     },
   };
   store.set(replaceAllTrackerItemsAtom, [ITEM]);
@@ -94,6 +96,17 @@ describe('Babel native detail title editing', () => {
     store.set(replaceAllTrackerItemsAtom, [babelItem('原始标题', 1)]);
     return command;
   }
+
+  it('reads Babel body from the record without host content IPC or collaboration bootstrap', async () => {
+    useBabelSource();
+    store.set(replaceAllTrackerItemsAtom, [{ ...babelItem('任务正文', 1), content: '来自 Babel 的权威正文' }]);
+    await act(async () => { renderDetail(); });
+    const region = screen.getByTestId('babel-body-editor');
+    await waitFor(() => expect(region.textContent).toContain('来自 Babel 的权威正文'));
+    expect(window.electronAPI.documentService.getTrackerItemContent).not.toHaveBeenCalled();
+    expect(useTrackerContentCollab).toHaveBeenLastCalledWith(expect.objectContaining({ sharing: 'personal', teamOrgId: null, itemPublished: false }));
+    expect(window.electronAPI.invoke).not.toHaveBeenCalledWith('team:find-for-workspace', expect.anything());
+  });
 
   it('follows same-item authoritative updates until a local draft exists', async () => {
     const command = useBabelSource();

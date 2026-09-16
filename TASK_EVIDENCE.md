@@ -146,3 +146,39 @@ cd /Users/gengrf/Projects/babel
 本轮未运行新的原生 Mac 窗口/真实 PTY 操作验收、VoiceOver、系统偏好切换或 200% 缩放；也未接真实 Agent、OAuth、SSH 或生产服务。TASKS 的 M0-10a 验收列保留空，验收会话按其中 7 步操作后再打标。GUI 测试/全量单测不代替这一独立验收。
 
 本轮开发自测摘要及对应源文件 SHA-256 见 [M0-10a validation](implementation/evidence/m0-10a-20260916/validation.json)。所有代码测试在冻结的实现文件上执行；后续仅整理 TASK/证据与提交信息，未把验收列自动改为通过。
+
+
+## M0-04a：正文显式保存与版本保护
+
+日期：2026-09-16；基线 `25c61e3d14057b102e8d36922ac4309226b7dc75`；cwd `/Users/gengrf/Projects/babel`，分支 `ui/macos-glass`，开始时工作树干净。沿用 MIT 许可及现有构建命令。本片是 M0-04 的正文子项，字段编辑与完整 M0-16 仍未完成；TASKS 现有 50 个稳定任务行，开发与独立验收分开标记。
+
+### 本片行为
+
+- 原生详情复用 NimbalystEditor，直接读取共享记录正文，输入后明确“保存正文”；保存携带草稿起始 revision，不自动保存、不启动执行。
+- 按 endpoint/project/tracker 隔离的会话草稿跨任务/详情重挂保留。远端变更保留中文草稿并禁用保存，展示远端正文，用户可采用远端或明确重定版本后再次保存。只读、无版本与在途重复提交受保护；任务切换后的异步结果不污染新任务。
+- Babel 正文不走宿主内容读写 IPC、不启动团队正文协作/发布初始化；普通宿主路径不变。只读状态随服务投影，不能由字段写入修改元数据。
+- 正文命令只接受 Markdown 字符串或包含 Markdown 字符串的对象，拒绝无效版本和任意编辑器 JSON，不把 JSON 文本当成正文保存。
+- TUI 保存固定原项目/Tracker 与 revision，不随后台筛选选中项改变而串写；重复 Ctrl+S 不再发第二次请求，失败保留编辑浮层和正文。Escape 明确取消并丢弃终端本次草稿；终端冲突选择、跨关闭/断线恢复仍待 M0-16。
+
+### 自测与实际窗口
+
+日志：`/Users/gengrf/Library/Logs/Babel-Dev/task-body-20260916/`。
+
+| 检查 | 结果 | 日志 |
+|---|---|---|
+| 原生正文适配 | 21 项通过；真实临时 HTTP、事件、CLI 读回，中文富 Markdown/清空/旧版本/只读；无版本及未知结构拒绝 | adapter-before.log、adapter-after.log、adapter-readonly-final.log |
+| GUI 行为及原详情回归 | 18 项通过；5 个正文行为 + 13 个详情测试，含实际编辑器挂载与无宿主正文 IPC | gui-final.log |
+| TUI 定向与已有入口回归 | 22 项通过；新增 3 项先复现再修复：拒绝丢稿、选中变化串写、重复保存冲突 | tui-before-behavior.log、tui-final.log |
+| Mac 原生开发者自测 | 1 项通过；中文正文显式保存、冲突/草稿、切任务、展开返回、两种冲突选择；同权威服务回读 | native-evidence-final.log |
+| 全仓类型与测试 | 26 工作区类型检查通过；1671 文件通过/7 跳过；14162 项通过/26 跳过/0 失败，209.24 秒 | typecheck.log、test-prepush.log |
+
+Mac 使用现有明确隔离的 `mac-glass-script-20260916` 开发 profile，Node24.15 / Apple M3 / macOS27；主进程启动记录仍为早期基线，renderer 经当前源码 HMR，本片未修改服务核心；精确本片源码以 validation 的 SHA-256 为准。没有重启或连接真实 Pi/SSH/OAuth，也未改变 GitLab/DUFS/代理配置。
+
+原生首次测试错误选中了仍打开的 Tutorial 窗口，尚未进入正文写入就因缺少 Babel 控件失败；重新打开指定隔离 workspace，并在测试中校验完整路径后通过。展开正文实际进入宿主全文页面，返回动作是“Back to tracker”，测试误用原切换按钮导致超时，修正操作后通过。组件测试曾用 default mock 掩盖 NimbalystEditor 的 named export，实际挂载测试发现并修复。新增真实 Lexical jsdom focus 测试超时且诊断格式化失败，删除该本轮实验用例，保留日志；对应路径由原生窗口实际操作覆盖，未删除既有测试。
+
+原生图与结构化结果：[冲突窗口](implementation/evidence/m0-04a-20260916/body-conflict-native.png)、[原生结果](implementation/evidence/m0-04a-20260916/body-evidence.json)。本轮是开发者自测；独立验收会话尚未签收，因此不勾验收列。未覆盖真实 PTY 本片操作、所有富文本格式、VoiceOver/中文组合输入、系统偏好/多主题/窄窗完整矩阵、字段编辑与退出应用后的持久草稿，也不代表完整 CAP-04/16 或 M0 完成。
+
+
+最终独立 Babel 类型检查发现新增保存中提示的文本替换误触原有 relation 帮助分支（TS2367/TS2339），已把该行恢复原文；未改关系业务行为。之后重新执行 Babel 类型检查与全包测试。宿主整仓门禁在此单行恢复前通过；该恢复只影响 Babel TUI，其最终版本由独立 Babel 门禁覆盖，不重复运行不受影响的宿主全仓测试。
+
+最终 Babel 独立门禁：类型检查通过，61 文件、291 项通过 / 4 跳过 / 0 失败（`babel-typecheck-corrected.log`、`babel-full-final.log`）；最终原生操作与截图日志 `native-evidence-final.log`。本片源码哈希及结果见 [M0-04a validation](implementation/evidence/m0-04a-20260916/validation.json)。

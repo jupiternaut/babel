@@ -1,0 +1,143 @@
+{
+  "trackerId": "trk-0093cd25-eb80-493d-8572-a9b5926c4d39",
+  "projectId": "fixture-project-babel",
+  "mode": "demo",
+  "final": {
+    "mode": "demo",
+    "demoLabel": "演示数据",
+    "record": {
+      "id": "trk-0093cd25-eb80-493d-8572-a9b5926c4d39",
+      "projectId": "fixture-project-babel",
+      "primaryType": "task",
+      "typeTags": [
+        "task"
+      ],
+      "source": "native",
+      "archived": false,
+      "syncStatus": "local",
+      "content": {
+        "format": "markdown",
+        "markdown": "最后采用远端正文"
+      },
+      "system": {
+        "workspace": "fixture-project-babel",
+        "createdAt": "2026-09-14T07:10:12.000Z",
+        "updatedAt": "2026-09-14T07:10:29.000Z",
+        "comments": [],
+        "activity": [
+          {
+            "id": "act-d1c7e6dc-20a8-4285-a221-cf743da24605",
+            "at": "2026-09-14T07:10:14.000Z",
+            "actorId": "demo-operator",
+            "kind": "created",
+            "detail": "创建条目"
+          },
+          {
+            "id": "act-3b99a251-e25e-4c25-ada6-d8fc67dadcfa",
+            "at": "2026-09-14T07:10:17.000Z",
+            "actorId": "demo-operator",
+            "kind": "updated",
+            "detail": "更新字段"
+          },
+          {
+            "id": "act-fc49370e-3ae3-4329-922b-b9c0ed4dd7d1",
+            "at": "2026-09-14T07:10:24.000Z",
+            "actorId": "demo-operator",
+            "kind": "updated",
+            "detail": "更新字段"
+          },
+          {
+            "id": "act-58aa1ea6-3583-4001-92a6-a5f95b9f6da8",
+            "at": "2026-09-14T07:10:27.000Z",
+            "actorId": "demo-operator",
+            "kind": "updated",
+            "detail": "更新字段"
+          },
+          {
+            "id": "act-5e17379d-e0ec-4e6f-9b1d-2ef265665d17",
+            "at": "2026-09-14T07:10:30.000Z",
+            "actorId": "demo-operator",
+            "kind": "updated",
+            "detail": "更新字段"
+          }
+        ],
+        "linkedSessions": [],
+        "origin": {
+          "kind": "manual"
+        }
+      },
+      "fields": {
+        "title": "原生正文验收-1789556032299",
+        "status": "to-do",
+        "description": "最后采用远端正文",
+        "priority": "normal",
+        "acceptance": [],
+        "dependsOn": [],
+        "blocks": []
+      },
+      "revision": 5,
+      "orderKey": "o:000480"
+    },
+    "binding": {
+      "projectId": "fixture-project-babel",
+      "trackerId": "trk-0093cd25-eb80-493d-8572-a9b5926c4d39",
+      "targetDeviceId": null,
+      "providerId": null,
+      "latestRunId": null,
+      "completionPolicy": "verified_and_reviewed",
+      "revision": 5,
+      "archivedAt": null,
+      "outcome": "not_started",
+      "restoreStage": null,
+      "executionEnabled": true
+    },
+    "stage": "TODO",
+    "latestRun": null,
+    "runs": [],
+    "card": {
+      "projectId": "fixture-project-babel",
+      "trackerId": "trk-0093cd25-eb80-493d-8572-a9b5926c4d39",
+      "title": "原生正文验收-1789556032299",
+      "description": "最后采用远端正文",
+      "primaryType": "task",
+      "status": "to-do",
+      "stage": "TODO",
+      "outcome": "not_started",
+      "archived": false,
+      "revision": 5,
+      "orderKey": "o:000480",
+      "latestRunId": null,
+      "runStatus": null,
+      "lastUpdatedAt": "2026-09-14T07:10:29.000Z",
+      "deviceId": null,
+      "attention": false,
+      "originKind": "manual",
+      "executionEnabled": true,
+      "readOnly": false,
+      "priority": "normal"
+    }
+  },
+  "viewport": {
+    "width": 1024,
+    "height": 768,
+    "devicePixelRatio": 2,
+    "theme": "light"
+  },
+  "verified": [
+    "native-explicit-body-save",
+    "no-autosave",
+    "draft-survives-task-switch",
+    "draft-survives-content-focus-toggle",
+    "conflict-no-overwrite",
+    "explicit-rebase-before-save",
+    "choose-remote",
+    "no-run-started"
+  ],
+  "notVerified": [
+    "independent acceptance session",
+    "real PTY",
+    "VoiceOver",
+    "full rich Markdown format coverage",
+    "full CAP-04"
+  ]
+}

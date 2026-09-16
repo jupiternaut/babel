@@ -151,6 +151,7 @@ export type TrackerDataCommand = {
     type: 'update-item-content';
     itemId: string;
     content: unknown;
+    expectedRevision?: number;
 } | {
     type: 'add-comment';
     itemId: string;

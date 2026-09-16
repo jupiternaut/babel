@@ -271,8 +271,8 @@
     },
     {
       "path": "TASKS.md",
-      "bytes": 13954,
-      "sha256": "3face0c1916b24b6e5bbd7bf67e13c8c4b9248f998c9cbcd89f19fd8ce4e9fa6",
+      "bytes": 15765,
+      "sha256": "b86e78db5e939bf259da911a8b803d0dc273a87badf427dcdc298322ba1f7ad4",
       "origin": {
         "kind": "publication_entry_or_configuration"
       }
@@ -282,8 +282,8 @@
       "origin": {
         "kind": "macos-development-and-acceptance"
       },
-      "bytes": 18940,
-      "sha256": "c53d3734ef0fa690215d88055d05f7c66f2615d73d3ac0cb4b967b613054c95e"
+      "bytes": 23827,
+      "sha256": "86c2f6f2a2b9a04cacc12caadb638f74918874ba3eef6f172d6f07c96af033b7"
     },
     {
       "path": "WAYLAND-DEVIN-BENCHMARK.md",

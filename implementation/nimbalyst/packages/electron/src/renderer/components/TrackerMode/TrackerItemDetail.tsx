@@ -61,6 +61,7 @@ import { formatTrackerActivity } from './trackerActivityPresentation';
 import { trackerHostDataSourceAtom } from '../../store/atoms/trackers';
 import { resolveBabelDemoWriteSource } from '../../services/createWorkspaceTrackerDataSource';
 import { useBabelTitleDraft } from './babelWorkbench/useBabelTitleDraft';
+import { BabelBodyEditor } from './babelWorkbench/BabelBodyEditor';
 import { createCollectionItem } from './createCollectionItem';
 import { TabEditor } from '../TabEditor/TabEditor';
 import { FeedbackBacklinkSection } from '../FeedbackRequest/FeedbackBacklinks';
@@ -258,6 +259,7 @@ export const TrackerItemDetail: React.FC<TrackerItemDetailProps> = ({
   // Read directly from per-item atom -- only re-renders when THIS item changes,
   // not when any other item in the workspace updates.
   const item = useAtomValue(trackerItemByIdAtom(itemId));
+  const babelTitleSource = resolveBabelDemoWriteSource(useAtomValue(trackerHostDataSourceAtom));
   // Whether the tracker store has finished its initial load — lets us show a
   // loading state vs. an "unavailable" state when `item` is absent.
   const trackerDataLoaded = useAtomValue(trackerDataLoadedAtom);
@@ -305,7 +307,7 @@ export const TrackerItemDetail: React.FC<TrackerItemDetailProps> = ({
   }, [item, teamOrgId]);
 
   useEffect(() => {
-    if (!workspacePath) {
+    if (babelTitleSource || !workspacePath) {
       setTeamOrgId(null);
       setTeamMembers([]);
       return;
@@ -337,7 +339,7 @@ export const TrackerItemDetail: React.FC<TrackerItemDetailProps> = ({
       }
     })();
     return () => { cancelled = true; };
-  }, [workspacePath]);
+  }, [workspacePath, babelTitleSource]);
   // Members load on a separate effect keyed on the resolved orgId so a
   // slow members call cannot block the editor. The list-members IPC has
   // its own server-side timeout (see fetchTeamApi); on failure the
@@ -474,7 +476,6 @@ export const TrackerItemDetail: React.FC<TrackerItemDetailProps> = ({
 
   // Local state for text fields (debounced save)
   const [localTitle, setLocalTitle] = useState(item ? getRecordTitle(item) : '');
-  const babelTitleSource = resolveBabelDemoWriteSource(useAtomValue(trackerHostDataSourceAtom));
   const babelTitle = useBabelTitleDraft(item, babelTitleSource);
   const displayedTitle = babelTitleSource ? babelTitle.value : localTitle;
   // Title is a textarea so long titles wrap; it grows with its content (NIM-1615).
@@ -569,7 +570,7 @@ export const TrackerItemDetail: React.FC<TrackerItemDetailProps> = ({
   // We intentionally do NOT re-fetch on updatedAt changes -- our own saves update updatedAt,
   // and refetching would destroy/remount the editor, causing text to vanish mid-typing.
   useEffect(() => {
-    if (!hasRichContent) {
+    if (babelTitleSource || !hasRichContent) {
       setContentLoaded(true);
       return;
     }
@@ -603,7 +604,7 @@ export const TrackerItemDetail: React.FC<TrackerItemDetailProps> = ({
       });
 
     return () => { cancelled = true; };
-  }, [item?.id, hasRichContent]);
+  }, [item?.id, hasRichContent, babelTitleSource]);
 
   // External content update detection.
   // The atom's `content` is refreshed by trackerSyncListeners whenever a
@@ -683,8 +684,8 @@ export const TrackerItemDetail: React.FC<TrackerItemDetailProps> = ({
   );
 
   const contentMode = useMemo(
-    () => resolveTrackerContentMode({ item, sharing, isItemPublished, teamOrgId }),
-    [item, sharing, teamOrgId, isItemPublished],
+    () => babelTitleSource ? 'local-pglite' : resolveTrackerContentMode({ item, sharing, isItemPublished, teamOrgId }),
+    [item, sharing, teamOrgId, isItemPublished, babelTitleSource],
   );
 
   const fileBackedDocumentPath = useMemo(() => {
@@ -806,9 +807,9 @@ export const TrackerItemDetail: React.FC<TrackerItemDetailProps> = ({
     itemId,
     title: item?.issueKey || (item ? getRecordTitle(item) : itemId),
     workspacePath,
-    sharing,
-    teamOrgId,
-    itemPublished: isItemPublished,
+    sharing: babelTitleSource ? 'personal' : sharing,
+    teamOrgId: babelTitleSource ? null : teamOrgId,
+    itemPublished: babelTitleSource ? false : isItemPublished,
   });
 
   // Whether the collab provider has reached 'connected' for the CURRENT
@@ -956,6 +957,7 @@ export const TrackerItemDetail: React.FC<TrackerItemDetailProps> = ({
    * guard -- its initialContent is fed synchronously, so onDirtyChange
    * only fires on real user edits. */
   const saveContent = useCallback((markdown: string, guardEmpty = false) => {
+    if (babelTitleSource) return;
     if (guardEmpty) {
       const baseline = loadedBaselineRef.current;
       if (markdown.trim() === '' && baseline != null && baseline.trim() !== '') {
@@ -990,7 +992,7 @@ export const TrackerItemDetail: React.FC<TrackerItemDetailProps> = ({
         contentSaveInFlightRef.current = false;
       }
     }, 800);
-  }, [item?.id]);
+  }, [item?.id, babelTitleSource]);
 
   // Cleanup timers
   useEffect(() => {
@@ -1006,7 +1008,7 @@ export const TrackerItemDetail: React.FC<TrackerItemDetailProps> = ({
   useEffect(() => {
     const isCollabMode = contentMode === 'collaborative';
     return () => {
-      if (contentSaveTimerRef.current && getContentFnRef.current) {
+      if (!babelTitleSource && contentSaveTimerRef.current && getContentFnRef.current) {
         clearTimeout(contentSaveTimerRef.current);
         const markdown = getContentFnRef.current();
         if (isCollabMode) {
@@ -1024,7 +1026,7 @@ export const TrackerItemDetail: React.FC<TrackerItemDetailProps> = ({
         }).catch(() => {});
       }
     };
-  }, [item?.id, contentMode]);
+  }, [item?.id, contentMode, babelTitleSource]);
 
   /** Handle immediate field change (selects, checkboxes) */
   const handleImmediateFieldChange = useCallback((fieldName: string, value: any) => {
@@ -1157,7 +1159,7 @@ export const TrackerItemDetail: React.FC<TrackerItemDetailProps> = ({
 
   /** Editor config for local PGLite mode (non-team native items only) */
   const localEditorConfig = useMemo((): EditorConfig | null => {
-    if (contentMode !== 'local-pglite' || !contentLoaded) return null;
+    if (babelTitleSource || contentMode !== 'local-pglite' || !contentLoaded) return null;
     return {
       isRichText: true,
       editable: true,
@@ -1184,7 +1186,7 @@ export const TrackerItemDetail: React.FC<TrackerItemDetailProps> = ({
         bodyEditorReadyRef.current?.(editor);
       },
     };
-  }, [contentMode, contentLoaded, contentMarkdown, focusActive, saveContent]);
+  }, [babelTitleSource, contentMode, contentLoaded, contentMarkdown, focusActive, saveContent]);
 
   /** Editor config for collaborative mode (team-synced native items) */
   const collabEditorConfig = useMemo((): EditorConfig | null => {
@@ -1781,12 +1783,14 @@ export const TrackerItemDetail: React.FC<TrackerItemDetailProps> = ({
             Content
           </label>
           )}
-          {hasRichContent && workspacePath && <TrackerCreationPublication workspacePath={workspacePath} itemId={item.id} />}
-          {hasRichContent && typeof item.fields.description === 'string' && <TrackerSavedDescription
+          {!babelTitleSource && hasRichContent && workspacePath && <TrackerCreationPublication workspacePath={workspacePath} itemId={item.id} />}
+          {!babelTitleSource && hasRichContent && typeof item.fields.description === 'string' && <TrackerSavedDescription
             key={item.id} description={item.fields.description} currentBody={contentMarkdown} editor={recoveryEditor}
-            canInsert={editable && contentLoaded && (contentMode === 'local-pglite' || (contentMode === 'collaborative' && hasSyncedOnce && collabStatus === 'connected'))}
+            canInsert={!babelTitleSource && editable && contentLoaded && (contentMode === 'local-pglite' || (contentMode === 'collaborative' && hasSyncedOnce && collabStatus === 'connected'))}
           />}
-          {contentMode === 'local-pglite' && localEditorConfig ? (
+          {babelTitleSource ? (
+            <BabelBodyEditor item={item} source={babelTitleSource} editable={editable} focusActive={focusActive} onEditorReady={onBodyEditorReady} />
+          ) : contentMode === 'local-pglite' && localEditorConfig ? (
             <div
               className={`tracker-content-editor bg-nim overflow-hidden ${focusActive ? 'flex-1 min-h-0' : 'min-h-[200px] border border-nim rounded'}`}
               data-testid="tracker-detail-content-editor"

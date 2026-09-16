@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- New features go here -->
 - Preview Babel on macOS with a frosted task board, shared attention filters, conflict-safe titles, and recoverable simulated runs.
 - Confirm lost or cancellation-pending demo runs from the desktop and terminal, with read-only and version-conflict protection across clients.
+- Save Babel task bodies explicitly, keep conflicting drafts across navigation, and prevent terminal edits from targeting another task.
 - Run sessions in your own Cloudflare sandbox with machine navigation, the shared composer, attachments and Actions, and profile/account selections remembered per project.
 
 ### Changed

@@ -419,3 +419,72 @@ describe("edit revision closed loop on one DomainService", () => {
     expect(viaTui.record.fields.title).toBe(seedTitle);
   });
 });
+
+
+describe("TUI body draft safety", () => {
+  const key = (tui: BabelTui, name: string) => tui.feedEvent({ type: "key", name, raw: "", ctrl: name.startsWith("ctrl-"), shift: false });
+  async function editSession() {
+    const shared = await startSharedHttp();
+    const task = await createEditable(shared.domain, "正文草稿目标", "");
+    const tui = new BabelTui({ endpoint: shared.endpoint, projectId: PROJECT, headless: true, cols: 130, rows: 40 });
+    sessions.push({ dispose: () => tui.dispose() });
+    await tui.boot();
+    tui.feed("/");
+    tui.feed("正文草稿目标");
+    key(tui, "enter");
+    await waitUntil(() => tui.inspect().selectedId === task.trackerId);
+    await waitUntil(() => {
+      if (tui.inspect().overlay === "edit") return true;
+      tui.feed("e");
+      return tui.inspect().overlay === "edit";
+    });
+    key(tui, "tab");
+    return { ...shared, ...task, tui };
+  }
+
+  it("keeps a refused Chinese body draft and its original revision visible", async () => {
+    const { domain, tui, trackerId, expectedRevision } = await editSession();
+    tui.feedEvent({ type: "paste", text: "中文未保存草稿" });
+    await command(domain, "task.update", { trackerId, markdown: "远端正文" }, { expectedRevision });
+    const cursor = domain.store.data.cursor;
+    key(tui, "ctrl-s");
+    await waitUntil(() => Boolean(tui.inspect().error));
+    expect(tui.inspect().error).toContain("REVISION_CONFLICT");
+    expect(tui.inspect().overlay).toBe("edit");
+    expect(tui.inspect().overlayRevision).toBe(expectedRevision);
+    expect(tui.inspect().frame).toContain("中文未保存草稿");
+    expect(query<EditDetail>(domain, "task.get", { trackerId }).record.content?.markdown).toBe("远端正文");
+    expect(domain.eventsSince(PROJECT, cursor).filter(e => e.type === "task.updated")).toHaveLength(0);
+  });
+
+  it("never sends a draft to a different selected record with the same revision", async () => {
+    const { domain, tui, trackerId, expectedRevision } = await editSession();
+    tui.feedEvent({ type: "paste", text: "属于原任务的草稿" });
+    const other = await createEditable(domain, "正文草稿目标另一个任务", "保持不变");
+    expect(other.expectedRevision).toBe(expectedRevision);
+    await command(domain, "task.update", { trackerId, title: "离开搜索结果" }, { expectedRevision });
+    await tui.reconnectNow();
+    expect(tui.inspect().selectedId).toBe(other.trackerId);
+    key(tui, "ctrl-s");
+    await waitUntil(() => Boolean(tui.inspect().error) || tui.inspect().overlay === "none");
+    expect(tui.inspect().error).toContain("REVISION_CONFLICT");
+    expect(tui.inspect().overlay).toBe("edit");
+    expect(query<EditDetail>(domain, "task.get", { trackerId: other.trackerId }).record.content?.markdown).toBe("保持不变");
+    expect(query<EditDetail>(domain, "task.get", { trackerId }).record.revision).toBe(expectedRevision + 1);
+  });
+
+  it("preserves multiline Markdown across HTTP, CLI and one repeated save key", async () => {
+    const { domain, tui, trackerId, expectedRevision, cli } = await editSession();
+    const body = "# 中文标题\n\n- **粗体**\n- [链接](https://example.com)\n\n```ts\nconst n = 1;\n```";
+    tui.feedEvent({ type: "paste", text: body });
+    const cursor = domain.store.data.cursor;
+    key(tui, "ctrl-s");
+    key(tui, "ctrl-s");
+    await waitUntil(() => tui.inspect().overlay === "none");
+    expect(tui.inspect().error).toBeNull();
+    const read = await cli.query<EditDetail>({ name: "task.get", projectId: PROJECT, input: { trackerId } });
+    expect(read.record.content?.markdown).toBe(body);
+    expect(read.record.revision).toBe(expectedRevision + 1);
+    expect(domain.eventsSince(PROJECT, cursor).filter(e => e.type === "task.updated")).toHaveLength(1);
+  });
+});

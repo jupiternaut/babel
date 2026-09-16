@@ -86,7 +86,7 @@ type Overlay =
   | { kind: "none" }
   | { kind: "help" }
   | { kind: "menu"; index: number }
-  | { kind: "edit"; title: string; body: string; field: "title" | "body"; revision: number }
+  | { kind: "edit"; title: string; body: string; field: "title" | "body"; revision: number; projectId: string; trackerId: string; saving: boolean }
   | { kind: "create"; title: string; body: string; field: "title" | "body" }
   | { kind: "message"; text: string; respondId?: string }
   | { kind: "search" }
@@ -559,6 +559,7 @@ export class BabelTui {
 
   private handleOverlay(ev: KeyEvent): void {
     const o = this.overlay;
+    if (o.kind === "edit" && o.saving) return;
     if (ev.type === "key" && ev.name === "escape") {
       this.overlay = { kind: "none" };
       this.setCursorVisible(false);
@@ -884,6 +885,9 @@ export class BabelTui {
     }
     this.overlay = {
       kind: "edit",
+      projectId: this.projectId,
+      trackerId: rec.id,
+      saving: false,
       title: String(rec.fields.title ?? ""),
       body: String(rec.fields.description ?? rec.content.markdown ?? ""),
       field: "title",
@@ -1011,16 +1015,28 @@ export class BabelTui {
         ...(o.body.trim() ? { description: o.body } : {}),
         primaryType: this.typeFilter === "executable" || this.typeFilter === "all" ? "task" : this.typeFilter,
       });
-    } else if (o.kind === "edit" && this.selectedId) {
+    } else if (o.kind === "edit") {
+      if (o.saving) return;
+      if (o.projectId !== this.projectId) {
+        this.error = "PRECONDITION: 所属项目已改变，本次未保存；请复制草稿后重新选择原任务";
+        this.setCursorVisible(true);
+        return;
+      }
       if (!Number.isFinite(o.revision)) {
         this.error = "USAGE: 保存需要当前 revision";
         return;
       }
-      await this.command("task.update", {
-        trackerId: this.selectedId,
+      o.saving = true;
+      const saved = await this.command("task.update", {
+        trackerId: o.trackerId,
         title: o.title,
-        description: o.body,
+        markdown: o.body,
       }, o.revision);
+      o.saving = false;
+      if (!saved) {
+        this.setCursorVisible(true);
+        return;
+      }
     } else if (o.kind === "message" && this.selectedRunId) {
       if (o.respondId) {
         await this.command("run.respond", { runId: this.selectedRunId, requestId: o.respondId, text: o.text });
@@ -1275,7 +1291,7 @@ export class BabelTui {
     this.overlay = { kind: "none" };
   }
 
-  private async command(name: Parameters<TuiHttp["command"]>[0]["name"], input: Record<string, unknown>, expectedRevision?: number, idempotencyKey?: string): Promise<void> {
+  private async command(name: Parameters<TuiHttp["command"]>[0]["name"], input: Record<string, unknown>, expectedRevision?: number, idempotencyKey?: string): Promise<boolean> {
     try {
       const result = await this.http.command({
         name,
@@ -1292,10 +1308,13 @@ export class BabelTui {
       if (result.runId) this.selectedRunId = result.runId;
       await this.refreshQuiet();
       if (result.trackerId) this.selectedId = result.trackerId;
+      return true;
     } catch (error) {
       this.noteError(error);
+      return false;
+    } finally {
+      this.dirty = true;
     }
-    this.dirty = true;
   }
 
   private noteError(error: unknown): void {
@@ -1482,7 +1501,7 @@ export class BabelTui {
       const markT = o.field === "title" ? ">" : " ";
       const markB = o.field === "body" ? ">" : " ";
       body = [`${markT}标题 ${o.title}`, `${markB}正文`, ...wrapByWidth(o.body, w - 4, 8)];
-      footer = "Tab 切换  Ctrl+S 保存  Esc 取消";
+      footer = o.kind === "edit" && o.saving ? "正在保存，请稍候" : "Tab 切换  Ctrl+S 保存  Esc 取消（丢弃草稿）";
     } else if (o.kind === "message") {
       title = o.respondId ? "回答待答请求" : "发送消息";
       body = wrapByWidth(o.text || "（输入后 Enter 或 Ctrl+S 发送）", w - 4, 8);

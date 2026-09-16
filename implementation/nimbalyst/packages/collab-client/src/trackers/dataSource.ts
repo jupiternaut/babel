@@ -136,7 +136,7 @@ export type TrackerDataCommand =
   | { type: 'update-items'; input: TrackerBatchUpdateInput }
   | { type: 'archive-item'; itemId: string; archive: boolean }
   | { type: 'delete-item'; itemId: string }
-  | { type: 'update-item-content'; itemId: string; content: unknown }
+  | { type: 'update-item-content'; itemId: string; content: unknown; expectedRevision?: number }
   | { type: 'add-comment'; itemId: string; body: string }
   | {
       type: 'update-comment';
