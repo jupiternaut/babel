@@ -44,4 +44,4 @@ Wayland 指 [getwayland.com 的 AI 工作台](https://getwayland.com/)，对应�
 
 证据逐项填写：WD/CAP 编号、提交、设备/OS、模式、命令与输入、预期/实际结果、截图或日志路径、失败项。Windows 历史结果见 implementation 下验收文档；不能据此把 macOS 标成通过。
 
-当前状态：本轮仅完成指标定义和源码中 macOS 构建入口核对；WD-01～10 的 macOS 验收均未执行。下一轮按 [macOS 交接](MACOS-DEVELOPMENT-HANDOFF.md) 落地，不重建已存在的核心。
+当前状态：指标定义之后已补 Mac 原生工作台、关注、编辑、归档/恢复与三端 demo 子路径证据，见 [TASK_EVIDENCE](TASK_EVIDENCE.md)。这不表示 WD-01～10 整项通过；具体开发完成与待验收功能以 [TASKS](TASKS.md) 和 [CAP 状态](implementation/M0-CAP-STATUS.md) 接续，按 [macOS 交接](MACOS-DEVELOPMENT-HANDOFF.md) 使用已有核心。

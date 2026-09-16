@@ -1,5 +1,7 @@
 # macOS UI/UX 首轮实施证据
 
+最新接续：本文件按轮次追加；当前任务的开发/验收双标记见 [TASKS](TASKS.md)，最新结果在文末。历史通过不覆盖后续未验收的新代码。
+
 日期：2026-09-16。下文“首轮”保留历史测试失败；最新修复与门禁结果见文末“持续迭代”。首轮交付为可运行的 Mac 开发入口与原生工作台视觉候选，不代表 M0 全部能力或发布验收完成。
 
 ## 环境与边界
@@ -109,3 +111,38 @@ cd /Users/gengrf/Projects/babel
 3. 延续 Mac 主开发、UI/UX 与可读性优先、Windows/Ubuntu 回归职责，保持 Draft PR，未验条件不标完成。
 
 最终文档完整性检查通过；本批候选提交仍保留完整产品未验项。PR：[jupiternaut/babel #1](https://github.com/jupiternaut/babel/pull/1)。提交内容含可移植的原生截图与验证 JSON；本机原始日志不入库。
+
+
+## TASK 双标记与 M0-10a：核对执行
+
+日期：2026-09-16；基线 `44683aa04c43d4a26eaefcf19c6554a0f9ed9640`；cwd `/Users/gengrf/Projects/babel`，分支 `ui/macos-glass`；开始时工作树干净。上游 MIT 许可及现有 Electron/React/TUI/CLI 结构保持不变。
+
+用户要求已落到根目录 TASKS：49 个稳定任务 ID，分别记录开发完成、验收通过、具体功能及操作条件；AGENTS、README、启动提示词均指向该入口。基线实测子路径单列，部分实现与完整 CAP 不混算；本轮新增功能的独立验收保持未通过标记。同步纠正 Mac 交接、WD 对标和视觉合同中落后于已提交证据的总括状态。
+
+本轮 M0-10a 行为：
+
+- GUI：当前 lost/cancel_requested 执行可选择“已取消/失败”，经明确二次确认再提交；返回/Escape 不写入，初始焦点与返回触发按钮有组件测试。冻结目标与版本，旧 run/切任务/切数据源/过期确认不能误写；服务拒绝不假造已停止。核对弹窗独立限制窄视口宽高及长 ID 换行，保留宿主主题。
+- TUI：两种待核对状态均有菜单入口，冻结 project/tracker/run/revision；可切换结果，Enter 明确确认，n/Escape 取消；后台目标变化时拒绝旧确认。
+- 公共核心：run.reconcile 在任何变更前校验只读与 expectedRevision；能力查询按记录或 run 提供一致的核对可用性及原因。
+- CLI：run reconcile 透传 expectedRevision 与 idempotencyKey；过期提交拒绝，同键重试返回 replay，不产生第二次终态事件。
+- 核对仅记录 demo 的人工选择，结果保持 unresolved，不自动 DONE，不新建 run；不是观察或终止真实 Pi/Worker 的实现，也不等于 WD06 人工接管完成。
+
+### 自测证据与验收边界
+
+日志根：`/Users/gengrf/Library/Logs/Babel-Dev/task-reconcile-20260916/`。相关测试源码随本轮提交，可重新运行；红绿日志保留。
+
+| 检查 | 当前结果 | 日志 |
+|---|---|---|
+| 核心守卫定向 | 18 通过；新增 6 项覆盖两种状态的只读、旧 revision、核对幂等与未完成语义 | core-before.log、core-after.log、core-final.log |
+| TUI 定向 | 15 通过；新增 7 项，输入事件→临时真实 HTTP→公共核心；不是实际 PTY | babel-tui-reconcile-before.log、babel-tui-reconcile-core-pending.log、babel-tui-reconcile-final.log |
+| CLI 定向 | 10 通过；新增 4 项；真实临时 HTTP 的旧版本拒绝/幂等重放 | babel-cap10-cli-before.log、babel-cap10-cli-after.log |
+| GUI 定向与已有动作回归 | 34 通过（19 个新增 + 15 个已有）；jsdom 组件/hook 测试 | reconcile-renderer-before.log、reconcile-renderer-after.log |
+| 宿主类型检查 | 26 工作区通过 | typecheck.log |
+| Babel 类型检查 / 全包 | 通过；288 通过 / 4 跳过 / 0 失败，61 文件 | babel-typecheck.log、babel-full.log |
+| 宿主整仓门禁 | 14137 通过 / 26 跳过 / 0 失败；1670 文件通过 / 7 跳过；259.22 秒 | test-prepush.log |
+
+核心测试首轮除守卫红例外，还修正了测试快照引用与计数假设：query 返回的 live 对象需要复制，demo 注入的 stopped:false 事件不能计成新增核对终态；最终检查核对事件与业务状态。CLI 的旧版本错误成功及重复提交错误拒绝均通过临时 HTTP 复现后修复。
+
+本轮未运行新的原生 Mac 窗口/真实 PTY 操作验收、VoiceOver、系统偏好切换或 200% 缩放；也未接真实 Agent、OAuth、SSH 或生产服务。TASKS 的 M0-10a 验收列保留空，验收会话按其中 7 步操作后再打标。GUI 测试/全量单测不代替这一独立验收。
+
+本轮开发自测摘要及对应源文件 SHA-256 见 [M0-10a validation](implementation/evidence/m0-10a-20260916/validation.json)。所有代码测试在冻结的实现文件上执行；后续仅整理 TASK/证据与提交信息，未把验收列自动改为通过。

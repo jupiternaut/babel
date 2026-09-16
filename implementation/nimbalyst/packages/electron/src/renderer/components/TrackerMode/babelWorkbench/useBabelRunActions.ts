@@ -75,7 +75,7 @@ export interface BabelTaskDetail {
 
 export function useBabelRunActions(trackerId: string, dataSource: BabelDemoTrackerDataSource) {
   const cacheKey = JSON.stringify([dataSource.endpoint, dataSource.projectId, trackerId]);
-  const scope = useMemo(() => ({ active: false, generation: 0, detail: null as BabelTaskDetail | null }), [dataSource, trackerId]);
+  const scope = useMemo(() => ({ active: false, generation: 0, detail: null as BabelTaskDetail | null, viewingRunId: getViewingRunId(cacheKey) }), [dataSource, trackerId, cacheKey]);
   const [loadedScope, setLoadedScope] = useState<object | null>(null);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
@@ -207,6 +207,7 @@ export function useBabelRunActions(trackerId: string, dataSource: BabelDemoTrack
 
   const viewRun = useCallback((runId: string | null) => {
     if (!scope.active || loadedScope !== scope || (runId && !detail?.runs.some(run => run.id === runId))) return;
+    scope.viewingRunId = runId;
     setViewingRunId(cacheKey, runId);
     setViewing(runId);
   }, [cacheKey, scope, loadedScope, detail?.runs]);
@@ -311,6 +312,24 @@ export function useBabelRunActions(trackerId: string, dataSource: BabelDemoTrack
     });
   }, [dataSource, detail?.bindingRunId, runAction]);
 
+  const reconcile = useCallback((resolution: 'cancelled' | 'failed') => {
+    if (!scope.active || loadedScope !== scope) return Promise.resolve();
+    if (scope.detail !== detail) {
+      setNote('执行信息已更新，请重新打开核对确认。');
+      return Promise.resolve();
+    }
+    const run = detail?.latestRun;
+    if (!detail || !run || run.id !== detail.bindingRunId
+      || (run.status !== 'lost' && run.status !== 'cancel_requested')
+      || (scope.viewingRunId && scope.viewingRunId !== run.id)
+      || detail.readOnly || !Number.isInteger(detail.revision)
+      || caps['run.reconcile']?.allowed !== true) return Promise.resolve();
+    return runAction(async (current) => {
+      await dataSource.postRaw('run.reconcile', { runId: run.id, resolution }, detail.revision);
+      if (current()) setNote(`已记录演示核对结果：${resolution === 'cancelled' ? '已取消' : '失败'}。不代表真实 Worker 已停止。`);
+    });
+  }, [caps, dataSource, detail, loadedScope, runAction, scope]);
+
   return {
     busy: loadedScope !== scope || busy || pendingActions.has(cacheKey),
     note,
@@ -332,6 +351,7 @@ export function useBabelRunActions(trackerId: string, dataSource: BabelDemoTrack
     respond,
     requestChanges,
     retry,
+    reconcile,
   };
 }
 

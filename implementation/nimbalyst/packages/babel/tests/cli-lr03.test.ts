@@ -36,6 +36,7 @@ async function startServer() {
   sessions.push({
     dispose: async () => {
       await server.close();
+      opened.dispose();
     },
   });
   return { server, domain: opened.domain, endpoint: server.endpoint };
@@ -213,5 +214,58 @@ describe("CLI LR-03 command/query against demo HTTP", () => {
     const after = query<TaskDetail>(domain, "task.get", { trackerId: created.trackerId! });
     expect(after.record.revision).toBe(revision);
     expect(after.record.fields.title).toBe("CLI 观察失败仍应存在");
+  });
+});
+
+describe("CAP-10 CLI reconciliation against demo HTTP", () => {
+  it.each(["lost", "cancel_unconfirmed"] as const)("rejects a stale revision for %s without changing the run", async scenario => {
+    const { endpoint, domain } = await startServer();
+    const created = await command(domain, "task.create", { title: "CLI 核对版本" });
+    await command(domain, "demo.inject", { trackerId: created.trackerId, scenario });
+    const initial = structuredClone(query<TaskDetail>(domain, "task.get", { trackerId: created.trackerId }));
+    await command(domain, "task.update", { trackerId: created.trackerId, title: "另一端已更新" });
+    const before = structuredClone(query<TaskDetail>(domain, "task.get", { trackerId: created.trackerId }));
+    const cursor = domain.store.data.cursor;
+
+    const rejected = await executeCli([
+      "run", "reconcile", "--project", PROJECT, "--endpoint", endpoint,
+      "--id", initial.latestRun!.id, "--resolution", "cancelled",
+      "--expected-revision", String(initial.record.revision), "--idempotency-key", "stale-reconcile",
+    ]);
+
+    expect(rejected.exitCode).toBe(EXIT_BY_CODE.REVISION_CONFLICT);
+    expect(parseStdout(rejected.stdout)).toMatchObject({ ok: false, code: "REVISION_CONFLICT" });
+    expect(query<TaskDetail>(domain, "task.get", { trackerId: created.trackerId })).toEqual(before);
+    expect(domain.eventsSince(PROJECT, cursor)).toEqual([]);
+  });
+
+  it.each(["lost", "cancel_unconfirmed"] as const)("replays %s reconciliation with the same key without a second transition", async scenario => {
+    const { endpoint, domain } = await startServer();
+    const created = await command(domain, "task.create", { title: "CLI 核对重试" });
+    await command(domain, "demo.inject", { trackerId: created.trackerId, scenario });
+    const before = structuredClone(query<TaskDetail>(domain, "task.get", { trackerId: created.trackerId }));
+    const cursor = domain.store.data.cursor;
+    const resolution = scenario === "lost" ? "failed" : "cancelled";
+    const argv = [
+      "run", "reconcile", "--project", PROJECT, "--endpoint", endpoint,
+      "--id", before.latestRun!.id, "--resolution", resolution,
+      "--expected-revision", String(before.record.revision), "--idempotency-key", "reconcile-once",
+    ];
+
+    const accepted = await executeCli(argv);
+    const replayed = await executeCli(argv);
+
+    expect(accepted.exitCode).toBe(0);
+    expect(replayed.exitCode).toBe(0);
+    const original = parseStdout(accepted.stdout);
+    expect(original.commandStatus).toBe("accepted");
+    expect(parseStdout(replayed.stdout)).toEqual({ ...original, commandStatus: "replayed" });
+    const after = query<TaskDetail>(domain, "task.get", { trackerId: created.trackerId });
+    expect(after.latestRun).toMatchObject({ id: before.latestRun!.id, status: resolution });
+    expect(after.record.revision).toBe(before.record.revision + 1);
+    expect(after.runs).toHaveLength(before.runs.length);
+    expect(after.binding.outcome).toBe("unresolved");
+    expect(after.stage).not.toBe("DONE");
+    expect(domain.eventsSince(PROJECT, cursor).filter(event => event.type === "run.finished")).toHaveLength(1);
   });
 });

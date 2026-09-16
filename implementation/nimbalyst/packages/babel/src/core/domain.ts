@@ -859,6 +859,9 @@ export class DomainService {
   private cmdReconcile(ctx: CmdCtx): CommandResult {
     const { data, request, correlationId } = ctx;
     const run = this.requireRun(data, request.projectId, str(request.input.runId ?? request.input.id));
+    const { record, binding } = this.requireRecord(data, request.projectId, run.taskId);
+    this.assertWritable(record);
+    this.assertRevision(record, request.expectedRevision);
     if (run.status !== "lost" && run.status !== "cancel_requested") {
       throw new BabelError("PRECONDITION", "只有失联或取消待确认的执行需要核对", { status: run.status });
     }
@@ -869,7 +872,6 @@ export class DomainService {
     run.status = resolution;
     run.endedAt = this.now(data);
     run.summary = resolution === "cancelled" ? "模拟：核对后标记为已取消" : "模拟：核对后标记为失败";
-    const { record, binding } = this.requireRecord(data, request.projectId, run.taskId);
     binding.outcome = "unresolved";
     record.fields.status = resolution === "cancelled" ? "wont-do" : "in-progress";
     record.revision += 1;
@@ -1217,6 +1219,23 @@ export class DomainService {
       if (run && TERMINAL_RUN.has(run.status)) {
         actions["run.message"] = { allowed: false, reason: "已结束的执行不能再发送运行消息", code: "PRECONDITION" };
         actions["run.cancel"] = { allowed: false, reason: "执行已经结束", code: "PRECONDITION" };
+      }
+    }
+    if (trackerId || runId) {
+      try {
+        let run = runId ? this.requireRun(data, projectId, runId) : undefined;
+        const { record, binding } = this.requireRecord(data, projectId, trackerId ?? run!.taskId);
+        this.assertWritable(record);
+        run ??= binding.latestRunId ? this.requireRun(data, projectId, binding.latestRunId) : undefined;
+        if (!run || run.taskId !== record.id || (run.status !== "lost" && run.status !== "cancel_requested")) {
+          throw new BabelError("PRECONDITION", "只有失联或取消待确认的执行需要核对");
+        }
+      } catch (error) {
+        if (error instanceof BabelError) {
+          actions["run.reconcile"] = { allowed: false, reason: error.message, code: error.code };
+        } else {
+          throw error;
+        }
       }
     }
     return {

@@ -91,6 +91,7 @@ type Overlay =
   | { kind: "message"; text: string; respondId?: string }
   | { kind: "search" }
   | { kind: "confirm"; action: "archive" | "cancel" | "restore" | "accept" | "changes" }
+  | { kind: "reconcile"; projectId: string; trackerId: string; runId: string; title: string; revision: number; status: "lost" | "cancel_requested"; resolution: "cancelled" | "failed" }
   | { kind: "diff"; text: string }
   | { kind: "history"; text: string }
   | { kind: "ready"; index: number; items: TaskCard[] }
@@ -588,6 +589,15 @@ export class BabelTui {
       this.dirty = true;
       return;
     }
+    if (o.kind === "reconcile") {
+      if (ev.type === "key" && (ev.name === "tab" || ev.name === "left" || ev.name === "right")) {
+        o.resolution = o.resolution === "cancelled" ? "failed" : "cancelled";
+      } else if ((ev.type === "key" && ev.name === "enter") || (ev.type === "text" && (ev.text === "y" || ev.text === "Y"))) {
+        void this.confirmReconcile(o);
+      } else if (ev.type === "text" && (ev.text === "n" || ev.text === "N")) this.overlay = { kind: "none" };
+      this.dirty = true;
+      return;
+    }
     if (o.kind === "ready" || o.kind === "views" || o.kind === "hooks") {
       this.handleListOverlay(ev, o);
       return;
@@ -897,6 +907,8 @@ export class BabelTui {
       { id: "start", label: "s  开始模拟" },
       { id: "message", label: run?.status === "waiting_input" ? "m  回答待答请求" : "m  发送消息" },
       { id: "cancel", label: "c  取消执行" },
+      ...(run?.status === "lost" || run?.status === "cancel_requested"
+        ? [{ id: "reconcile", label: `   终止核对（${runStatusText(run.status)}）` }] : []),
       { id: "archive", label: "a  归档" },
       { id: "restore", label: "r  恢复（不自动重跑）" },
       { id: "accept", label: "v  验收" },
@@ -913,7 +925,6 @@ export class BabelTui {
       { id: "hooks", label: "g  Hook 与投递" },
       ...SURFACE_MENU_ITEMS,
     ];
-    if (run?.status === "lost") items.push({ id: "reconcile", label: "   核对失联" });
     return items;
   }
 
@@ -939,8 +950,37 @@ export class BabelTui {
     else if (id === "reorder-down") await this.reorderSelected(1);
     else if (id === "hooks") await this.showHooks();
     else if (isSurfaceMenuId(id)) this.overlay = openSurface(id);
-    else if (id === "reconcile") await this.command("run.reconcile", { runId: this.selectedRunId, resolution: "cancelled" });
+    else if (id === "reconcile") this.beginReconcile();
     this.dirty = true;
+  }
+
+  private beginReconcile(): void {
+    const record = this.detail?.record;
+    const run = this.detail?.latestRun;
+    if (!record || !run || record.id !== this.selectedId || run.id !== this.selectedRunId
+      || (run.status !== "lost" && run.status !== "cancel_requested")) {
+      this.error = "PRECONDITION: 只有失联或取消待确认的执行需要核对";
+      return;
+    }
+    if (!this.actionAllowed("run.reconcile")) {
+      this.error = this.actionDenied("run.reconcile");
+      return;
+    }
+    this.overlay = {
+      kind: "reconcile", projectId: this.projectId, trackerId: record.id, runId: run.id,
+      title: record.fields.title, revision: record.revision, status: run.status, resolution: "cancelled",
+    };
+  }
+
+  private async confirmReconcile(target: Extract<Overlay, { kind: "reconcile" }>): Promise<void> {
+    this.overlay = { kind: "none" };
+    if (target.projectId !== this.projectId || target.trackerId !== this.selectedId || target.runId !== this.selectedRunId) {
+      this.error = "PRECONDITION: 核对目标已改变，请重新选择执行";
+      return;
+    }
+    await this.command("run.reconcile", {
+      trackerId: target.trackerId, runId: target.runId, resolution: target.resolution,
+    }, target.revision);
   }
 
   private async runConfirm(action: "archive" | "cancel" | "restore" | "accept" | "changes"): Promise<void> {
@@ -1450,6 +1490,20 @@ export class BabelTui {
     } else if (o.kind === "confirm") {
       title = "确认";
       body = [confirmText(o.action), "Enter 确认  n 取消"];
+    } else if (o.kind === "reconcile") {
+      title = "核对演示执行";
+      body = [
+        "取消请求或失联不代表执行已停止。",
+        "此处仅记录人工核对结果，不检测真实 Worker。",
+        `项目 ${o.projectId}`,
+        ...wrapByWidth(`条目 ${o.title}`, w - 4, 2),
+        `Tracker ${o.trackerId}`,
+        `run ${o.runId}`,
+        `状态 ${runStatusText(o.status)} · revision ${o.revision}`,
+        `结果 ${o.resolution === "cancelled" ? "已取消" : "失败"}`,
+        "仅在你已确认该演示执行终止后提交。",
+      ];
+      footer = "Tab 切换结果  Enter 确认  n/Esc 取消";
     } else if (o.kind === "diff" || o.kind === "history") {
       title = o.kind === "diff" ? "差异" : "历史";
       body = wrapByWidth(o.text, w - 4, h - 3);

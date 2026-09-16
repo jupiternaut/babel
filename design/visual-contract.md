@@ -1,6 +1,6 @@
 # Nimbalyst GUI 与 TUI：视觉及交互合同
 
-版本：候选 v3，2026-09-16。状态：对齐 v2.3 业务合同及 UI/UX 主导的 macOS 开发方向；玻璃材质尚待原生窗口验收，不是用户已批准的最终效果，也不是运行时验收记录。
+版本：候选 v3，2026-09-16。状态：对齐 v2.3 业务合同及 UI/UX 主导的 macOS 开发方向；部分原生窗口输入与材质回退已有 [运行证据](../TASK_EVIDENCE.md)，完整视觉/性能验收及用户审美签收仍待完成。本文是约束，开发与验收状态见 [TASKS](../TASKS.md)。
 
 依据：[开发 SPEC](../NIMBALYST-DEVELOPMENT-SPEC.md)、[Trackers 一一映射](../NIMBALYST-TRACKER-MAPPING.md)、[TUI/CLI 与 Hooks 契约](../NIMBALYST-TUI-HOOKS-SPEC.md)。现有 [v2 图](babel-dashboard-v2.png) 与 [生成提示词](babel-dashboard-v2-prompt.md) 用于 GUI 方向参考；本合同修正它未表达的新映射要求，并单列 TUI 基准。计划见 [视觉覆盖矩阵](UI-VISUAL-PLAN.md)，GUI 后续生成用 [逐图提示词](UI-IMAGE-PROMPTS.md)。
 

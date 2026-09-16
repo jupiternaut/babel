@@ -91,6 +91,56 @@ describe("CAP-12 hook cannot self-approve", () => {
 });
 
 describe("CAP-10 lost and cancel_pending", () => {
+  it.each([
+    ["lost", "READ_ONLY"], ["cancel_unconfirmed", "READ_ONLY"],
+    ["lost", "REVISION_CONFLICT"], ["cancel_unconfirmed", "REVISION_CONFLICT"],
+  ] as const)("rejects %s reconciliation with %s without terminating the run", async (scenario, code) => {
+    const d = domain("off");
+    const created = await command(d, "task.create", { title: "核对守卫" });
+    await command(d, "demo.inject", { scenario, trackerId: created.trackerId });
+    const initial = structuredClone(query<TaskDetail>(d, "task.get", { trackerId: created.trackerId }));
+    if (code === "READ_ONLY") {
+      d.store.transaction(data => { data.records.find(row => row.id === created.trackerId)!.system.readOnly = true; });
+    } else {
+      await command(d, "task.update", { trackerId: created.trackerId, title: "确认期间已更新" });
+    }
+    const before = structuredClone(query<TaskDetail>(d, "task.get", { trackerId: created.trackerId }));
+    const finished = d.store.data.events.filter(event => event.runId === initial.latestRun!.id && event.type === "run.finished");
+    await expectCode(() => command(d, "run.reconcile", {
+      runId: initial.latestRun!.id, resolution: "cancelled",
+    }, { expectedRevision: initial.record.revision }), code);
+    const after = query<TaskDetail>(d, "task.get", { trackerId: created.trackerId });
+    expect(after.record).toEqual(before.record);
+    expect(after.latestRun).toEqual(before.latestRun);
+    expect(after.binding).toEqual(before.binding);
+    expect(d.store.data.events.filter(event => event.runId === initial.latestRun!.id && event.type === "run.finished")).toEqual(finished);
+    if (code === "READ_ONLY") {
+      for (const input of [{ trackerId: created.trackerId }, { runId: initial.latestRun!.id }]) {
+        const caps = query<{ actions: Record<string, { allowed: boolean; code?: string }> }>(d, "capabilities.get", input);
+        expect(caps.actions["run.reconcile"]).toMatchObject({ allowed: false, code: "READ_ONLY" });
+      }
+    }
+  });
+
+  it.each(["lost", "cancel_unconfirmed"] as const)("reconciles %s once and keeps the same run unresolved", async scenario => {
+    const d = domain("off");
+    const created = await command(d, "task.create", { title: "明确核对结果" });
+    await command(d, "demo.inject", { scenario, trackerId: created.trackerId });
+    const before = structuredClone(query<TaskDetail>(d, "task.get", { trackerId: created.trackerId }));
+    const input = { runId: before.latestRun!.id, resolution: scenario === "lost" ? "failed" : "cancelled" };
+    const options = { expectedRevision: before.record.revision, idempotencyKey: "reconcile-once" };
+    await command(d, "run.reconcile", input, options);
+    await command(d, "run.reconcile", input, options);
+    const after = query<TaskDetail>(d, "task.get", { trackerId: created.trackerId });
+    expect(after.latestRun).toMatchObject({ id: input.runId, status: input.resolution });
+    expect(after.binding.outcome).toBe("unresolved");
+    expect(after.runs).toHaveLength(before.runs.length);
+    expect(after.stage).not.toBe("DONE");
+    expect(d.store.data.events.filter(event => event.runId === input.runId && event.type === "run.finished" && event.payload.reconciled === true)).toHaveLength(1);
+    const caps = query<{ actions: Record<string, { allowed: boolean; code?: string }> }>(d, "capabilities.get", { trackerId: created.trackerId });
+    expect(caps.actions["run.reconcile"]).toMatchObject({ allowed: false, code: "PRECONDITION" });
+  });
+
   it("blocks start after lost until reconcile", async () => {
     const d = domain("off");
     const created = await command(d, "task.create", { title: "失联条目" });

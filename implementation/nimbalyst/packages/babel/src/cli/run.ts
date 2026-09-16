@@ -510,6 +510,8 @@ async function dispatch(flags: CliFlags, io: CliIo): Promise<unknown> {
           runId: runIdOf(flags),
           resolution: flags.resolution ?? input.resolution,
         },
+        expectedRevision: flags.expectedRevision,
+        idempotencyKey: flags.idempotencyKey,
       }));
     }
     throw new BabelError("USAGE", `未知 run 动作 ${verb}`);

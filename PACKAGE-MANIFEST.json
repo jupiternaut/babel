@@ -34,8 +34,8 @@
     },
     {
       "path": "AGENTS.md",
-      "bytes": 12212,
-      "sha256": "01f49b5bd7c61568db637aff15bd69c0d89ecc52936f4130637d4bbdd51dafb3",
+      "bytes": 12563,
+      "sha256": "581dacec0c2f93e6f70d48aec475de32ece2e30a675b4545fdd7089266bd1210",
       "origin": {
         "kind": "copied_from_development_kit",
         "source_sha256": "8a240ebaf2b2cd160d86362dc662a712b2dd5adc80e10e965de13a63b5ad19c0",
@@ -88,8 +88,8 @@
       "origin": {
         "kind": "authored_for_handoff"
       },
-      "bytes": 12329,
-      "sha256": "102ae0183ba60a4222f9fe970fd8ff0d10e6951160a621916e7900051c02b4f8"
+      "bytes": 12416,
+      "sha256": "55d9369727b272ab52b17beaab3b58113c0f0b0b47eac90a6878b2addb8810c4"
     },
     {
       "path": "MULTI-AGENT-PLAN.md",
@@ -202,8 +202,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 8286,
-      "sha256": "1370732d717d65c2775ef8039edec2397ca6ec838a3cdc19a3109e8663a3845d",
+      "bytes": 8464,
+      "sha256": "a7f645bdbfa4b92c8329abac5891d4ba0871a10143f94e6aab1406008ba4381c",
       "origin": {
         "kind": "publication_adaptation",
         "source_sha256": "58b7531abe5795affee8cd6cf3fc3b8f40eb6f40011c177879626b6c9a851ccd",
@@ -246,8 +246,8 @@
     },
     {
       "path": "START-HERE-PROMPT.md",
-      "bytes": 7249,
-      "sha256": "54b3d789231b0b238ebafa2b81bb1831a0b133175ad03123b16ab257cb2de854",
+      "bytes": 7472,
+      "sha256": "700eb2725e48db662890a10d3b3d3b28498d7097c0847250274a6659e2b82927",
       "origin": {
         "kind": "copied_from_development_kit",
         "source_sha256": "ac441077a31489d722fc4168ff81ba9b83dfd776a3581aa1a0ff7fb0ed8324d1",
@@ -271,8 +271,8 @@
     },
     {
       "path": "TASKS.md",
-      "bytes": 599,
-      "sha256": "aa9babf73c03506811f662f7ccd6356d956711a07b39dc9aa3449c88e1c079ed",
+      "bytes": 13954,
+      "sha256": "3face0c1916b24b6e5bbd7bf67e13c8c4b9248f998c9cbcd89f19fd8ce4e9fa6",
       "origin": {
         "kind": "publication_entry_or_configuration"
       }
@@ -282,16 +282,16 @@
       "origin": {
         "kind": "macos-development-and-acceptance"
       },
-      "bytes": 14801,
-      "sha256": "ab129eee82a499135b0913b1ced488a7d322a67aa640a7119333cab1bc70a7bc"
+      "bytes": 18940,
+      "sha256": "c53d3734ef0fa690215d88055d05f7c66f2615d73d3ac0cb4b967b613054c95e"
     },
     {
       "path": "WAYLAND-DEVIN-BENCHMARK.md",
       "origin": {
         "kind": "authored_for_handoff"
       },
-      "bytes": 6111,
-      "sha256": "19586fa8dd14a4f37267425ec7d3405516db4247be83ad784323b8d271aefcf9"
+      "bytes": 6282,
+      "sha256": "19c26c8810ab1e6d9d7e84a474a381410a6e569a6f34a4a561badf3821fdc65c"
     },
     {
       "path": "decisions/ADR-001.md",
@@ -475,8 +475,8 @@
     },
     {
       "path": "design/visual-contract.md",
-      "bytes": 14481,
-      "sha256": "478e580da3c7c9a4009a181279564d92e6b9780a68c9146a3c1addc892dfdd20",
+      "bytes": 14581,
+      "sha256": "81db3625b8f8b141c175a80c3d879bf887cf524c34716bd799505e1f577dfcbc",
       "origin": {
         "kind": "copied_from_development_kit",
         "source_sha256": "8a73fdfd29b50c2646def272504e015fa18ef3ba5ec3a70ffe5e2bcde0463114",

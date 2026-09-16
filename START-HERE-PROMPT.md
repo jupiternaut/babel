@@ -8,6 +8,7 @@
 
 ```text
 请在 macOS 的巴别塔仓库检出目录继续开发现有产品，建议 ~/Projects/babel。
+先读 TASKS.md，选择尚未完成的任务 ID；开发后登记实现与自测，验收会话检查真实程序后再勾“验收通过”，附提交、平台和证据。两个标记分开，部分通过不勾整行。
 先读 MACOS-DEVELOPMENT-HANDOFF.md 和 WAYLAND-DEVIN-BENCHMARK.md。资料留在根目录，源码在 implementation/nimbalyst/，依赖和独立 profile 使用本机配置路径。
 以当前验收记录确定缺口，不把下面历史 M0 的实施顺序当成重写现有功能的要求；目标是成品，演示验收与真实能力分别登记。
 

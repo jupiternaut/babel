@@ -43,7 +43,7 @@ export const HELP_TEXT = `babel — 巴别塔 M0 非交互 CLI（演示数据，
   babel run respond --project <id> --id <runId> --request <requestId> --input answer.json --json
   babel run cancel --project <id> --id <runId> --json
   babel run retry --project <id> --task <trackerId> --json
-  babel run reconcile --project <id> --id <runId> --input resolve.json --json
+  babel run reconcile --project <id> --id <runId> --input resolve.json --expected-revision N --idempotency-key <key> --json
   babel review accept --project <id> --run <runId> --expected-revision N --json
   babel review request-changes --project <id> --run <runId> --input note.json --json
   babel history get --project <id> --id <trackerId> --json

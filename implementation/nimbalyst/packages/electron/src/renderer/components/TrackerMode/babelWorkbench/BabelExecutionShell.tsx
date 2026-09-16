@@ -1,5 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useId, useState } from 'react';
+import { FloatingFocusManager, FloatingPortal, useDismiss, useFloating, useInteractions, useRole } from '@floating-ui/react';
 import type { BabelDemoTrackerDataSource } from '../../../services/BabelDemoTrackerDataSource';
+import { ConfirmDialog } from '../../ConfirmDialog/ConfirmDialog';
 import { BabelRunActionBar } from '../BabelRunControls';
 import {
   getWorkbenchTab,
@@ -114,6 +116,18 @@ const BabelExecutionShellInner: React.FC<{
 
       <div className="babel-detail-actions shrink-0">
         <BabelRunActionBar actions={actions} trackerId={trackerId} layout="panel" />
+        {!viewingOld && latest && (latest.status === 'lost' || latest.status === 'cancel_requested') ? (
+          <ReconcileRunControl
+            key={JSON.stringify([dataSource.endpoint, dataSource.projectId, trackerId, latest.id, latest.status, actions.detail?.revision])}
+            runId={latest.id}
+            busy={actions.busy}
+            disabledReason={actions.detail?.readOnly ? '只读条目不能核对执行'
+              : !Number.isInteger(actions.detail?.revision) ? '当前版本尚未确认，请刷新后再核对'
+                : actions.caps['run.reconcile']?.allowed !== true
+                  ? actions.caps['run.reconcile']?.reason ?? '核对权限尚未确认' : undefined}
+            onReconcile={actions.reconcile}
+          />
+        ) : null}
       </div>
 
       <div className="babel-detail-tabs flex shrink-0 overflow-x-auto" role="tablist" aria-label="任务工作流">
@@ -197,6 +211,74 @@ const BabelExecutionShellInner: React.FC<{
     </aside>
   );
 };
+
+function ReconcileRunControl({ runId, busy, disabledReason, onReconcile }: {
+  runId: string;
+  busy: boolean;
+  disabledReason?: string;
+  onReconcile: (resolution: 'cancelled' | 'failed') => Promise<void>;
+}) {
+  const fieldId = useId();
+  const [resolution, setResolution] = useState<'cancelled' | 'failed'>('cancelled');
+  const [confirmation, setConfirmation] = useState<{
+    resolution: 'cancelled' | 'failed';
+    submit: () => Promise<void>;
+  } | null>(null);
+  const { refs, context } = useFloating({
+    open: Boolean(confirmation),
+    onOpenChange: (open) => { if (!open) setConfirmation(null); },
+  });
+  const dismiss = useDismiss(context, { outsidePress: false });
+  const role = useRole(context, { role: 'dialog' });
+  const { getReferenceProps, getFloatingProps } = useInteractions([dismiss, role]);
+  const disabled = busy || Boolean(disabledReason);
+
+  return (
+    <section className="babel-run-reconcile mt-2 flex flex-col gap-2 rounded border border-nim bg-nim-secondary p-2 text-[12px] text-nim">
+      <p className="text-nim-muted">失联或取消待确认不表示执行已停止。核对只记录演示结果。</p>
+      <div className="flex flex-wrap items-center gap-2">
+        <label htmlFor={fieldId}>核对结果</label>
+        <select
+          id={fieldId}
+          value={resolution}
+          disabled={disabled}
+          onChange={(event) => setResolution(event.target.value as 'cancelled' | 'failed')}
+          className="min-h-8 rounded border border-nim bg-nim px-2 text-nim"
+        >
+          <option value="cancelled">已取消</option>
+          <option value="failed">失败</option>
+        </select>
+        <button
+          ref={refs.setReference}
+          type="button"
+          disabled={disabled}
+          className="nim-btn-secondary min-h-8 disabled:cursor-not-allowed disabled:opacity-50"
+          {...getReferenceProps({ onClick: () => setConfirmation({ resolution, submit: () => onReconcile(resolution) }) })}
+        >
+          核对演示执行
+        </button>
+      </div>
+      {disabledReason ? <p className="text-nim-muted">{disabledReason}</p> : null}
+      {confirmation ? (
+        <FloatingPortal>
+          <FloatingFocusManager context={context} modal outsideElementsInert>
+            <div className="babel-workbench babel-reconcile-dialog" ref={refs.setFloating} {...getFloatingProps({ 'aria-label': '确认核对演示执行' })}>
+              <ConfirmDialog
+                isOpen
+                title="确认核对演示执行"
+                message={`将演示执行 ${runId} 标记为${confirmation.resolution === 'cancelled' ? '已取消' : '失败'}。此操作不检测或终止真实 Worker，不能作为真实执行已停止的证明。`}
+                confirmLabel={`确认标记为${confirmation.resolution === 'cancelled' ? '已取消' : '失败'}`}
+                cancelLabel="返回"
+                onCancel={() => setConfirmation(null)}
+                onConfirm={() => { setConfirmation(null); void confirmation.submit(); }}
+              />
+            </div>
+          </FloatingFocusManager>
+        </FloatingPortal>
+      ) : null}
+    </section>
+  );
+}
 
 function SessionPane({
   shown,

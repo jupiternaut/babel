@@ -321,6 +321,27 @@
   border-radius: 8px;
 }
 
+.babel-reconcile-dialog .confirm-dialog-overlay {
+  padding: 16px;
+}
+
+.babel-reconcile-dialog .confirm-dialog {
+  width: min(500px, calc(100vw - 32px));
+  min-width: 0;
+  max-width: 100%;
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.babel-reconcile-dialog .confirm-dialog-message {
+  overflow-wrap: anywhere;
+}
+
+.babel-reconcile-dialog .confirm-dialog-buttons {
+  flex-wrap: wrap;
+}
+
 .babel-workbench :is(button, [role='button'], textarea, input, select, summary):focus-visible {
   outline: 2px solid var(--nim-border-focus);
   outline-offset: 2px;

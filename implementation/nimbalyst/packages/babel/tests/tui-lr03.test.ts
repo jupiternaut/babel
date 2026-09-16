@@ -68,6 +68,100 @@ function stripAnsi(text: string): string {
   return text.replace(/\x1b\[[0-9;]*[A-Za-z]/g, "");
 }
 
+async function pendingReconciliation(status: "lost" | "cancel_requested") {
+  const session = await startHeadless();
+  const created = await command(session.domain, "task.create", { title: "终止核对测试" });
+  const started = await command(session.domain, "run.start", { trackerId: created.trackerId });
+  if (status === "lost") await command(session.domain, "demo.inject", { runId: started.runId, scenario: "lost" });
+  else await command(session.domain, "run.cancel", { runId: started.runId, hold: true });
+  session.tui.feed("/终止核对测试\r");
+  await waitUntil(() => session.tui.inspect().selectedRunId === started.runId);
+  return { ...session, trackerId: created.trackerId!, runId: started.runId! };
+}
+
+function openReconcile(tui: BabelTui, mouse = false): void {
+  tui.feed("o");
+  const index = tui.inspect().menuItems.findIndex(item => item.id === "reconcile");
+  expect(index).toBeGreaterThanOrEqual(0);
+  expect(stripAnsi(tui.inspect().frame)).toContain(tui.inspect().menuItems[index]!.label.trim());
+  if (mouse) {
+    const hit = tui.inspect().hits.find(row => row.action === "menuitem" && row.id === String(index))!;
+    tui.feedEvent({ type: "mouse", kind: "down", button: 0, x: hit.x + 1, y: hit.y + 1, wheel: 0 });
+  } else {
+    for (let i = 0; i < index; i++) tui.feedEvent({ type: "key", name: "down", raw: "\x1b[B", ctrl: false, shift: false });
+    tui.feed("\r");
+  }
+  expect(tui.inspect().overlay).toBe("reconcile");
+}
+
+describe("CAP-10 TUI explicit termination reconciliation", () => {
+  it.each(["lost", "cancel_requested"] as const)("requires confirmation for %s and never submits when dismissed", async status => {
+    const { tui, http, domain, trackerId, runId } = await pendingReconciliation(status);
+    const send = vi.spyOn(http, "command");
+    const revision = query<TaskDetail>(domain, "task.get", { trackerId }).record.revision;
+    const runCount = domain.store.data.runs.length;
+    openReconcile(tui);
+    const frame = stripAnsi(tui.inspect().frame);
+    for (const target of [PROJECT, trackerId, runId]) expect(frame).toContain(target);
+    expect(frame).toContain("不代表执行已停止");
+    expect(frame).toContain("不检测真实 Worker");
+    expect(send).not.toHaveBeenCalled();
+    tui.feedEvent({ type: "key", name: "escape", raw: "\x1b", ctrl: false, shift: false });
+    expect(tui.inspect().overlay).toBe("none");
+    openReconcile(tui, true);
+    tui.feed("n");
+    expect(tui.inspect().overlay).toBe("none");
+    expect(send).not.toHaveBeenCalled();
+    expect(query<TaskDetail>(domain, "task.get", { trackerId }).latestRun?.status).toBe(status);
+    openReconcile(tui);
+    const resolution = status === "lost" ? "failed" : "cancelled";
+    if (resolution === "failed") tui.feedEvent({ type: "key", name: "tab", raw: "\t", ctrl: false, shift: false });
+    tui.feed("\r");
+    await waitUntil(() => query<TaskDetail>(domain, "task.get", { trackerId }).latestRun?.status === resolution);
+    expect(send).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
+      name: "run.reconcile", projectId: PROJECT, expectedRevision: revision,
+      input: { trackerId, runId, resolution },
+    }));
+    expect(domain.store.data.runs.length).toBe(runCount);
+    expect(query<TaskDetail>(domain, "task.get", { trackerId }).stage).toBe("RUNNING");
+  });
+
+  it.each(["READ_ONLY", "REVISION_CONFLICT", "PRECONDITION", "PERMISSION"])("preserves authoritative state when confirmation is rejected with %s", async code => {
+    const { tui, http, domain, trackerId, runId } = await pendingReconciliation("cancel_requested");
+    openReconcile(tui);
+    if (code === "READ_ONLY") domain.store.transaction(data => { data.records.find(row => row.id === trackerId)!.system.readOnly = true; });
+    else if (code === "REVISION_CONFLICT") await command(domain, "task.update", { trackerId, title: "另一客户端的新标题" });
+    else if (code === "PRECONDITION") domain.store.transaction(data => { data.runs.find(row => row.id === runId)!.status = "executing"; });
+    else {
+      // Model a changed authenticated identity at the transport boundary; the
+      // real domain still decides permission and must not commit the command.
+      vi.spyOn(http, "command").mockImplementation(request => domain.command({
+        ...request, actor: { ...DEMO_ACTOR, projectIds: ["another-project"] },
+      }));
+    }
+    const before = structuredClone(query<TaskDetail>(domain, "task.get", { trackerId }));
+    const events = domain.store.data.events.length;
+    tui.feed("\r");
+    await waitUntil(() => (tui.inspect().error ?? "").startsWith(`${code}:`));
+    expect(query<TaskDetail>(domain, "task.get", { trackerId })).toEqual(before);
+    expect(domain.store.data.events.length).toBe(events);
+  });
+
+  it("does not apply an open confirmation to a newly selected run", async () => {
+    const { tui, http, domain, trackerId, runId } = await pendingReconciliation("lost");
+    openReconcile(tui);
+    await command(domain, "run.reconcile", { runId, resolution: "failed" });
+    const next = await command(domain, "run.start", { trackerId });
+    await tui.reconnectNow();
+    expect(tui.inspect().selectedRunId).toBe(next.runId);
+    const send = vi.spyOn(http, "command");
+    tui.feed("\r");
+    expect(tui.inspect().error).toContain("核对目标已改变");
+    expect(send).not.toHaveBeenCalled();
+    expect(query<TaskDetail>(domain, "task.get", { trackerId }).latestRun?.status).toBe("accepted");
+  });
+});
+
 describe("TUI LR-03 discoverable entries", () => {
   it("filters attention through the shared projection, preserves four stages and replays events without duplicate cards", async () => {
     const { tui, http, domain, endpoint } = await startHeadless();
