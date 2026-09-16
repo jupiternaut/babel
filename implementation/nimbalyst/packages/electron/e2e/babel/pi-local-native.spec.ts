@@ -176,7 +176,8 @@ test('local Pi protocol double: native start, real PTY session, CLI identity and
     terminal.write('F');
     await expect.poll(() => stripAnsi(output)).toContain(`记录 ${id}`);
     output = '';
-    terminal.write('\x1b');
+    // The terminal decoder waits for another byte to disambiguate bare Escape.
+    terminal.write('\x1b ');
     await expect.poll(() => stripAnsi(output)).toContain('S 查看会话输入与输出');
     output = '';
     terminal.write('S');
