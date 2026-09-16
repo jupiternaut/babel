@@ -1,0 +1,216 @@
+Command: npm run test:prepush
+Platform: Windows / Node 24.12
+Result: 13849 passed, 206 failed, 26 skipped, 1 unhandled error.
+No clean-upstream comparison: attribution remains unverified.
+This is a selected failure index, not the complete console log.
+
+ FAIL  |node| packages/node/src/__tests__/credentials.test.ts > node credential refresh > persists the rotated refresh token before reporting the refresh complete
+ FAIL  |node| packages/node/src/__tests__/credentials.test.ts > node credential refresh > treats HTTP 400 as revoked and never retries the rejected token
+ FAIL  |node| packages/node/src/__tests__/credentials.test.ts > node credential refresh > takes the expiry from the token, not from expires_in against our own clock
+ FAIL  |node| packages/node/src/__tests__/credentials.test.ts > node credential refresh > re-derives a stored token's expiry instead of trusting the number beside it
+ FAIL  |node| packages/node/src/__tests__/credentials.test.ts > node credential refresh > marks the rotation in flight on disk BEFORE presenting the token
+ FAIL  |node| packages/node/src/__tests__/credentials.test.ts > node credential refresh > never replays a rotation a previous process left in flight
+ FAIL  |node| packages/node/src/__tests__/credentials.test.ts > node credential refresh > is terminal, not transient, when the rotated credential cannot be stored
+ FAIL  |node| packages/node/src/__tests__/credentials.test.ts > node credential refresh > retries a connection that was refused before the request could be sent
+ FAIL  |node| packages/node/src/__tests__/credentials.test.ts > node credential refresh > will not retry a request that may already have reached the server
+ FAIL  |node| packages/node/src/__tests__/credentials.test.ts > node credential refresh > treats a 503 as uncertain, because the server mints the token AFTER rotating
+ FAIL  |node| packages/node/src/__tests__/credentials.test.ts > node credential refresh > treats a 2xx it cannot use as uncertain rather than retrying it
+ FAIL  |node| packages/node/src/__tests__/credentials.test.ts > node credential refresh > does not read a 400 without a revocation code as a confirmed revocation
+ FAIL  |node| packages/node/src/__tests__/serveParts.test.ts > repo checkout > clones on first sight and fast-forwards afterwards, never through a shell
+ FAIL  |node| packages/node/src/__tests__/serveParts.test.ts > repo checkout > confines the checkout to its root, including through a symlink
+ FAIL  |node| packages/node/src/__tests__/workspaceContext.test.ts > lists the selected checkout and expands only its bounded explicit command catalog
+ FAIL  |node| packages/cli/src/db/__tests__/nativeBinding.test.ts > bundled channel binding resolution > opens a database through the binding inside the app Resources
+ FAIL  |node| packages/cli/src/db/__tests__/nativeBinding.test.ts > NIMBALYST_BETTER_SQLITE3_NATIVE > rejects a path that does not exist instead of handing it to the loader
+ FAIL  |node| packages/cli/src/gateway/__tests__/DirectGateway.test.ts > DirectGateway reads > runs the ready command over a full personal corpus before filtering
+ FAIL  |node| packages/cli/src/gateway/__tests__/DirectGateway.test.ts > DirectGateway reads > carries the machine-private caveat through -q, --csv and the table, once and only when earned
+ FAIL  |node| packages/cli/src/gateway/__tests__/DirectGateway.test.ts > DirectGateway reads > renders a title carrying terminal control sequences without them reaching the terminal
+ FAIL  |node| packages/cli/src/gateway/__tests__/DirectGateway.test.ts > DirectGateway reads > neutralizes csv formula cells without mangling ordinary numbers
+ FAIL  |node| packages/electron/src/main/__tests__/HistoryManager.multiRoot.test.ts > HistoryManager across multiple workspace roots > counts pending files under an attached folder
+ FAIL  |node| packages/electron/src/main/__tests__/HistoryManager.multiRoot.test.ts > HistoryManager across multiple workspace roots > lists a session pending file under an attached folder
+ FAIL  |node| packages/electron/src/main/__tests__/HistoryManager.multiRoot.test.ts > HistoryManager across multiple workspace roots > clears pending tags under an attached folder and leaves other roots alone
+ FAIL  |node| packages/electron/src/main/__tests__/HistoryManager.multiRoot.test.ts > HistoryManager across multiple workspace roots > still scopes to a single path when the workspace has no attached folders
+ FAIL  |node| packages/electron/src/main/file/__tests__/FileSnapshotCache.test.ts > FileSnapshotCache > startSession - git repo > should cache dirty files from git status
+ FAIL  |node| packages/electron/src/main/file/__tests__/FileSnapshotCache.test.ts > FileSnapshotCache > getBeforeState > should use git show for clean tracked files not in cache (tier 2)
+ FAIL  |node| packages/electron/src/main/file/__tests__/FileSnapshotCache.test.ts > FileSnapshotCache > getBeforeState > should resolve baseline through realpath when workspace path differs (symlink/casing)
+ FAIL  |node| packages/electron/src/main/file/__tests__/FileSnapshotCache.test.ts > FileSnapshotCache > getBeforeState > should cache git show results for subsequent lookups
+ FAIL  |node| packages/electron/src/main/file/__tests__/FileSnapshotCache.test.ts > FileSnapshotCache > hasSnapshot > returns true only for files in tier-1 in-memory cache, never via tier-2 git fallback
+ FAIL  |node| packages/electron/src/main/file/__tests__/safeFileWrite.test.ts > writeFileAtomicSync > preserves the file mode
+ FAIL  |node| packages/electron/src/main/file/__tests__/safeFileWrite.test.ts > writeFileAtomicSync > writes through a symlink instead of replacing it
+ FAIL  |node| packages/electron/src/main/file/__tests__/WorkspaceEventBus-circuit-breaker.test.ts > WorkspaceEventBus circuit breaker teardown (#629) > recovers delivery to the original subscriber after a storm (#1499)
+ FAIL  |node| packages/electron/src/main/file/__tests__/WorkspaceEventBus-gitignore-bypass.test.ts > WorkspaceEventBus gitignore bypass > bypass set management > keeps an open-file bypass when legacy/session ownership is cleared
+ FAIL  |node| packages/electron/src/main/file/__tests__/WorkspaceEventBus-gitignore-bypass.test.ts > WorkspaceEventBus gitignore bypass > bypass set management > adds and removes bypass paths
+ FAIL  |node| packages/electron/src/main/file/__tests__/WorkspaceEventBus-gitignore-bypass.test.ts > WorkspaceEventBus gitignore bypass > event dispatch with bypass > reloads the workspace .gitignore matcher when the file changes
+ FAIL  |node| packages/electron/src/main/file/__tests__/WorkspaceEventBus-gitignore-bypass.test.ts > WorkspaceEventBus gitignore bypass > event dispatch with bypass > dispatches non-gitignored events without bypass flag
+ FAIL  |node| packages/electron/src/main/file/__tests__/WorkspaceEventBus-gitignore-bypass.test.ts > WorkspaceEventBus gitignore bypass > event dispatch with bypass > dispatches bypassed gitignored events with flag
+ FAIL  |node| packages/electron/src/main/file/__tests__/WorkspaceEventBus-gitignore-bypass.test.ts > WorkspaceEventBus gitignore bypass > event dispatch with bypass > dispatches .md files in gitignored dirs with bypass flag
+ FAIL  |node| packages/electron/src/main/file/__tests__/WorkspaceEventBus-gitignore-bypass.test.ts > WorkspaceEventBus gitignore bypass > event dispatch with bypass > handles rename events (add/unlink) with bypass
+ FAIL  |node| packages/electron/src/main/file/__tests__/WorkspaceEventBus-gitignore-bypass.test.ts > WorkspaceEventBus gitignore bypass > event dispatch with bypass > retries rename events before treating a delayed file as unlink
+ FAIL  |node| packages/electron/src/main/file/__tests__/WorkspaceEventBus-gitignore-bypass.test.ts > WorkspaceEventBus gitignore bypass > replay buffer > replays dropped events when bypass is registered
+ FAIL  |node| packages/electron/src/main/file/__tests__/WorkspaceEventBus-gitignore-bypass.test.ts > WorkspaceEventBus gitignore bypass > gitignored structure events for tree refresh > dispatches gitignored add events to opt-in listeners with bypassed=true
+ FAIL  |node| packages/electron/src/main/file/__tests__/WorkspaceEventBus-gitignore-bypass.test.ts > WorkspaceEventBus gitignore bypass > gitignored structure events for tree refresh > dispatches gitignored unlink events to opt-in listeners with bypassed=true
+ FAIL  |node| packages/electron/src/main/file/__tests__/WorkspaceEventBus-nested-gitignore.test.ts > WorkspaceEventBus nested-repo .gitignore (issue #207) > drops content events for files inside a nested-repo gitignored dir
+ FAIL  |node| packages/electron/src/main/file/__tests__/WorkspaceEventBus-nested-gitignore.test.ts > WorkspaceEventBus nested-repo .gitignore (issue #207) > reloads a nested repo .gitignore when it changes on disk
+ FAIL  |node| packages/electron/src/main/file/__tests__/WorkspaceEventBus-nested-gitignore.test.ts > WorkspaceEventBus nested-repo .gitignore (issue #207) > does not deliver structure events for nested-ignored paths to listeners that did not opt in
+ FAIL  |node| packages/electron/src/main/file/__tests__/WorkspaceEventBus-nested-gitignore.test.ts > WorkspaceEventBus nested-repo .gitignore (issue #207) > delivers structure events for nested-ignored paths to listeners that opt in
+ FAIL  |node| packages/electron/src/main/protocols/__tests__/nimAssetProtocol.test.ts > nimAssetProtocol > validateNimAssetPath > accepts a PNG inside the first allowlisted root
+ FAIL  |node| packages/electron/src/main/protocols/__tests__/nimAssetProtocol.test.ts > nimAssetProtocol > validateNimAssetPath > accepts a JPG inside another allowlisted root
+ FAIL  |node| packages/electron/src/main/protocols/__tests__/nimAssetProtocol.test.ts > nimAssetProtocol > validateNimAssetPath > accepts each image extension in the allowlist
+ FAIL  |node| packages/electron/src/main/protocols/__tests__/nimAssetProtocol.test.ts > nimAssetProtocol > validateNimAssetPath > normalizes the file extension comparison case-insensitively
+ FAIL  |node| packages/electron/src/main/protocols/__tests__/nimAssetProtocol.test.ts > nimAssetProtocol > validateNimAssetPath > accepts the root itself if the root is the file (edge case, won't happen in practice)
+ FAIL  |node| packages/electron/src/main/protocols/__tests__/nimAssetProtocol.test.ts > nimAssetProtocol > validateNimAssetPath > serves .mp4 so video can be opened, but still rejects other binaries
+ FAIL  |node| packages/electron/src/main/protocols/__tests__/nimAssetWorktreeRoots.test.ts > a registered worktree root makes the image servable (#1343) > is accepted once the worktree root is registered -- the fix
+ FAIL  |node| packages/electron/src/main/protocols/__tests__/nimPreviewProtocol.test.ts > nimPreviewProtocol > encodeNimPreviewUrl > produces a credential-free URL with the lowercase-hex root as host
+ FAIL  |node| packages/electron/src/main/protocols/__tests__/nimPreviewProtocol.test.ts > nimPreviewProtocol > encodeNimPreviewUrl > preserves the workspace root for page-relative asset URLs
+ FAIL  |node| packages/electron/src/main/protocols/__tests__/nimPreviewProtocol.test.ts > nimPreviewProtocol > encodeNimPreviewUrl > preserves the workspace root for root-relative asset URLs
+ FAIL  |node| packages/electron/src/main/protocols/__tests__/nimPreviewProtocol.test.ts > nimPreviewProtocol > validateNimPreviewPath > accepts an HTML file directly under an allowlisted root
+ FAIL  |node| packages/electron/src/main/protocols/__tests__/nimPreviewProtocol.test.ts > nimPreviewProtocol > validateNimPreviewPath > accepts nested asset paths
+ FAIL  |node| packages/electron/src/main/security/__tests__/SafePathValidator.test.ts > SafePathValidator Security Tests > Valid Path Handling > should normalize redundant path elements
+ FAIL  |node| packages/electron/src/main/security/__tests__/SafePathValidator.test.ts > SafePathValidator Security Tests > Logging Safety > should not expose full paths in safe log paths
+ FAIL  |node| packages/electron/src/main/security/__tests__/SafePathValidator.test.ts > SafePathValidator Security Tests > System Path Detection > should throw error if workspace is in system directory
+ FAIL  |node| packages/electron/src/main/ipc/__tests__/BrowserSessionHandlers.test.ts > getBrowserTranscriptImageDir > stores transcript screenshots under a durable .nimbalyst subdirectory
+ FAIL  |node| packages/electron/src/main/ipc/__tests__/BrowserSessionHandlers.test.ts > getBrowserTranscriptImageDir > normalizes the workspace path before joining the transcript image directory
+ FAIL  |node| packages/electron/src/main/ipc/__tests__/GitHandlers.test.ts > working tree mutations > does not expand a pathspec-magic filename while discarding changes
+ FAIL  |node| packages/electron/src/main/ipc/__tests__/SessionFileHandlers.toolDiffScope.test.ts > session:file-diff path resolution > resolves a workspace-relative path against the workspace
+ FAIL  |node| packages/electron/src/main/utils/__tests__/dialogPaths.test.ts > dialogPaths > resolves relative suggested paths under the contextual directory
+ FAIL  |node| packages/electron/src/main/utils/__tests__/dialogPaths.test.ts > dialogPaths > retains the filename while applying a suggested name
+ FAIL  |node| packages/electron/src/main/utils/__tests__/fileUtils.secrets.test.ts > secret file storage > reads a secret stored under the legacy name
+ FAIL  |node| packages/electron/src/main/utils/__tests__/fileUtils.secrets.test.ts > secret file storage > copies a legacy secret forward without removing the original
+ FAIL  |node| packages/electron/src/main/utils/__tests__/fileUtils.secrets.test.ts > secret file storage > does not adopt a legacy file whose contents will not decrypt
+ FAIL  |node| packages/electron/src/main/utils/__tests__/fileUtils.secrets.test.ts > secret file storage > prefers the current scheme over a stale legacy file
+ FAIL  |node| packages/electron/src/main/utils/__tests__/fileUtils.secrets.test.ts > secret file storage > removes a superseded legacy file once the new write has landed
+ FAIL  |node| packages/electron/src/main/utils/__tests__/fileUtils.secrets.test.ts > secret file storage > keeps the legacy file when the new write fails
+ FAIL  |node| packages/electron/src/main/utils/__tests__/fileUtils.secrets.test.ts > secret file storage > deletes both names so no decryptable copy survives
+ FAIL  |node| packages/electron/src/main/utils/__tests__/privateSettingsStore.test.ts > keeps new and repaired files private across independent writers and unrelated saves
+ FAIL  |node| packages/electron/src/main/utils/__tests__/privateSettingsStore.test.ts > refuses to follow a settings symlink or broaden a read-only owner mode
+ FAIL  |node| packages/electron/src/main/utils/__tests__/protocolRegistration.test.ts > planProtocolRegistration > still registers on macOS when NIMBALYST_DEV_PROTOCOL forces it
+ FAIL  |node| packages/electron/src/main/utils/__tests__/protocolRegistration.test.ts > planProtocolRegistration > registers with execPath and app path for an unpackaged Windows or Linux run
+ FAIL  |node| packages/electron/src/main/utils/__tests__/store.attachedFolders.test.ts > attached folders > defaults to no attachments and a single root
+ FAIL  |node| packages/electron/src/main/utils/__tests__/store.attachedFolders.test.ts > attached folders > attaches a folder and orders roots primary-first
+ FAIL  |node| packages/electron/src/main/utils/__tests__/store.attachedFolders.test.ts > attached folders > rejects the primary root and duplicates instead of double-attaching
+ FAIL  |node| packages/electron/src/main/utils/__tests__/store.attachedFolders.test.ts > attached folders > detaches without disturbing the other roots
+ FAIL  |node| packages/electron/src/main/utils/__tests__/store.attachedFolders.test.ts > attached folders > preserves a persisted list longer than the current cap
+ FAIL  |node| packages/electron/src/main/utils/__tests__/store.attachedFolders.test.ts > attached folders > drops malformed and self-referential entries from persisted state
+ FAIL  |node| packages/electron/src/main/utils/__tests__/workspaceDetection.test.ts > findNearestAncestor > returns the start path itself when it matches
+ FAIL  |node| packages/electron/src/main/utils/__tests__/workspaceDetection.test.ts > findNearestAncestor > walks up to the nearest matching ancestor (subfolder cascade)
+ FAIL  |node| packages/electron/src/main/utils/__tests__/workspaceDetection.test.ts > findNearestAncestor > returns the most specific matching ancestor when several match
+ FAIL  |node| packages/electron/src/main/utils/__tests__/workspaceDetection.test.ts > findNearestAncestor > handles empty input and trailing slashes
+ FAIL  |node| packages/electron/src/main/utils/__tests__/workspaceDetection.test.ts > findNearestAncestor > stopAt boundary > still returns a match found at or below the boundary
+ FAIL  |node| packages/electron/src/main/utils/__tests__/workspaceDetection.test.ts > findNearestAncestor > stopAt boundary > returns the nearer match even when a farther one also matches
+ FAIL  |node| packages/electron/src/main/services/__tests__/ElectronDocumentService.frontmatterCompatibility.test.ts > ElectronDocumentService frontmatter compatibility > lists metadata-only full-document plans under their canonical public id
+ FAIL  |node| packages/electron/src/main/services/__tests__/ElectronFileSystemService.test.ts > ElectronFileSystemService > searchFiles > should search files using ripgrep
+ FAIL  |node| packages/electron/src/main/services/__tests__/ElectronFileSystemService.test.ts > ElectronFileSystemService > listFiles > should list files with pattern using glob
+ FAIL  |node| packages/electron/src/main/services/__tests__/GitOperationLock.test.ts > GitOperationLock > serializes callers that spell the same repository differently
+ FAIL  |node| packages/electron/src/main/services/__tests__/HeadlessAgentMcpConfigService.test.ts > HeadlessAgentMcpConfigService.sync > creates the home file 0600, and leaves an existing file its own mode
+ FAIL  |node| packages/electron/src/main/services/__tests__/MetaAgentService.fullResponse.test.ts > MetaAgentService buildSessionResultData editedFiles dedupe (#1244) > reports each edited path once, in first-edit order, however many edit events it has
+ FAIL  |node| packages/electron/src/main/services/__tests__/MetaAgentService.fullResponse.test.ts > MetaAgentService buildSessionResultData editedFiles dedupe (#1244) > collapses distinct absolute paths that resolve to the same workspace-relative path
+ FAIL  |node| packages/electron/src/main/services/__tests__/ProjectFileService.test.ts > ProjectFileService > keys dirty checks and receipt paths on the caller root spelling, not the realpath
+ FAIL  |node| packages/electron/src/main/services/__tests__/ProjectFileService.test.ts > ProjectFileService > rejects workspace escape and symlink escape
+ FAIL  |node| packages/electron/src/main/services/__tests__/StytchAuthService.test.ts > StytchAuthService personal JWT scope guard > does not expose an ambient team-org JWT as a personal JWT
+ FAIL  |node| packages/electron/src/main/services/__tests__/StytchAuthService.test.ts > StytchAuthService explicit add-account intent regression > keeps the expired sync account selected when an add-account callback succeeds
+ FAIL  |node| packages/electron/src/main/services/__tests__/StytchAuthService.test.ts > StytchAuthService auth callback intent matrix > sign-in creates the first account and selects it for sync
+ FAIL  |node| packages/electron/src/main/services/__tests__/StytchAuthService.test.ts > StytchAuthService auth callback intent matrix > add-account appends a new org without changing singleton or sync stores
+ FAIL  |node| packages/electron/src/main/services/__tests__/StytchAuthService.test.ts > StytchAuthService auth callback intent matrix > add-account refreshes an existing org in place without changing singleton stores
+ FAIL  |node| packages/electron/src/main/services/__tests__/StytchAuthService.test.ts > StytchAuthService auth callback intent matrix > add-account on the sync account itself refreshes the singleton state without repointing sync
+ FAIL  |node| packages/electron/src/main/services/__tests__/StytchAuthService.test.ts > StytchAuthService auth callback intent matrix > reauth updates singleton state only for the sync account
+ FAIL  |node| packages/electron/src/main/services/__tests__/StytchAuthService.test.ts > StytchAuthService auth callback intent matrix > rejects a reauth callback from a different member of the target org
+ FAIL  |node| packages/electron/src/main/services/__tests__/StytchAuthService.test.ts > StytchAuthService auth callback intent matrix > rejects an add-account callback from a different member of a stored org
+ FAIL  |node| packages/electron/src/main/services/__tests__/StytchAuthService.test.ts > StytchAuthService auth callback intent matrix > accepts a refresh for a legacy account with no bound member and backfills it
+ FAIL  |node| packages/electron/src/main/services/__tests__/StytchAuthService.test.ts > StytchAuthService auth callback intent matrix > reauth updates only the accounts map for a secondary account
+ FAIL  |node| packages/electron/src/main/services/__tests__/StytchAuthService.test.ts > StytchAuthService sync-account persistence > loads the legacy primaryAccountId key as the sync account and rewrites the renamed key
+ FAIL  |node| packages/electron/src/main/services/__tests__/StytchAuthService.test.ts > StytchAuthService account refresh outcome classification > classifies an unreachable sync server as a network failure for a non-sync account
+ FAIL  |node| packages/electron/src/main/services/__tests__/StytchAuthService.test.ts > StytchAuthService account refresh outcome classification > classifies a server-confirmed rejection as an auth failure for a non-sync account
+ FAIL  |node| packages/electron/src/main/services/__tests__/StytchAuthService.test.ts > StytchAuthService account refresh outcome classification > returns the fresh JWT on success
+ FAIL  |node| packages/electron/src/main/services/__tests__/StytchAuthService.test.ts > StytchAuthService account refresh outcome classification > brands an account refresh as personal only when the refreshed org is the personal org
+ FAIL  |node| packages/electron/src/main/services/__tests__/StytchAuthService.test.ts > StytchAuthService account refresh outcome classification > refuses to launder a team-scoped account refresh into a personal JWT
+ FAIL  |node| packages/electron/src/main/services/__tests__/StytchAuthService.test.ts > StytchAuthService account refresh outcome classification > propagates the transport classification through the personal-account wrapper
+ FAIL  |node| packages/electron/src/main/services/__tests__/TeamService.accountOrgBinding.test.ts > TeamService account-to-org viewer binding > keeps the workspace org JWT bound when the sync account changes through setSyncAccount
+ FAIL  |node| packages/electron/src/main/services/__tests__/TeamService.accountOrgBinding.test.ts > TeamService account-to-org viewer binding > persists the exchanged session token for the account that owns the exchange
+ FAIL  |node| packages/electron/src/main/services/__tests__/TeamService.accountOrgBinding.test.ts > TeamService account-to-org viewer binding > does not overwrite the sync account token when a secondary account exchanges
+ FAIL  |node| packages/electron/src/main/services/__tests__/WorkspaceFileEditAttributionService.test.ts > WorkspaceFileEditAttributionService > drops pooled listener events workspace-wide while app-server attribution is disabled
+ FAIL  |node| packages/electron/src/main/mcp/tools/__tests__/collabReadToolHandlers.test.ts > readResourceSharingStatus > resolves a relative file sourceId against the workspace before looking up its binding
+ FAIL  |node| packages/electron/src/main/services/ai/__tests__/claudeCliJsonlPath.test.ts > claudeCliJsonlPath > resolveClaudeCliJsonlPath > builds <config dir>/projects/<encoded-cwd>/<sessionId>.jsonl
+ FAIL  |node| packages/electron/src/main/services/ai/__tests__/ClaudeCliSessionLauncher.test.ts > ClaudeCliSessionLauncher > builds the sessionId-bearing MCP config and writes it as { mcpServers: ... }
+ FAIL  |node| packages/electron/src/main/services/ai/__tests__/ClaudeCliSessionLauncher.test.ts > ClaudeCliSessionLauncher > RESUMES with --resume (not --session-id) when the CLI jsonl already exists
+ FAIL  |node| packages/electron/src/main/services/ai/__tests__/ShellFileAttribution.test.ts > shell hook attribution > records sequential owners without using a dirty Git baseline or inventing a diff
+ FAIL  |node| packages/electron/src/main/services/ai/__tests__/ShellFileAttribution.test.ts > shell hook attribution > captures ambiguity at event arrival and suppresses known saves and structured tools
+ FAIL  |node| packages/electron/src/main/services/ai/__tests__/ShellFileAttribution.test.ts > abstains after registry overflow until turn cleanup and ignores events between turns
+ FAIL  |node| packages/electron/src/main/services/credentials/__tests__/ProviderCredentialVault.test.ts > migrates global, dynamic, and project keys, retains ordinary settings, and survives reopen/delete
+ FAIL  |node| packages/electron/src/main/services/credentials/__tests__/ProviderCredentialVault.test.ts > pauses keys without destroying legacy data when storage is unavailable, then retries
+ FAIL  |node| packages/electron/src/main/services/credentials/__tests__/ProviderCredentialVault.test.ts > leaves a symlinked vault directory untouched and retains keys if source cleanup fails
+ FAIL  |node| packages/electron/src/main/services/tracker/__tests__/publishTrackerCreation.test.ts > creation publication > rejects screenshots escaping the workspace through a symlink
+ FAIL  |node| packages/electron/src/main/services/tutorial/__tests__/tutorialProjectContent.test.ts > tutorial project content > keeps README file links and documented keyboard shortcuts valid
+ FAIL  |node| packages/electron/src/main/services/tutorial/__tests__/TutorialSessionSeeder.test.ts > seedTutorialSessions > regenerates ids, rewrites materialized paths, and writes both tracker-link sides
+ FAIL  |node| packages/runtime/src/ai/server/protocols/__tests__/CodexAppServerProtocol.test.ts > CodexAppServerProtocol > registers the workspace skills root so Nimbalyst skills reach the agent
+ FAIL  |node| packages/runtime/src/ai/server/protocols/__tests__/headlessAgentRecordMapping.test.ts > Grok Build streaming-json mapping > absolutizes the relative file_path Grok puts in edit tool arguments
+ FAIL  |node| packages/runtime/src/ai/server/providers/__tests__/claudeCodeEnvironment.test.ts > claudeCodeEnvironment > adds hoisted workspace node_modules paths in development mode
+ FAIL  |node| packages/runtime/src/ai/server/providers/__tests__/claudeCodeEnvironment.test.ts > claudeCodeEnvironment > uses unpacked node_modules in packaged mode
+ FAIL  |node| packages/runtime/src/ai/server/providers/__tests__/ClaudeCodeProvider.bashParser.test.ts > bashUtils - Bash Parser > Output Redirects > should detect cat > file
+ FAIL  |node| packages/runtime/src/ai/server/providers/__tests__/ClaudeCodeProvider.bashParser.test.ts > bashUtils - Bash Parser > Output Redirects > should detect cat >> file (append)
+ FAIL  |node| packages/runtime/src/ai/server/providers/__tests__/ClaudeCodeProvider.bashParser.test.ts > bashUtils - Bash Parser > Output Redirects > should detect echo > file
+ FAIL  |node| packages/runtime/src/ai/server/providers/__tests__/ClaudeCodeProvider.bashParser.test.ts > bashUtils - Bash Parser > Output Redirects > should detect echo >> file (append)
+ FAIL  |node| packages/runtime/src/ai/server/providers/__tests__/ClaudeCodeProvider.bashParser.test.ts > bashUtils - Bash Parser > Output Redirects > should detect printf > file
+ FAIL  |node| packages/runtime/src/ai/server/providers/__tests__/ClaudeCodeProvider.bashParser.test.ts > bashUtils - Bash Parser > Direct Redirects > should detect > file (truncate)
+ FAIL  |node| packages/runtime/src/ai/server/providers/__tests__/ClaudeCodeProvider.bashParser.test.ts > bashUtils - Bash Parser > Direct Redirects > should detect >> file (append)
+ FAIL  |node| packages/runtime/src/ai/server/providers/__tests__/ClaudeCodeProvider.bashParser.test.ts > bashUtils - Bash Parser > rm Command > should detect rm file
+ FAIL  |node| packages/runtime/src/ai/server/providers/__tests__/ClaudeCodeProvider.bashParser.test.ts > bashUtils - Bash Parser > rm Command > should detect rm -rf directory
+ FAIL  |node| packages/runtime/src/ai/server/providers/__tests__/ClaudeCodeProvider.bashParser.test.ts > bashUtils - Bash Parser > rm Command > should detect rm -f file
+ FAIL  |node| packages/runtime/src/ai/server/providers/__tests__/ClaudeCodeProvider.bashParser.test.ts > bashUtils - Bash Parser > mv Command > should detect mv old new (both files)
+ FAIL  |node| packages/runtime/src/ai/server/providers/__tests__/ClaudeCodeProvider.bashParser.test.ts > bashUtils - Bash Parser > mv Command > should detect mv -f old new
+ FAIL  |node| packages/runtime/src/ai/server/providers/__tests__/ClaudeCodeProvider.bashParser.test.ts > bashUtils - Bash Parser > mv Command > should detect mv with relative paths
+ FAIL  |node| packages/runtime/src/ai/server/providers/__tests__/ClaudeCodeProvider.bashParser.test.ts > bashUtils - Bash Parser > cp Command > should detect cp src dest (destination only)
+ FAIL  |node| packages/runtime/src/ai/server/providers/__tests__/ClaudeCodeProvider.bashParser.test.ts > bashUtils - Bash Parser > cp Command > should detect cp -r directory
+ FAIL  |node| packages/runtime/src/ai/server/providers/__tests__/ClaudeCodeProvider.bashParser.test.ts > bashUtils - Bash Parser > cp Command > should detect cp -f with overwrite
+ FAIL  |node| packages/runtime/src/ai/server/providers/__tests__/ClaudeCodeProvider.bashParser.test.ts > bashUtils - Bash Parser > sed -i Command > should detect sed -i with single quotes
+ FAIL  |node| packages/runtime/src/ai/server/providers/__tests__/ClaudeCodeProvider.bashParser.test.ts > bashUtils - Bash Parser > sed -i Command > should detect sed -i with double quotes
+ FAIL  |node| packages/runtime/src/ai/server/providers/__tests__/ClaudeCodeProvider.bashParser.test.ts > bashUtils - Bash Parser > sed -i Command > should detect sed -i.bak (backup)
+ FAIL  |node| packages/runtime/src/ai/server/providers/__tests__/ClaudeCodeProvider.bashParser.test.ts > bashUtils - Bash Parser > tee Command > should detect tee file
+ FAIL  |node| packages/runtime/src/ai/server/providers/__tests__/ClaudeCodeProvider.bashParser.test.ts > bashUtils - Bash Parser > tee Command > should detect tee -a (append)
+ FAIL  |node| packages/runtime/src/ai/server/providers/__tests__/ClaudeCodeProvider.bashParser.test.ts > bashUtils - Bash Parser > Compound Commands > should detect multiple operations in chained commands
+ FAIL  |node| packages/runtime/src/ai/server/providers/__tests__/ClaudeCodeProvider.bashParser.test.ts > bashUtils - Bash Parser > Compound Commands > should detect files in piped commands
+ FAIL  |node| packages/runtime/src/ai/server/providers/__tests__/ClaudeCodeProvider.bashParser.test.ts > bashUtils - Bash Parser > Compound Commands > should detect multiple file operations with semicolons
+ FAIL  |node| packages/runtime/src/ai/server/providers/__tests__/ClaudeCodeProvider.bashParser.test.ts > bashUtils - Bash Parser > Path Resolution > should resolve relative paths
+ FAIL  |node| packages/runtime/src/ai/server/providers/__tests__/ClaudeCodeProvider.bashParser.test.ts > bashUtils - Bash Parser > Edge Cases > should handle commands with quotes in strings
+ FAIL  |node| packages/runtime/src/ai/server/providers/__tests__/ClaudeCodeProvider.bashParser.test.ts > bashUtils - Bash Parser > Edge Cases > should deduplicate same file mentioned multiple times
+ FAIL  |node| packages/runtime/src/ai/server/providers/__tests__/ClaudeCodeProvider.bashParser.test.ts > bashUtils - Bash Parser > Edge Cases > should handle files with special characters in name
+ FAIL  |node| packages/runtime/src/ai/server/providers/__tests__/ClaudeCodeProvider.bashParser.test.ts > bashUtils - Bash Parser > Heredoc Handling > should strip heredoc content and only detect the redirect target
+ FAIL  |node| packages/runtime/src/ai/server/providers/__tests__/ClaudeCodeProvider.bashParser.test.ts > bashUtils - Bash Parser > Heredoc Handling > should not produce false positives from mermaid syntax in heredocs
+ FAIL  |node| packages/runtime/src/ai/server/providers/__tests__/ClaudeCodeProvider.bashParser.test.ts > bashUtils - Bash Parser > Heredoc Handling > should handle heredoc with unquoted delimiter
+ FAIL  |node| packages/runtime/src/ai/server/providers/__tests__/ClaudeCodeProvider.bashParser.test.ts > bashUtils - Bash Parser > Path Validation > should allow paths with dots, dashes, underscores, and slashes
+ FAIL  |node| packages/runtime/src/ai/server/providers/__tests__/sdkOptionsBuilder.mcpConfig.test.ts > buildSdkOptions MCP config (NIM-2372) > preserves platform networking and location variables without inheriting credentials or provider controls
+ FAIL  |node| packages/runtime/src/ai/server/providers/__tests__/spawnCrashDiagnostics.test.ts > collectSpawnCrashDiagnostics > reports inherited fd limits and binary existence
+ FAIL  |node| packages/runtime/src/ai/server/transcript/__tests__/ClaudeCodeRawParser.test.ts > ClaudeCodeRawParser > output messages > emits an attachment staging warning for a denied Read result
+ FAIL  |jsdom| packages/marketplace/__tests__/build-extension.test.ts > build-extension.sh agent workflows > packages the declared agent workflows at their manifest-relative path
+ FAIL  |jsdom| packages/marketplace/__tests__/build-extension.test.ts > build-extension.sh agent workflows > rejects a declared workflow path that escapes the extension
+ FAIL  |jsdom| packages/marketplace/__tests__/release-tooling.test.ts > generate-registry.sh > keeps only the newest build when dist still holds an older one
+ FAIL  |jsdom| packages/marketplace/__tests__/release-tooling.test.ts > marketplace-status helpers > orders versions numerically, not lexically
+ FAIL  |jsdom| packages/marketplace/__tests__/release-tooling.test.ts > marketplace-status helpers > flags a live build still offering a share path the manifest withdrew
+ FAIL  |jsdom| packages/marketplace/__tests__/release-tooling.test.ts > marketplace-status helpers > treats matching versions with unreleased source as needing a bump
+ FAIL  |jsdom| packages/marketplace/__tests__/release-tooling.test.ts > marketplace-status helpers > ignores the shipping comment markers when reading the release list
+ FAIL  |jsdom| packages/electron/build/__tests__/claude-runtime.test.ts > #1476 packaged Claude layout > darwin-x64 retains one executable and its SDK manifest
+ FAIL  |jsdom| packages/electron/build/__tests__/claude-runtime.test.ts > #1476 packaged Claude layout > darwin-arm64 retains one executable and its SDK manifest
+ FAIL  |jsdom| packages/electron/build/__tests__/claude-runtime.test.ts > #1476 packaged Claude layout > linux-x64 retains one executable and its SDK manifest
+ FAIL  |jsdom| packages/electron/build/__tests__/claude-runtime.test.ts > #1476 packaged Claude layout > linux-arm64 retains one executable and its SDK manifest
+ FAIL  |jsdom| packages/electron/src/__tests__/viteRendererDepOptimization.test.ts > renderer optimizeDeps policy > excludes @revolist/react-datagrid from dep pre-bundling
+ FAIL  |jsdom| packages/electron/src/__tests__/viteRendererDepOptimization.test.ts > renderer optimizeDeps policy > excludes @revolist/revogrid from dep pre-bundling
+ FAIL  |jsdom| packages/extensions/animation/src/__tests__/animCore.test.ts > shipped samples > demo.anim.json parses clean and is already canonical
+ FAIL  |jsdom| packages/extensions/animation/src/__tests__/animCore.test.ts > shipped samples > git-storage.anim.json parses clean and is already canonical
+ FAIL  |jsdom| packages/extensions/animation/src/__tests__/animCore.test.ts > shipped samples > meta-agent-sessions.anim.json parses clean and is already canonical
+ FAIL  |jsdom| packages/runtime/src/canvas/__tests__/canvas.test.ts > canvas authoring skill > every documented snippet is valid JSON
+ FAIL  |jsdom| packages/runtime/src/canvas/__tests__/canvas.test.ts > canvas authoring skill > the worked example is a board the editor would accept
+ FAIL  |jsdom| packages/runtime/src/electron/__tests__/claudeCodeEnvironment.test.ts > interrupted self-update detection (NIM-1573) > findOrphanedClaudeUpdateFiles lists claude.old.* orphans in the unpacked SDK dir
+ FAIL  |jsdom| packages/runtime/src/electron/__tests__/claudeRuntimeRecovery.test.ts > #1476 manifest-verified recovery > selects the newest exact match, preserving all mismatched, malformed and symlink artifacts
+ FAIL  |jsdom| packages/extensions/project-graph/src/prototypes/trails/__tests__/trailsModel.test.ts > date provenance > reports a creation date only when an event recorded one
+ FAIL  |jsdom| packages/extensions/project-graph/src/prototypes/trails/__tests__/TrailsPrototype.test.tsx > TrailsPrototype > captions dates from recorded events, never from an inferred node.createdAt
+ FAIL  |jsdom| packages/runtime/src/plugins/TrackerPlugin/components/__tests__/trackerDateDisplay.test.ts > tracker date-only display in a behind-UTC timezone > renders a calendar-day string as the day that was entered
+ FAIL  |jsdom| packages/runtime/src/plugins/TrackerPlugin/components/__tests__/trackerDateDisplay.test.ts > tracker date-only display in a behind-UTC timezone > still renders a datetime instant in local time
+ FAIL  |jsdom| packages/runtime/src/plugins/TrackerPlugin/components/__tests__/trackerDateDisplay.test.ts > relative tracker date labels around the reported 8pm-ET boundary > falls back to an absolute date well outside the relative window
+ FAIL  |jsdom| packages/runtime/src/plugins/TrackerPlugin/components/__tests__/trackerDateDisplay.test.ts > relative tracker date labels around the reported 8pm-ET boundary > carries the exact date as hover text
+ FAIL  |jsdom| packages/runtime/src/plugins/TrackerPlugin/components/__tests__/TrackerFieldPills.test.tsx > TrackerFieldPills > formats Date instances instead of treating them as empty objects
+ FAIL  |jsdom| packages/runtime/src/ui/AgentTranscript/components/__tests__/TutorialSessionFixtures.test.tsx > tutorial session fixtures > projects the product-brief rich content through the production parser
+ FAIL  |jsdom| packages/runtime/src/editor/plugins/DiffPlugin/__tests__/unit/regressions/larger-doc-bug.test.ts > Larger document with section additions > should handle large document diff without errors
+ FAIL  |jsdom| packages/runtime/src/editor/plugins/DiffPlugin/__tests__/unit/regressions/larger-doc-test2.test.ts > Larger document diff - test2 (PM guide rewrite) > correctly accepts the rewrite and rejects back to the original formatting and order
+ FAIL  |jsdom| packages/runtime/src/editor/plugins/DiffPlugin/__tests__/unit/regressions/larger-doc-test2.test.ts > Larger document diff - test2 (PM guide rewrite) > preserves the intended new document after accepting all changes
+Error: [CodexAppServer] child process exited
+ Test Files  63 failed | 1599 passed | 7 skipped (1669)
+      Tests  206 failed | 13849 passed | 26 skipped (14081)
+     Errors  1 error

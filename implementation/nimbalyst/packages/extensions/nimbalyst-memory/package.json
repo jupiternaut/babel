@@ -1,0 +1,24 @@
+{
+  "name": "@nimbalyst/extension-memory",
+  "version": "0.1.0",
+  "description": "Voice/agent grounding: a local project-knowledge + facts brain for Nimbalyst. Wraps the host-agnostic memory engine (MCP server) and, later, bridges it to the voice agent.",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "src/index.tsx",
+  "scripts": {
+    "build": "npm run build --prefix engine && vite build && vite build --config vite.backend.config.ts",
+    "dev": "vite build --watch",
+    "typecheck": "npm run typecheck --prefix engine && tsc --noEmit",
+    "memory:eval": "esbuild engine/src/eval/cli.ts --bundle --platform=node --target=node20 --format=esm --packages=external --outfile=engine/dist/eval-cli.mjs --log-level=warning && node engine/dist/eval-cli.mjs",
+    "test": "echo \"engine tests run via root vitest\""
+  },
+  "optionalDependencies": {
+    "@huggingface/transformers": "^3.8.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.0",
+    "typescript": "^5.0.0",
+    "vite": "^7.1.12"
+  }
+}

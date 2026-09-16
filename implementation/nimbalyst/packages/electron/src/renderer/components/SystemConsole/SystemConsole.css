@@ -1,0 +1,357 @@
+.system-console {
+  position: fixed;
+  inset: 24px;
+  width: calc(100vw - 48px);
+  height: calc(100vh - 48px);
+  max-width: 1600px;
+  max-height: none;
+  margin: auto;
+  padding: 0;
+  border: 1px solid var(--nim-border);
+  border-radius: 8px;
+  background: var(--nim-bg);
+  color: var(--nim-text);
+  font: inherit;
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.system-console::backdrop {
+  background: var(--nim-bg-secondary);
+  opacity: 0.85;
+}
+.system-console h1 {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 4px 0;
+  letter-spacing: -0.02em;
+}
+.system-console h2 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+}
+.system-console h3 {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 20px 0 8px;
+}
+.system-console p {
+  margin: 6px 0;
+  color: var(--nim-text-muted);
+}
+.system-console button {
+  color: var(--nim-text);
+  background: var(--nim-bg-secondary);
+  border: 1px solid var(--nim-border);
+  border-radius: 4px;
+  padding: 6px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  font: inherit;
+}
+.system-console button:hover:not(:disabled) {
+  background: var(--nim-bg-hover);
+}
+.system-console button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.system-console :is(button, input):focus-visible {
+  outline: 2px solid var(--nim-border-focus);
+  outline-offset: 2px;
+}
+.system-console input[type="checkbox"] {
+  accent-color: var(--nim-primary);
+  width: 16px;
+  height: 16px;
+  vertical-align: middle;
+}
+.sc-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: center;
+  padding: 24px;
+  border-bottom: 1px solid var(--nim-border);
+}
+.sc-eyebrow {
+  color: var(--nim-text-muted);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+}
+.sc-header-actions,
+.sc-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sc-success {
+  color: var(--nim-success);
+}
+.sc-warning {
+  color: var(--nim-warning);
+}
+.sc-error-text,
+.system-console .sc-danger {
+  color: var(--nim-error);
+}
+.sc-error {
+  color: var(--nim-error);
+  background: var(--nim-bg-secondary);
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--nim-border);
+  overflow-wrap: anywhere;
+}
+.sc-resources {
+  display: grid;
+  grid-template-columns: 0.75fr 1.2fr 0.7fr 1.5fr;
+  border-bottom: 1px solid var(--nim-border);
+}
+.sc-resources > div {
+  padding: 20px 24px;
+  min-width: 0;
+  border-right: 1px solid var(--nim-border);
+}
+.sc-resources > div:last-child {
+  border-right: 0;
+}
+.sc-resources span,
+.system-console small {
+  display: block;
+  font-size: 11px;
+  color: var(--nim-text-muted);
+  font-weight: 400;
+  margin-top: 4px;
+}
+.sc-resources strong {
+  display: block;
+  font-size: 20px;
+  font-weight: 500;
+  margin: 8px 0;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.sc-resources strong small {
+  display: inline;
+}
+.sc-notice {
+  padding: 8px 24px;
+}
+.sc-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--nim-border);
+}
+.sc-tabs {
+  display: flex;
+  gap: 4px;
+}
+.sc-tabs button {
+  border-color: transparent;
+  background: transparent;
+}
+.sc-tabs button[aria-pressed="true"] {
+  background: var(--nim-bg-tertiary);
+  color: var(--nim-primary);
+  border-color: var(--nim-border);
+}
+.sc-toolbar input {
+  background: var(--nim-bg-secondary);
+  color: var(--nim-text);
+  border: 1px solid var(--nim-border);
+  border-radius: 4px;
+  padding: 6px 12px;
+  width: 280px;
+  min-width: 100px;
+}
+.sc-content {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+.sc-services {
+  display: grid;
+  height: 100%;
+  grid-template-columns: minmax(0, 1fr);
+}
+.sc-with-detail {
+  grid-template-columns: minmax(0, 1fr) 340px;
+}
+.sc-table-scroll {
+  overflow: auto;
+  min-width: 0;
+}
+.system-console table {
+  border-collapse: collapse;
+  width: 100%;
+  text-align: left;
+  font-variant-numeric: tabular-nums;
+}
+.system-console th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--nim-bg-secondary);
+  color: var(--nim-text-muted);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--nim-border);
+  white-space: nowrap;
+}
+.system-console td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--nim-border);
+  vertical-align: middle;
+}
+.system-console th button {
+  font-size: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+}
+.system-console tbody tr:hover,
+.sc-selected {
+  background: var(--nim-bg-secondary);
+}
+.system-console .sc-service-name {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font-weight: 600;
+  text-align: left;
+}
+.sc-state {
+  display: inline-block;
+  white-space: nowrap;
+}
+.sc-state-running {
+  color: var(--nim-success);
+}
+.sc-state-unknown,
+.sc-state-unavailable,
+.sc-state-starting,
+.sc-state-stopping {
+  color: var(--nim-warning);
+}
+.sc-switch {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.sc-detail {
+  padding: 20px;
+  border-left: 1px solid var(--nim-border);
+  background: var(--nim-bg-secondary);
+  overflow: auto;
+  overflow-wrap: anywhere;
+}
+.sc-detail-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.sc-detail dl {
+  display: grid;
+  grid-template-columns: 80px minmax(0, 1fr);
+  gap: 10px;
+  font-size: 12px;
+  margin: 20px 0;
+}
+.sc-detail dt {
+  color: var(--nim-text-muted);
+}
+.sc-detail dd {
+  margin: 0;
+}
+.sc-detail pre {
+  background: var(--nim-bg);
+  border: 1px solid var(--nim-border);
+  padding: 12px;
+  font: 11px/1.6 monospace;
+  white-space: pre-wrap;
+  max-height: 300px;
+  overflow: auto;
+}
+.sc-empty {
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--nim-text-muted);
+}
+.sc-path {
+  max-width: 360px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sc-process-count {
+  padding: 8px 16px;
+}
+.sc-footer {
+  padding: 10px 24px;
+  border-top: 1px solid var(--nim-border);
+  color: var(--nim-text-muted);
+  font-size: 11px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.sc-confirm {
+  max-width: 520px;
+  padding: 28px;
+  margin: auto;
+  color: var(--nim-text);
+  background: var(--nim-bg);
+  border: 1px solid var(--nim-border);
+  border-radius: 8px;
+}
+.sc-confirm::backdrop {
+  background: var(--nim-bg-secondary);
+  opacity: 0.9;
+}
+.sc-confirm p {
+  line-height: 1.8;
+  margin: 16px 0;
+}
+.sc-confirm label {
+  display: block;
+  margin: 12px 0;
+}
+.sc-confirm .sc-actions {
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+@media (max-width: 1000px) {
+  .system-console {
+    inset: 8px;
+    width: calc(100vw - 16px);
+    height: calc(100vh - 16px);
+  }
+  .sc-header {
+    padding: 16px;
+  }
+  .sc-resources {
+    grid-template-columns: 1fr 1fr;
+  }
+  .sc-resources > div {
+    padding: 12px 16px;
+  }
+  .sc-with-detail {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sc-detail {
+    border-left: 0;
+    border-top: 1px solid var(--nim-border);
+  }
+  .sc-header-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+}

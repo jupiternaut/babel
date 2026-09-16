@@ -1,0 +1,14 @@
+
+> @nimbalyst/babel@0.1.0-m0 test
+> vitest run --environment node --run tests/pi-rpc-client.test.ts tests/pi-probe.test.ts
+
+
+ RUN  v3.2.7 /Users/gengrf/Projects/babel/implementation/nimbalyst/packages/babel
+
+ ✓ tests/pi-probe.test.ts (3 tests) 186ms
+ ✓ tests/pi-rpc-client.test.ts (9 tests) 34ms
+
+ Test Files  2 passed (2)
+      Tests  12 passed (12)
+   Start at  07:46:01
+   Duration  799ms (transform 108ms, setup 0ms, collect 140ms, tests 220ms, environment 0ms, prepare 61ms)

@@ -1,0 +1,114 @@
+{
+  "date": "2026-09-16",
+  "platform": {
+    "os": "macOS 27.0 (26A428)",
+    "arch": "arm64",
+    "hardware": "Apple M3",
+    "node": "24.15.0"
+  },
+  "scope": "Mac native demo UI and M0 hardening; not full product acceptance",
+  "sourceBaseline": "6568dc00f4fb6a20d828542b4a6694be854aa3e0",
+  "candidate": "commit containing this evidence",
+  "workspaceTypecheck": {
+    "passedWorkspaces": 26
+  },
+  "babelTypecheck": "passed",
+  "workspaceTests": {
+    "passed": 14118,
+    "skipped": 26,
+    "failed": 0,
+    "filesPassed": 1669,
+    "filesSkipped": 7,
+    "durationSeconds": 348.73
+  },
+  "babelTests": {
+    "passed": 271,
+    "skipped": 4,
+    "failed": 0,
+    "filesPassed": 61
+  },
+  "nativeAcceptance": {
+    "passed": 6,
+    "cases": [
+      "archive-and-restore",
+      "attention-and-same-record-selection",
+      "status-and-search-filter-counts",
+      "glass-and-accessibility-fallback",
+      "title-conflict-and-draft-navigation",
+      "GUI-CLI-POSIX-PTY-lifecycle"
+    ]
+  },
+  "realProcessCrashRecovery": {
+    "passed": 2,
+    "phases": [
+      "executing",
+      "verifying"
+    ],
+    "result": "same demo run resumes to review_required; no automatic approval"
+  },
+  "initialIntegrationFailure": {
+    "passed": 14111,
+    "failed": 7,
+    "kind": "20 second timeouts while typecheck and E2E ran concurrently",
+    "focusedRetry": {
+      "files": 4,
+      "passed": 248,
+      "changedTimeouts": false,
+      "addedSkips": false
+    },
+    "finalIndependentFullRun": "passed"
+  },
+  "notVerified": [
+    "full M0 parity",
+    "real Pi execution",
+    "Google OAuth/sync",
+    "SSH devices",
+    "PDF workflows",
+    "new Windows/Ubuntu regression",
+    "macOS launchd/autostart acceptance",
+    "signed/notarized release",
+    "final user visual approval"
+  ],
+  "artifacts": [
+    {
+      "path": "README.md",
+      "sha256": "c0c174c42b9515f7f49afb1f4bbd59a3eb69db2b8ebe3093bfc06df10363979d"
+    },
+    {
+      "path": "attention-evidence.json",
+      "sha256": "f82c2f76f731b0349f5ce9bb41fc07dafc75c082a265d4d40cc02e52ac2c9a7f"
+    },
+    {
+      "path": "board-narrow.png",
+      "sha256": "68348b4de94f57a3409b8a0a62d834438d7a1c9b05edda4021eceaf39e342ab4"
+    },
+    {
+      "path": "board-wide.png",
+      "sha256": "bfdf4cf01e4faec3e6e2043088779cfc6b2e915b3e1b53ef6d021a8d664173f3"
+    },
+    {
+      "path": "filtered-board.png",
+      "sha256": "c716cf9792f2c151a305d4b9c1748c5a970ec3df02ad288a8e71d0b8d4318270"
+    },
+    {
+      "path": "filters-evidence.json",
+      "sha256": "8f023a8e98d03644817353a22ef5a70a3babd89100ee9a95772db1078473828f"
+    },
+    {
+      "path": "glass-workbench.png",
+      "sha256": "9566ba3d95df019b78dd2db3cf4f535fa934e2cfbe3dc86d8d6db53e743cc636"
+    },
+    {
+      "path": "three-surfaces-identity.json",
+      "sha256": "71800e74ab924a1cdcb3ed64294178ba88dc4d963773cd61026a1f601776b233"
+    },
+    {
+      "path": "title-conflict-native.png",
+      "sha256": "02a86a46ae409bd16f343e36c49a4918ee824a3ed1707d8e65c5c5820ae7a37a"
+    },
+    {
+      "path": "title-evidence.json",
+      "sha256": "56fdfdc8b4786b47c75b4a5ee27e634a07c1219bdf36d3ac9cf17ae0061c997b"
+    }
+  ]
+}

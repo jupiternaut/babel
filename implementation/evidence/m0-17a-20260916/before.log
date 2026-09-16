@@ -1,0 +1,93 @@
+
+> @nimbalyst/babel@0.1.0-m0 test
+> vitest run --environment node --run tests/tui-input.test.ts
+
+
+ RUN  v3.2.7 /Users/gengrf/Projects/babel/implementation/nimbalyst/packages/babel
+
+ ❯ tests/tui-input.test.ts (9 tests | 6 failed) 11ms
+   ✓ TUI input and Chinese width > decodes Chinese text without splitting a wide glyph 2ms
+   ✓ TUI input and Chinese width > decodes SGR mouse clicks and wheel 0ms
+   ✓ TUI input and Chinese width > keeps Chinese labels in the help overlay 0ms
+   × TUI fragmented input and standalone Escape > retains every split of "\u001b[A" without treating it as Escape 5ms
+     → expected [ { type: 'key', …(4) }, …(1) ] to deeply equal []
+   × TUI fragmented input and standalone Escape > retains every split of "\u001bOP" without treating it as Escape 1ms
+     → expected [ { type: 'key', …(4) }, …(1) ] to deeply equal []
+   × TUI fragmented input and standalone Escape > retains every split of "\u001b[<0;12;4M" without treating it as Escape 0ms
+     → expected [ { type: 'key', …(4) }, …(1) ] to deeply equal []
+   × TUI fragmented input and standalone Escape > retains every split of "\u001b[200~中文\u001b[200~正文\u001b[201~" without treating it as Escape 0ms
+     → expected [ { type: 'key', …(4) }, …(1) ] to deeply equal []
+   × TUI fragmented input and standalone Escape > expires only a standalone Escape, never paste content or an incomplete sequence 0ms
+     → decoder.flushEscape is not a function
+   × TUI fragmented input and standalone Escape > dismisses with one Escape, cancels the timeout for a continued sequence and on disposal 2ms
+     → expected 'help' to be 'none' // Object.is equality
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 6 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/tui-input.test.ts > TUI fragmented input and standalone Escape > retains every split of "\u001b[A" without treating it as Escape
+ FAIL  tests/tui-input.test.ts > TUI fragmented input and standalone Escape > retains every split of "\u001bOP" without treating it as Escape
+ FAIL  tests/tui-input.test.ts > TUI fragmented input and standalone Escape > retains every split of "\u001b[<0;12;4M" without treating it as Escape
+ FAIL  tests/tui-input.test.ts > TUI fragmented input and standalone Escape > retains every split of "\u001b[200~中文\u001b[200~正文\u001b[201~" without treating it as Escape
+AssertionError: expected [ { type: 'key', …(4) }, …(1) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   {
++     "ctrl": false,
++     "name": "escape",
++     "raw": "",
++     "shift": false,
++     "type": "key",
++   },
++   {
++     "text": "[",
++     "type": "text",
++   },
++ ]
+
+ ❯ tests/tui-input.test.ts:45:54
+     43|     for (let split = 1; split < sequence.length; split++) {
+     44|       const decoder = new InputDecoder();
+     45|       expect(decoder.push(sequence.slice(0, split))).toEqual([]);
+       |                                                      ^
+     46|       expect(decoder.push(sequence.slice(split))).toEqual([expect.obje…
+     47|     }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/6]⎯
+
+ FAIL  tests/tui-input.test.ts > TUI fragmented input and standalone Escape > expires only a standalone Escape, never paste content or an incomplete sequence
+TypeError: decoder.flushEscape is not a function
+ ❯ tests/tui-input.test.ts:53:20
+     51|     const decoder = new InputDecoder();
+     52|     expect(decoder.push("\x1b")).toEqual([]);
+     53|     expect(decoder.flushEscape()).toEqual([expect.objectContaining({ t…
+       |                    ^
+     54|     expect(decoder.flushEscape()).toEqual([]);
+     55|     decoder.push("\x1b[");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/6]⎯
+
+ FAIL  tests/tui-input.test.ts > TUI fragmented input and standalone Escape > dismisses with one Escape, cancels the timeout for a continued sequence and on disposal
+AssertionError: expected 'help' to be 'none' // Object.is equality
+
+Expected: "none"
+Received: "help"
+
+ ❯ tests/tui-input.test.ts:71:37
+     69|       expect(tui.inspect().overlay).toBe("help");
+     70|       vi.advanceTimersByTime(150);
+     71|       expect(tui.inspect().overlay).toBe("none");
+       |                                     ^
+     72|       tui.feed("?");
+     73|       tui.feed("\x1b");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/6]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  6 failed | 3 passed (9)
+   Start at  08:57:09
+   Duration  378ms (transform 119ms, setup 0ms, collect 161ms, tests 11ms, environment 0ms, prepare 62ms)

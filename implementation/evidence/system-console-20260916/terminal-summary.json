@@ -1,0 +1,72 @@
+{
+  "date": "2026-09-16",
+  "backend": "node-pty 1.1.0 / Windows ConPTY",
+  "steps": [
+    {
+      "name": "isolated real adapter initially stopped",
+      "passed": true,
+      "durationMs": 31
+    },
+    {
+      "name": "ConPTY renders Chinese services and actual resources",
+      "passed": true,
+      "durationMs": 716
+    },
+    {
+      "name": "keyboard starts real fixture process",
+      "passed": true,
+      "durationMs": 891
+    },
+    {
+      "name": "mouse selects logs tab and renders real Chinese log",
+      "passed": true,
+      "durationMs": 1079
+    },
+    {
+      "name": "resize and help remain usable",
+      "passed": true,
+      "durationMs": 668
+    },
+    {
+      "name": "q exits and leaves managed process alive",
+      "passed": true,
+      "durationMs": 1337
+    },
+    {
+      "name": "mouse stops fixture and keyboard restarts it",
+      "passed": true,
+      "durationMs": 5291
+    },
+    {
+      "name": "unsupported autostart shows error without success",
+      "passed": true,
+      "durationMs": 358
+    },
+    {
+      "name": "process identity confirmation cancels safely",
+      "passed": true,
+      "durationMs": 1439
+    },
+    {
+      "name": "confirmed process termination affects only fixture identity",
+      "passed": true,
+      "durationMs": 3500
+    },
+    {
+      "name": "history and Ctrl+C exit retain background process",
+      "passed": true,
+      "durationMs": 2805
+    },
+    {
+      "name": "CLI stable request ID retries without repeating real restart",
+      "passed": true,
+      "durationMs": 2137
+    }
+  ],
+  "cleanup": {
+    "credentialsFoundInEvidence": 0,
+    "port7783Listeners": 0,
+    "ownedNodeProcessesRemaining": 0
+  },
+  "evidenceType": "Actual ConPTY input and isolated OS process tests; not native GUI screenshots"
+}

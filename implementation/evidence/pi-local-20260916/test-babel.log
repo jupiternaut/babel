@@ -1,0 +1,99 @@
+
+> @nimbalyst/babel@0.1.0-m0 test
+> vitest run --environment node
+
+
+ RUN  v3.2.7 /Users/gengrf/Projects/babel/implementation/nimbalyst/packages/babel
+
+stdout | tests/server-crash-recovery.test.ts > HTTP demo service recovery after a real process crash > survives SIGKILL during executing without replay or automatic completion
+{"evidence":"real-process-crash-recovery","phase":"executing","platform":"darwin","node":"v24.15.0","profile":"/var/folders/9j/cx6fkz613dd_6545wf7kvt4w0000gn/T/babel-http-recovery-Yg8Y2G","firstPid":10687,"secondPid":10688,"endpoints":["http://127.0.0.1:52582","http://127.0.0.1:52586"],"signal":"SIGKILL","trackerId":"trk-b992b2df-9965-4302-8bfe-fd0b39febad9","runId":"run-50c40695-8ac0-4978-9ed7-da3b098502f2","status":"review_required","eventIds":["evt-cce09b31-e486-42c9-8d93-ee01250c0a4c","evt-6559be88-72b4-4843-bd24-85dea0bcf979","evt-0b1d722a-8851-4b1f-bba5-4779a4a8423c","evt-65ed5398-74e3-41ac-85ff-f8d85d12c922","evt-cae02f28-6f8f-4d80-8153-ef7e82e41e34","evt-7cdc92cf-626c-4fab-9d5f-c7d59b5c2428"],"eventTypes":["run.accepted","run.started","message.delta","tool.started","tool.finished","verification.updated"],"autoDone":false,"childProcessesStopped":true,"listenersClosed":true}
+
+stdout | tests/server-crash-recovery.test.ts > HTTP demo service recovery after a real process crash > survives SIGKILL during verifying without replay or automatic completion
+{"evidence":"real-process-crash-recovery","phase":"verifying","platform":"darwin","node":"v24.15.0","profile":"/var/folders/9j/cx6fkz613dd_6545wf7kvt4w0000gn/T/babel-http-recovery-hM0niA","firstPid":10689,"secondPid":10690,"endpoints":["http://127.0.0.1:52591","http://127.0.0.1:52597"],"signal":"SIGKILL","trackerId":"trk-b9eb055c-d62a-4af0-9e6b-1123227047f0","runId":"run-ddc534e7-1712-4e94-aa77-0238f034c2ba","status":"review_required","eventIds":["evt-952dc151-471c-43d9-8613-1c494df37e23","evt-272d46a1-902b-4d64-80f1-7be01e725427","evt-84591b7d-39f5-488e-bee8-2d9336022ac0","evt-029a3e2a-2a37-43dd-a14b-5caa494fdcb0","evt-2bead76d-b2a1-4217-8733-6d25634d0ef4","evt-ca8e2bea-04c8-4eab-9100-27bccbcbbe41"],"eventTypes":["run.accepted","run.started","message.delta","tool.started","tool.finished","verification.updated"],"autoDone":false,"childProcessesStopped":true,"listenersClosed":true}
+
+ ✓ tests/server-crash-recovery.test.ts (2 tests) 8876ms
+   ✓ HTTP demo service recovery after a real process crash > survives SIGKILL during executing without replay or automatic completion  4429ms
+   ✓ HTTP demo service recovery after a real process crash > survives SIGKILL during verifying without replay or automatic completion  4446ms
+ ✓ tests/edit-revision-closed-loop.test.ts (12 tests) 1240ms
+ ✓ tests/hooks-outbox.test.ts (8 tests) 613ms
+ ✓ tests/hooks-delivery.test.ts (4 tests) 320ms
+ ✓ tests/pi-runtime.test.ts (6 tests) 16995ms
+   ✓ LocalPiRuntime (protocol subprocess double, no model calls) > never treats acknowledgement or low-level agent_end as completion, and never idles after errors  330ms
+   ✓ LocalPiRuntime (protocol subprocess double, no model calls) > rejects a mismatched handshake before any prompt and never replays a timed-out prompt  15159ms
+   ✓ LocalPiRuntime (protocol subprocess double, no model calls) > confirms the owned group is gone even when abort is acknowledged and descendants ignore termination  1173ms
+stdout | tests/perf-lr17-memory.test.ts > LR-17 persist cost probe (not a product SLO) > measures 500 in-process creates when the 20-card probe stays cheap; 10000 events stay 未测
+LR17_PERF {"condition":"DomainService FileStore persist() after every command; temp profile; simulate=off; default vitest 5s; no timeout bump","probeCards":20,"probeCreateMs":8,"perCreateMs":0.4,"probeListMs":5.9,"estimate500CreateMs":196,"cards500":"measured","create500Ms":1028,"list500Ms":1.6,"eventsListMs":0.1,"eventsListReturned":200,"storeEventCount":500,"eventDelta":500,"rssBeforeMb":77,"rssAfterMb":145,"cards500Reason":"FileStore 每次命令 pretty-print 落盘。探针 8ms；500 张 create 1028ms，task.list 1.6ms，events.list(limit=200) 0.1ms。默认 5s 超时，未放宽。","events10000":"未测","events10000Reason":"未测 1 万条写入。当前 store 事件 500 条（含 fixture）。events.list 默认 limit=200。未造假批量插入，也未放宽超时灌库。"}
+
+ ✓ tests/perf-lr17-memory.test.ts (1 test) 1039ms
+   ✓ LR-17 persist cost probe (not a product SLO) > measures 500 in-process creates when the 20-card probe stays cheap; 10000 events stay 未测  1038ms
+ ✓ tests/system-platform.test.ts (12 tests | 4 skipped) 644ms
+   ✓ isolated real managed process > starts a local HTTP process once, persists identity/logs, rejects stale PID identity and restarts/stops it  639ms
+ ✓ tests/tui-lr03.test.ts (15 tests) 1034ms
+ ✓ tests/regression-lr17-hooks-faults.test.ts (5 tests) 603ms
+ ✓ tests/relation-edit-closed-loop.test.ts (7 tests) 686ms
+ ✓ tests/tui-pi-session.test.ts (7 tests) 710ms
+ ✓ tests/worker-lifecycle.test.ts (4 tests) 224ms
+ ✓ tests/vendor-pi.test.ts (5 tests) 379ms
+ ✓ tests/vendor-codex.test.ts (4 tests) 376ms
+ ✓ tests/worker-pi-sim.test.ts (4 tests) 233ms
+ ✓ tests/fault-contract-causal.test.ts (3 tests) 271ms
+ ✓ tests/worker-reconnect.test.ts (3 tests) 187ms
+ ✓ tests/pi-probe.test.ts (3 tests) 190ms
+ ✓ tests/create-closed-loop.test.ts (4 tests) 246ms
+ ✓ tests/cross-surface-identity.test.ts (3 tests) 179ms
+ ✓ tests/archive-closed-loop.test.ts (4 tests) 267ms
+ ✓ tests/idempotency-auth.test.ts (6 tests) 293ms
+ ✓ tests/isolated-install-guard.test.ts (9 tests) 174ms
+ ✓ tests/vendor-hooks.test.ts (4 tests) 176ms
+ ✓ tests/system-hooks.test.ts (4 tests) 216ms
+ ✓ tests/fault-unknown-command.test.ts (5 tests) 145ms
+ ✓ tests/ops-health.test.ts (3 tests) 112ms
+ ✓ tests/fault-contract-delivery.test.ts (1 test) 93ms
+ ✓ tests/integration-lr17-closed-loop.test.ts (3 tests) 165ms
+ ✓ tests/system-terminal.test.ts (8 tests) 41ms
+ ✓ tests/cli-lr03.test.ts (12 tests) 141ms
+ ✓ tests/local-pi-domain.test.ts (7 tests) 44ms
+ ✓ tests/wd-attention.test.ts (4 tests) 41ms
+ ✓ tests/domain-recovery.test.ts (9 tests) 36ms
+ ✓ tests/relations-guards.test.ts (6 tests) 24ms
+ ✓ tests/system-http.test.ts (1 test) 23ms
+ ✓ tests/domain-lifecycle.test.ts (17 tests) 40ms
+ ✓ tests/system-service.test.ts (6 tests) 40ms
+ ✓ tests/guards.test.ts (29 tests) 49ms
+ ✓ tests/ops-repair-guards.test.ts (2 tests) 21ms
+ ✓ tests/surfaces-optional.test.ts (5 tests) 10ms
+ ✓ tests/pi-rpc-client.test.ts (9 tests) 33ms
+ ✓ tests/nodes-sftp.test.ts (5 tests) 8ms
+ ✓ tests/tui-surfaces-lr16.test.ts (6 tests) 26ms
+ ✓ tests/chat-inbox-confirm.test.ts (2 tests) 8ms
+ ✓ tests/nodes-status.test.ts (6 tests) 10ms
+ ✓ tests/semantic-stage.test.ts (4 tests) 12ms
+ ✓ tests/fault-contract-auth.test.ts (3 tests) 7ms
+ ✓ tests/gateway-sqlite.test.ts (5 tests) 13ms
+ ✓ tests/regression-lr17-surfaces.test.ts (4 tests) 3ms
+ ✓ tests/events-auth.test.ts (5 tests) 10ms
+ ✓ tests/fault-contract-replay.test.ts (4 tests) 9ms
+ ✓ tests/nodes-disconnect.test.ts (3 tests) 6ms
+ ✓ tests/chat-inbox-adapter.test.ts (2 tests) 5ms
+ ✓ tests/fault-restore.test.ts (2 tests) 7ms
+ ✓ tests/system-lock.test.ts (1 test) 7ms
+ ✓ tests/google-tasks-conflicts.test.ts (4 tests) 2ms
+ ✓ tests/google-tasks-import.test.ts (4 tests) 3ms
+ ✓ tests/gateway-worker-double.test.ts (1 test) 4ms
+ ✓ tests/google-tasks-resume.test.ts (4 tests) 3ms
+ ✓ tests/gateway-pdf-files.test.ts (3 tests) 2ms
+ ✓ tests/profile-init.test.ts (2 tests) 3ms
+ ✓ tests/cli-pi-start.test.ts (5 tests) 5ms
+ ✓ tests/cli-surfaces-lr16.test.ts (8 tests) 5ms
+ ✓ tests/google-tasks-auth.test.ts (3 tests) 2ms
+ ✓ tests/local-pi-config.test.ts (2 tests) 4ms
+ ✓ tests/tui-m0-entries.test.ts (3 tests) 3ms
+ ✓ tests/tui-input.test.ts (3 tests) 3ms
+ ✓ tests/cli-m0-entries.test.ts (4 tests) 2ms
+ ✓ tests/gateway-google-tasks.test.ts (1 test) 1ms
+
+ Test Files  70 passed (70)
+      Tests  361 passed | 4 skipped (365)
+   Start at  08:32:56
+   Duration  48.86s (transform 441ms, setup 0ms, collect 1.29s, tests 37.41s, environment 4ms, prepare 1.74s)
+

@@ -1,0 +1,699 @@
+{
+  "mode": "local",
+  "evidenceKind": "native-and-real-PTY-with-RPC-protocol-double",
+  "modelExecutionVerified": false,
+  "projectId": "pi-protocol-validation",
+  "trackerId": "afcb74dd-943a-497e-bd9e-e9633d9fe84b",
+  "runId": "run-b61e4a74-5994-4bc3-9639-459c1e7f1756",
+  "sessionId": "protocol-double-session",
+  "workspace": "/Users/gengrf/Library/Application Support/Babel/pi-protocol-workspace-20260916",
+  "initial": {
+    "mode": "local",
+    "demoLabel": "本地 Pi",
+    "executionTarget": {
+      "workdir": "/Users/gengrf/Library/Application Support/Babel/pi-protocol-workspace-20260916",
+      "provider": "protocol-test",
+      "model": "no-model"
+    },
+    "record": {
+      "id": "afcb74dd-943a-497e-bd9e-e9633d9fe84b",
+      "projectId": "pi-protocol-validation",
+      "primaryType": "task",
+      "typeTags": [
+        "task"
+      ],
+      "source": "native",
+      "archived": false,
+      "syncStatus": "local",
+      "content": {
+        "format": "markdown",
+        "markdown": ""
+      },
+      "system": {
+        "workspace": "pi-protocol-validation",
+        "createdAt": "2026-09-16T13:46:54.338Z",
+        "updatedAt": "2026-09-16T13:46:54.339Z",
+        "comments": [],
+        "activity": [
+          {
+            "id": "act-c17e1915-5637-4cdd-bcea-7d042f4cc4de",
+            "at": "2026-09-16T13:46:54.339Z",
+            "actorId": "babel-service",
+            "kind": "created",
+            "detail": "创建条目"
+          }
+        ],
+        "linkedSessions": [],
+        "origin": {
+          "kind": "manual"
+        }
+      },
+      "fields": {
+        "title": "Pi 协议测试（不调用模型）-1789566414239",
+        "status": "to-do",
+        "description": "",
+        "priority": "medium",
+        "acceptance": [],
+        "dependsOn": [],
+        "blocks": []
+      },
+      "revision": 1,
+      "orderKey": "o:000010"
+    },
+    "binding": {
+      "projectId": "pi-protocol-validation",
+      "trackerId": "afcb74dd-943a-497e-bd9e-e9633d9fe84b",
+      "targetDeviceId": null,
+      "providerId": null,
+      "latestRunId": null,
+      "completionPolicy": "verified_and_reviewed",
+      "revision": 1,
+      "archivedAt": null,
+      "outcome": "not_started",
+      "restoreStage": null,
+      "executionEnabled": true
+    },
+    "stage": "TODO",
+    "latestRun": null,
+    "runs": [],
+    "card": {
+      "projectId": "pi-protocol-validation",
+      "trackerId": "afcb74dd-943a-497e-bd9e-e9633d9fe84b",
+      "title": "Pi 协议测试（不调用模型）-1789566414239",
+      "description": "",
+      "primaryType": "task",
+      "status": "to-do",
+      "stage": "TODO",
+      "outcome": "not_started",
+      "archived": false,
+      "revision": 1,
+      "orderKey": "o:000010",
+      "latestRunId": null,
+      "runStatus": null,
+      "lastUpdatedAt": "2026-09-16T13:46:54.339Z",
+      "deviceId": null,
+      "attention": false,
+      "originKind": "manual",
+      "executionEnabled": true,
+      "readOnly": false,
+      "priority": "medium"
+    }
+  },
+  "started": {
+    "mode": "local",
+    "demoLabel": "本地 Pi",
+    "executionTarget": {
+      "workdir": "/Users/gengrf/Library/Application Support/Babel/pi-protocol-workspace-20260916",
+      "provider": "protocol-test",
+      "model": "no-model"
+    },
+    "record": {
+      "id": "afcb74dd-943a-497e-bd9e-e9633d9fe84b",
+      "projectId": "pi-protocol-validation",
+      "primaryType": "task",
+      "typeTags": [
+        "task"
+      ],
+      "source": "native",
+      "archived": false,
+      "syncStatus": "local",
+      "content": {
+        "format": "markdown",
+        "markdown": ""
+      },
+      "system": {
+        "workspace": "pi-protocol-validation",
+        "createdAt": "2026-09-16T13:46:54.338Z",
+        "updatedAt": "2026-09-16T13:46:54.339Z",
+        "comments": [],
+        "activity": [
+          {
+            "id": "act-c17e1915-5637-4cdd-bcea-7d042f4cc4de",
+            "at": "2026-09-16T13:46:54.339Z",
+            "actorId": "babel-service",
+            "kind": "created",
+            "detail": "创建条目"
+          },
+          {
+            "id": "act-4056001d-eb93-4688-972e-76dde04d08a4",
+            "at": "2026-09-16T13:46:55.472Z",
+            "actorId": "babel-service",
+            "kind": "run-accepted",
+            "detail": "执行已接受 run-b61e4a74-5994-4bc3-9639-459c1e7f1756"
+          }
+        ],
+        "linkedSessions": [
+          "protocol-double-session"
+        ],
+        "origin": {
+          "kind": "manual"
+        }
+      },
+      "fields": {
+        "title": "Pi 协议测试（不调用模型）-1789566414239",
+        "status": "in-progress",
+        "description": "",
+        "priority": "medium",
+        "acceptance": [],
+        "dependsOn": [],
+        "blocks": []
+      },
+      "revision": 2,
+      "orderKey": "o:000010"
+    },
+    "binding": {
+      "projectId": "pi-protocol-validation",
+      "trackerId": "afcb74dd-943a-497e-bd9e-e9633d9fe84b",
+      "targetDeviceId": "local-device",
+      "providerId": "pi",
+      "latestRunId": "run-b61e4a74-5994-4bc3-9639-459c1e7f1756",
+      "completionPolicy": "verified_and_reviewed",
+      "revision": 2,
+      "archivedAt": null,
+      "outcome": "unresolved",
+      "restoreStage": null,
+      "executionEnabled": true
+    },
+    "stage": "RUNNING",
+    "latestRun": {
+      "id": "run-b61e4a74-5994-4bc3-9639-459c1e7f1756",
+      "projectId": "pi-protocol-validation",
+      "taskId": "afcb74dd-943a-497e-bd9e-e9633d9fe84b",
+      "attempt": 1,
+      "status": "executing",
+      "deviceId": "local-device",
+      "providerId": "pi",
+      "execution": {
+        "kind": "pi",
+        "workdir": "/Users/gengrf/Library/Application Support/Babel/pi-protocol-workspace-20260916",
+        "provider": "protocol-test",
+        "model": "no-model",
+        "sessionFile": "/Users/gengrf/Library/Application Support/Babel/mac-pi-protocol-final-20260916/local/pi-sessions/run-b61e4a74-5994-4bc3-9639-459c1e7f1756.jsonl"
+      },
+      "sessionId": "protocol-double-session",
+      "taskRevision": 1,
+      "inputSnapshotId": "snap-de5ae367-a5a3-41a7-801a-083b0c38d4a7",
+      "baseCommit": null,
+      "executionFence": 1,
+      "startedAt": "2026-09-16T13:46:55.472Z",
+      "endedAt": null,
+      "lastEventSeq": 5,
+      "summary": "Pi 会话已连接",
+      "messages": [
+        {
+          "id": "run-b61e4a74-5994-4bc3-9639-459c1e7f1756:assistant:1",
+          "role": "agent",
+          "text": "你好 Pi",
+          "at": "2026-09-16T13:46:55.558Z"
+        }
+      ],
+      "inputRequests": [],
+      "verification": [],
+      "diff": null,
+      "review": null
+    },
+    "runs": [
+      {
+        "id": "run-b61e4a74-5994-4bc3-9639-459c1e7f1756",
+        "projectId": "pi-protocol-validation",
+        "taskId": "afcb74dd-943a-497e-bd9e-e9633d9fe84b",
+        "attempt": 1,
+        "status": "executing",
+        "deviceId": "local-device",
+        "providerId": "pi",
+        "execution": {
+          "kind": "pi",
+          "workdir": "/Users/gengrf/Library/Application Support/Babel/pi-protocol-workspace-20260916",
+          "provider": "protocol-test",
+          "model": "no-model",
+          "sessionFile": "/Users/gengrf/Library/Application Support/Babel/mac-pi-protocol-final-20260916/local/pi-sessions/run-b61e4a74-5994-4bc3-9639-459c1e7f1756.jsonl"
+        },
+        "sessionId": "protocol-double-session",
+        "taskRevision": 1,
+        "inputSnapshotId": "snap-de5ae367-a5a3-41a7-801a-083b0c38d4a7",
+        "baseCommit": null,
+        "executionFence": 1,
+        "startedAt": "2026-09-16T13:46:55.472Z",
+        "endedAt": null,
+        "lastEventSeq": 5,
+        "summary": "Pi 会话已连接",
+        "messages": [
+          {
+            "id": "run-b61e4a74-5994-4bc3-9639-459c1e7f1756:assistant:1",
+            "role": "agent",
+            "text": "你好 Pi",
+            "at": "2026-09-16T13:46:55.558Z"
+          }
+        ],
+        "inputRequests": [],
+        "verification": [],
+        "diff": null,
+        "review": null
+      }
+    ],
+    "card": {
+      "projectId": "pi-protocol-validation",
+      "trackerId": "afcb74dd-943a-497e-bd9e-e9633d9fe84b",
+      "title": "Pi 协议测试（不调用模型）-1789566414239",
+      "description": "",
+      "primaryType": "task",
+      "status": "in-progress",
+      "stage": "RUNNING",
+      "outcome": "unresolved",
+      "archived": false,
+      "revision": 2,
+      "orderKey": "o:000010",
+      "latestRunId": "run-b61e4a74-5994-4bc3-9639-459c1e7f1756",
+      "runStatus": "executing",
+      "lastUpdatedAt": "2026-09-16T13:46:55.559Z",
+      "deviceId": "local-device",
+      "attention": false,
+      "originKind": "manual",
+      "executionEnabled": true,
+      "readOnly": false,
+      "priority": "medium"
+    }
+  },
+  "settled": {
+    "mode": "local",
+    "demoLabel": "本地 Pi",
+    "executionTarget": {
+      "workdir": "/Users/gengrf/Library/Application Support/Babel/pi-protocol-workspace-20260916",
+      "provider": "protocol-test",
+      "model": "no-model"
+    },
+    "record": {
+      "id": "afcb74dd-943a-497e-bd9e-e9633d9fe84b",
+      "projectId": "pi-protocol-validation",
+      "primaryType": "task",
+      "typeTags": [
+        "task"
+      ],
+      "source": "native",
+      "archived": false,
+      "syncStatus": "local",
+      "content": {
+        "format": "markdown",
+        "markdown": ""
+      },
+      "system": {
+        "workspace": "pi-protocol-validation",
+        "createdAt": "2026-09-16T13:46:54.338Z",
+        "updatedAt": "2026-09-16T13:46:54.339Z",
+        "comments": [],
+        "activity": [
+          {
+            "id": "act-c17e1915-5637-4cdd-bcea-7d042f4cc4de",
+            "at": "2026-09-16T13:46:54.339Z",
+            "actorId": "babel-service",
+            "kind": "created",
+            "detail": "创建条目"
+          },
+          {
+            "id": "act-4056001d-eb93-4688-972e-76dde04d08a4",
+            "at": "2026-09-16T13:46:55.472Z",
+            "actorId": "babel-service",
+            "kind": "run-accepted",
+            "detail": "执行已接受 run-b61e4a74-5994-4bc3-9639-459c1e7f1756"
+          }
+        ],
+        "linkedSessions": [
+          "protocol-double-session"
+        ],
+        "origin": {
+          "kind": "manual"
+        }
+      },
+      "fields": {
+        "title": "Pi 协议测试（不调用模型）-1789566414239",
+        "status": "in-progress",
+        "description": "",
+        "priority": "medium",
+        "acceptance": [],
+        "dependsOn": [],
+        "blocks": []
+      },
+      "revision": 2,
+      "orderKey": "o:000010"
+    },
+    "binding": {
+      "projectId": "pi-protocol-validation",
+      "trackerId": "afcb74dd-943a-497e-bd9e-e9633d9fe84b",
+      "targetDeviceId": "local-device",
+      "providerId": "pi",
+      "latestRunId": "run-b61e4a74-5994-4bc3-9639-459c1e7f1756",
+      "completionPolicy": "verified_and_reviewed",
+      "revision": 2,
+      "archivedAt": null,
+      "outcome": "unresolved",
+      "restoreStage": null,
+      "executionEnabled": true
+    },
+    "stage": "RUNNING",
+    "latestRun": {
+      "id": "run-b61e4a74-5994-4bc3-9639-459c1e7f1756",
+      "projectId": "pi-protocol-validation",
+      "taskId": "afcb74dd-943a-497e-bd9e-e9633d9fe84b",
+      "attempt": 1,
+      "status": "review_required",
+      "deviceId": "local-device",
+      "providerId": "pi",
+      "execution": {
+        "kind": "pi",
+        "workdir": "/Users/gengrf/Library/Application Support/Babel/pi-protocol-workspace-20260916",
+        "provider": "protocol-test",
+        "model": "no-model",
+        "sessionFile": "/Users/gengrf/Library/Application Support/Babel/mac-pi-protocol-final-20260916/local/pi-sessions/run-b61e4a74-5994-4bc3-9639-459c1e7f1756.jsonl"
+      },
+      "sessionId": "protocol-double-session",
+      "taskRevision": 1,
+      "inputSnapshotId": "snap-de5ae367-a5a3-41a7-801a-083b0c38d4a7",
+      "baseCommit": null,
+      "executionFence": 1,
+      "startedAt": "2026-09-16T13:46:55.472Z",
+      "endedAt": null,
+      "lastEventSeq": 9,
+      "summary": "Pi 本轮已结束；代码结果和验收尚未核实，可补充消息继续",
+      "messages": [
+        {
+          "id": "run-b61e4a74-5994-4bc3-9639-459c1e7f1756:assistant:1",
+          "role": "agent",
+          "text": "你好 Pi 完整",
+          "at": "2026-09-16T13:46:55.558Z"
+        },
+        {
+          "id": "msg-c412ea17-8dcd-473a-ad22-6495c28a8965",
+          "role": "user",
+          "text": "来自 GUI 的补充消息",
+          "at": "2026-09-16T13:46:57.687Z",
+          "clientMessageId": "host-message-2ce60b42-0202-47fd-a5f0-587b81a84347"
+        },
+        {
+          "id": "msg-7b4a2791-1a2d-40ee-92b3-08dc431eb5ba",
+          "role": "user",
+          "text": "finish",
+          "at": "2026-09-16T13:46:58.470Z"
+        }
+      ],
+      "inputRequests": [],
+      "verification": [],
+      "diff": null,
+      "review": null
+    },
+    "runs": [
+      {
+        "id": "run-b61e4a74-5994-4bc3-9639-459c1e7f1756",
+        "projectId": "pi-protocol-validation",
+        "taskId": "afcb74dd-943a-497e-bd9e-e9633d9fe84b",
+        "attempt": 1,
+        "status": "review_required",
+        "deviceId": "local-device",
+        "providerId": "pi",
+        "execution": {
+          "kind": "pi",
+          "workdir": "/Users/gengrf/Library/Application Support/Babel/pi-protocol-workspace-20260916",
+          "provider": "protocol-test",
+          "model": "no-model",
+          "sessionFile": "/Users/gengrf/Library/Application Support/Babel/mac-pi-protocol-final-20260916/local/pi-sessions/run-b61e4a74-5994-4bc3-9639-459c1e7f1756.jsonl"
+        },
+        "sessionId": "protocol-double-session",
+        "taskRevision": 1,
+        "inputSnapshotId": "snap-de5ae367-a5a3-41a7-801a-083b0c38d4a7",
+        "baseCommit": null,
+        "executionFence": 1,
+        "startedAt": "2026-09-16T13:46:55.472Z",
+        "endedAt": null,
+        "lastEventSeq": 9,
+        "summary": "Pi 本轮已结束；代码结果和验收尚未核实，可补充消息继续",
+        "messages": [
+          {
+            "id": "run-b61e4a74-5994-4bc3-9639-459c1e7f1756:assistant:1",
+            "role": "agent",
+            "text": "你好 Pi 完整",
+            "at": "2026-09-16T13:46:55.558Z"
+          },
+          {
+            "id": "msg-c412ea17-8dcd-473a-ad22-6495c28a8965",
+            "role": "user",
+            "text": "来自 GUI 的补充消息",
+            "at": "2026-09-16T13:46:57.687Z",
+            "clientMessageId": "host-message-2ce60b42-0202-47fd-a5f0-587b81a84347"
+          },
+          {
+            "id": "msg-7b4a2791-1a2d-40ee-92b3-08dc431eb5ba",
+            "role": "user",
+            "text": "finish",
+            "at": "2026-09-16T13:46:58.470Z"
+          }
+        ],
+        "inputRequests": [],
+        "verification": [],
+        "diff": null,
+        "review": null
+      }
+    ],
+    "card": {
+      "projectId": "pi-protocol-validation",
+      "trackerId": "afcb74dd-943a-497e-bd9e-e9633d9fe84b",
+      "title": "Pi 协议测试（不调用模型）-1789566414239",
+      "description": "",
+      "primaryType": "task",
+      "status": "in-progress",
+      "stage": "RUNNING",
+      "outcome": "unresolved",
+      "archived": false,
+      "revision": 2,
+      "orderKey": "o:000010",
+      "latestRunId": "run-b61e4a74-5994-4bc3-9639-459c1e7f1756",
+      "runStatus": "review_required",
+      "lastUpdatedAt": "2026-09-16T13:46:58.472Z",
+      "deviceId": "local-device",
+      "attention": true,
+      "originKind": "manual",
+      "executionEnabled": true,
+      "readOnly": false,
+      "priority": "medium"
+    }
+  },
+  "stopped": {
+    "mode": "local",
+    "demoLabel": "本地 Pi",
+    "executionTarget": {
+      "workdir": "/Users/gengrf/Library/Application Support/Babel/pi-protocol-workspace-20260916",
+      "provider": "protocol-test",
+      "model": "no-model"
+    },
+    "record": {
+      "id": "afcb74dd-943a-497e-bd9e-e9633d9fe84b",
+      "projectId": "pi-protocol-validation",
+      "primaryType": "task",
+      "typeTags": [
+        "task"
+      ],
+      "source": "native",
+      "archived": false,
+      "syncStatus": "local",
+      "content": {
+        "format": "markdown",
+        "markdown": ""
+      },
+      "system": {
+        "workspace": "pi-protocol-validation",
+        "createdAt": "2026-09-16T13:46:54.338Z",
+        "updatedAt": "2026-09-16T13:46:54.339Z",
+        "comments": [],
+        "activity": [
+          {
+            "id": "act-c17e1915-5637-4cdd-bcea-7d042f4cc4de",
+            "at": "2026-09-16T13:46:54.339Z",
+            "actorId": "babel-service",
+            "kind": "created",
+            "detail": "创建条目"
+          },
+          {
+            "id": "act-4056001d-eb93-4688-972e-76dde04d08a4",
+            "at": "2026-09-16T13:46:55.472Z",
+            "actorId": "babel-service",
+            "kind": "run-accepted",
+            "detail": "执行已接受 run-b61e4a74-5994-4bc3-9639-459c1e7f1756"
+          }
+        ],
+        "linkedSessions": [
+          "protocol-double-session"
+        ],
+        "origin": {
+          "kind": "manual"
+        }
+      },
+      "fields": {
+        "title": "Pi 协议测试（不调用模型）-1789566414239",
+        "status": "wont-do",
+        "description": "",
+        "priority": "medium",
+        "acceptance": [],
+        "dependsOn": [],
+        "blocks": []
+      },
+      "revision": 3,
+      "orderKey": "o:000010"
+    },
+    "binding": {
+      "projectId": "pi-protocol-validation",
+      "trackerId": "afcb74dd-943a-497e-bd9e-e9633d9fe84b",
+      "targetDeviceId": "local-device",
+      "providerId": "pi",
+      "latestRunId": "run-b61e4a74-5994-4bc3-9639-459c1e7f1756",
+      "completionPolicy": "verified_and_reviewed",
+      "revision": 2,
+      "archivedAt": null,
+      "outcome": "unresolved",
+      "restoreStage": null,
+      "executionEnabled": true
+    },
+    "stage": "RUNNING",
+    "latestRun": {
+      "id": "run-b61e4a74-5994-4bc3-9639-459c1e7f1756",
+      "projectId": "pi-protocol-validation",
+      "taskId": "afcb74dd-943a-497e-bd9e-e9633d9fe84b",
+      "attempt": 1,
+      "status": "cancelled",
+      "deviceId": "local-device",
+      "providerId": "pi",
+      "execution": {
+        "kind": "pi",
+        "workdir": "/Users/gengrf/Library/Application Support/Babel/pi-protocol-workspace-20260916",
+        "provider": "protocol-test",
+        "model": "no-model",
+        "sessionFile": "/Users/gengrf/Library/Application Support/Babel/mac-pi-protocol-final-20260916/local/pi-sessions/run-b61e4a74-5994-4bc3-9639-459c1e7f1756.jsonl"
+      },
+      "sessionId": "protocol-double-session",
+      "taskRevision": 1,
+      "inputSnapshotId": "snap-de5ae367-a5a3-41a7-801a-083b0c38d4a7",
+      "baseCommit": null,
+      "executionFence": 1,
+      "startedAt": "2026-09-16T13:46:55.472Z",
+      "endedAt": "2026-09-16T13:46:58.809Z",
+      "lastEventSeq": 11,
+      "summary": "Pi 进程停止已确认",
+      "messages": [
+        {
+          "id": "run-b61e4a74-5994-4bc3-9639-459c1e7f1756:assistant:1",
+          "role": "agent",
+          "text": "你好 Pi 完整",
+          "at": "2026-09-16T13:46:55.558Z"
+        },
+        {
+          "id": "msg-c412ea17-8dcd-473a-ad22-6495c28a8965",
+          "role": "user",
+          "text": "来自 GUI 的补充消息",
+          "at": "2026-09-16T13:46:57.687Z",
+          "clientMessageId": "host-message-2ce60b42-0202-47fd-a5f0-587b81a84347"
+        },
+        {
+          "id": "msg-7b4a2791-1a2d-40ee-92b3-08dc431eb5ba",
+          "role": "user",
+          "text": "finish",
+          "at": "2026-09-16T13:46:58.470Z"
+        }
+      ],
+      "inputRequests": [],
+      "verification": [],
+      "diff": null,
+      "review": null
+    },
+    "runs": [
+      {
+        "id": "run-b61e4a74-5994-4bc3-9639-459c1e7f1756",
+        "projectId": "pi-protocol-validation",
+        "taskId": "afcb74dd-943a-497e-bd9e-e9633d9fe84b",
+        "attempt": 1,
+        "status": "cancelled",
+        "deviceId": "local-device",
+        "providerId": "pi",
+        "execution": {
+          "kind": "pi",
+          "workdir": "/Users/gengrf/Library/Application Support/Babel/pi-protocol-workspace-20260916",
+          "provider": "protocol-test",
+          "model": "no-model",
+          "sessionFile": "/Users/gengrf/Library/Application Support/Babel/mac-pi-protocol-final-20260916/local/pi-sessions/run-b61e4a74-5994-4bc3-9639-459c1e7f1756.jsonl"
+        },
+        "sessionId": "protocol-double-session",
+        "taskRevision": 1,
+        "inputSnapshotId": "snap-de5ae367-a5a3-41a7-801a-083b0c38d4a7",
+        "baseCommit": null,
+        "executionFence": 1,
+        "startedAt": "2026-09-16T13:46:55.472Z",
+        "endedAt": "2026-09-16T13:46:58.809Z",
+        "lastEventSeq": 11,
+        "summary": "Pi 进程停止已确认",
+        "messages": [
+          {
+            "id": "run-b61e4a74-5994-4bc3-9639-459c1e7f1756:assistant:1",
+            "role": "agent",
+            "text": "你好 Pi 完整",
+            "at": "2026-09-16T13:46:55.558Z"
+          },
+          {
+            "id": "msg-c412ea17-8dcd-473a-ad22-6495c28a8965",
+            "role": "user",
+            "text": "来自 GUI 的补充消息",
+            "at": "2026-09-16T13:46:57.687Z",
+            "clientMessageId": "host-message-2ce60b42-0202-47fd-a5f0-587b81a84347"
+          },
+          {
+            "id": "msg-7b4a2791-1a2d-40ee-92b3-08dc431eb5ba",
+            "role": "user",
+            "text": "finish",
+            "at": "2026-09-16T13:46:58.470Z"
+          }
+        ],
+        "inputRequests": [],
+        "verification": [],
+        "diff": null,
+        "review": null
+      }
+    ],
+    "card": {
+      "projectId": "pi-protocol-validation",
+      "trackerId": "afcb74dd-943a-497e-bd9e-e9633d9fe84b",
+      "title": "Pi 协议测试（不调用模型）-1789566414239",
+      "description": "",
+      "primaryType": "task",
+      "status": "wont-do",
+      "stage": "RUNNING",
+      "outcome": "unresolved",
+      "archived": false,
+      "revision": 3,
+      "orderKey": "o:000010",
+      "latestRunId": "run-b61e4a74-5994-4bc3-9639-459c1e7f1756",
+      "runStatus": "cancelled",
+      "lastUpdatedAt": "2026-09-16T13:46:58.809Z",
+      "deviceId": "local-device",
+      "attention": false,
+      "originKind": "manual",
+      "executionEnabled": true,
+      "readOnly": false,
+      "priority": "medium"
+    }
+  },
+  "verified": [
+    "native-create",
+    "cancel-start-confirmation-does-not-launch",
+    "native-confirmed-target",
+    "streamed-output",
+    "real-PTY-task-run-session-identity",
+    "GUI-message-to-same-run",
+    "PTY-message-to-same-run",
+    "authenticated-CLI-readback",
+    "native-confirmed-stop",
+    "no-fake-DONE-or-verification",
+    "light-dark-native-screenshots",
+    "PTY-alternate-screen-restored"
+  ],
+  "notVerified": [
+    "real-provider-or-model-call",
+    "real-tool-edit",
+    "real-diff-and-test-evidence",
+    "independent-acceptance-session"
+  ]
+}

@@ -1,6 +1,12 @@
 # Nimbalyst 巴别塔开发提示词入口 · v2.3
 
+## 当前开发方向（2026-09-16）
+
+后续主开发与原生桌面验收平台为 **MacBook M3 / macOS**，执行 [macOS 开发交接](MACOS-DEVELOPMENT-HANDOFF.md)。Windows 历史路径/阶段顺序不覆盖此决定；保留 Windows/Ubuntu 的适配与回归要求。Wayland 指 getwayland.com 的 AI 工作台，对标以 [Wayland / Devin 指标](WAYLAND-DEVIN-BENCHMARK.md) 为准。已有实现继续收口，不重新制作另一套独立看板；历史测试通过不代表 macOS 已验收。
+
 使用 [START-HERE-PROMPT.md](START-HERE-PROMPT.md) 中的完整提示词。这里保持单一入口，避免两个提示词各自漂移。
+
+当前切片由 UI/UX 主导：先精修浅色磨砂主稿与深色适配，在现有 Electron 宿主完成 V01/V03 的可操作界面，按 [视觉合同](design/visual-contract.md) 检查材质、减少动效/透明度回退和真实窗口证据。CSS 磨砂是基础；simple 局部折射只作待小样验证的增强候选。旧 v2 仍是结构参考，不代表新效果已获批准。
 
 当前开发要求是 **共享非图形业务核心 + Nimbalyst GUI + 交互式 TUI + JSON CLI + 应用 Hooks**，M0 就交付三端同源演示与自动化测试，不能只做桌面看板。
 

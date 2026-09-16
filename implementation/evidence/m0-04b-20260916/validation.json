@@ -1,0 +1,233 @@
+{
+  "date": "2026-09-16",
+  "taskId": "M0-04b",
+  "sourceBase": "e8af8c8cd19bafbea8e1b0bb16b866410c2dbdb0",
+  "candidate": "commit containing this evidence; exact implementation identified by sourceFiles SHA-256",
+  "mode": "demo",
+  "developmentComplete": true,
+  "acceptancePassed": false,
+  "scope": "priority, owner, tags explicit edits across native GUI, real PTY and CLI; independent acceptance pending",
+  "platform": {
+    "os": "macOS 27.0",
+    "hardware": "Apple M3",
+    "arch": "arm64",
+    "node": "24.15.0"
+  },
+  "checks": {
+    "workspaceTypecheck": {
+      "passedWorkspaces": 26
+    },
+    "workspaceTests": {
+      "passed": 14179,
+      "skipped": 26,
+      "failed": 0,
+      "passedFiles": 1672,
+      "skippedFiles": 7,
+      "durationSeconds": 178.92
+    },
+    "babelTypecheck": "passed",
+    "babelTests": {
+      "passed": 308,
+      "skipped": 4,
+      "failed": 0,
+      "passedFiles": 61
+    },
+    "focused": {
+      "coreAndCLI": 40,
+      "adapter": 26,
+      "guiAndDetail": 25,
+      "tuiAndExistingEntries": 33
+    },
+    "nativeMacAndRealPTY": {
+      "passed": 1,
+      "result": "fields-evidence.json",
+      "screenshot": "fields-conflict-native.png",
+      "pty": "fields-pty.txt",
+      "log": "native-frozen.log"
+    }
+  },
+  "validationOrderNote": "Isolated profile restarted for new core. Host gate and final Babel gate passed; final native GUI/PTY/CLI check reran after the TUI tags array narrowing. Source frozen before evidence packaging.",
+  "notVerified": [
+    "independent acceptance session",
+    "full CAP-04/05/16",
+    "custom fields, relationships and type editing",
+    "batch remote transaction atomicity (not implemented)",
+    "full theme/narrow-window/IME/VoiceOver matrix",
+    "draft persistence after application exit",
+    "Windows and Ubuntu regression",
+    "real Agent, SSH, OAuth or production services"
+  ],
+  "sourceFiles": [
+    {
+      "path": "implementation/nimbalyst/packages/babel/src/core/domain.ts",
+      "sha256": "a38b8763eff60343f68dfa722d6c92483eaee24dbc32d9e98fed97e8ba3328cd"
+    },
+    {
+      "path": "implementation/nimbalyst/packages/babel/src/tui/app.ts",
+      "sha256": "1b53e3e848ec3b21e95e1cdb1cf8112971ba37ed9545ccecb1e7a2945879d3ff"
+    },
+    {
+      "path": "implementation/nimbalyst/packages/babel/src/tui/render.ts",
+      "sha256": "09b666498315375637cc0763730b4e328fccd988b2c943a124d2e8b479dc11bc"
+    },
+    {
+      "path": "implementation/nimbalyst/packages/babel/tests/cli-lr03.test.ts",
+      "sha256": "84c07d91a094f5c563b1ee3a685cd329b4904c9425dae896beafa2a2dd474fdc"
+    },
+    {
+      "path": "implementation/nimbalyst/packages/babel/tests/edit-revision-closed-loop.test.ts",
+      "sha256": "65830209ba22327844de3bdc7d40718cb275b3f13969b13f7e9740d00f8d2e61"
+    },
+    {
+      "path": "implementation/nimbalyst/packages/babel/tests/guards.test.ts",
+      "sha256": "3ba79bbdbab3e9f4202d35d1762c494e57c15e36cd9d93aa0aba29d2384e731b"
+    },
+    {
+      "path": "implementation/nimbalyst/packages/electron/e2e/babel/fields-native.spec.ts",
+      "sha256": "79b42b6f9cb85fed39b819fc131e19d5cfb92aedb415c44a1c3aba5b66cc48f0"
+    },
+    {
+      "path": "implementation/nimbalyst/packages/electron/src/renderer/components/TrackerMode/TrackerItemDetail.tsx",
+      "sha256": "a9f837e5b9837adc5ab66ee9b9f58cf5dcdd91331d94be4e3dc332298dc72d9c"
+    },
+    {
+      "path": "implementation/nimbalyst/packages/electron/src/renderer/components/TrackerMode/__tests__/TrackerItemDetail.fields.test.tsx",
+      "sha256": "81831587039adcd54ffe61da419ca5280a7fec02ddb6386da728f827f9a3a87e"
+    },
+    {
+      "path": "implementation/nimbalyst/packages/electron/src/renderer/components/TrackerMode/__tests__/babelFieldDraft.test.tsx",
+      "sha256": "9d9029e6dff3dd4f3659599cc22c174f08b9109bfe460f747336a36198e2da61"
+    },
+    {
+      "path": "implementation/nimbalyst/packages/electron/src/renderer/components/TrackerMode/babelWorkbench/BabelFieldDraftControls.tsx",
+      "sha256": "b2dbd649fa82312586640e625bb1a902fd96ea11807f2c0eb7474a5f01456d51"
+    },
+    {
+      "path": "implementation/nimbalyst/packages/electron/src/renderer/components/TrackerMode/babelWorkbench/useBabelFieldDraft.ts",
+      "sha256": "ae71c0bce4d006c36ae2d5cf891aede4b7d05959c354fe73d491d2ab06747925"
+    },
+    {
+      "path": "implementation/nimbalyst/packages/electron/src/renderer/services/BabelDemoTrackerDataSource.ts",
+      "sha256": "8014d6ab74e65510f82a6c3526bd11332b4a7b1d8dfeebfc8cbc64e4528e5f27"
+    },
+    {
+      "path": "implementation/nimbalyst/packages/electron/src/renderer/services/__tests__/BabelDemoTrackerDataSource.test.ts",
+      "sha256": "ef0ec981c21d3c8384ddc92e9a9f50d50fc71ce2f12f35976dec622f734e5bb5"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "fields-conflict-native.png",
+      "sha256": "c3195dfb85c81e8c11369a0efafa051bb8a1d293d084011ead5368365f60a1cb"
+    },
+    {
+      "path": "fields-evidence.json",
+      "sha256": "db1c69ceb021e15f4cd207a4a695bb7c2de74e9340c38fe5da9cd022aeecd6bf"
+    },
+    {
+      "path": "fields-pty.txt",
+      "sha256": "ec12c88cdb7f4d62cb5df3209d6753a64185e61d5a8d79a34df502b90c724f39"
+    }
+  ],
+  "logs": {
+    "localDirectory": "/Users/gengrf/Library/Logs/Babel-Dev/task-fields-20260916",
+    "files": [
+      {
+        "name": "adapter-after.log",
+        "sha256": "2f68d230ad2f5dbb8fb2e5f8888182db3696313a55942e22cc563e456e82cd8e"
+      },
+      {
+        "name": "adapter-before.log",
+        "sha256": "b7bb7de4c1b0e6fc3246ea563f2bfa1544c5083b16a2283972090ac5ebe9993c"
+      },
+      {
+        "name": "adapter-final.log",
+        "sha256": "7001ec679e0a96070cf37cf0b0884be0e5d82d9e1ab1062e8db88d3d31a02b7b"
+      },
+      {
+        "name": "babel-full.log",
+        "sha256": "8303f486abc1e36f858485091c76a1337deeabf22bc56de9d10410158fd4a6c0"
+      },
+      {
+        "name": "babel-typecheck-final.log",
+        "sha256": "19e949560398fd220fcb435a973449df31369c7dae7fcb5d8694ac8ddb1f26b5"
+      },
+      {
+        "name": "babel-typecheck.log",
+        "sha256": "e0979cd679a374605269a951b99fff34b905e12c62d897c8c7a7a2a6b958ce27"
+      },
+      {
+        "name": "cli-fields-final.log",
+        "sha256": "e6b86919edddbcca6808288001a092ba2e1db8ffedf231097c622eac2e75e852"
+      },
+      {
+        "name": "cli-fields.log",
+        "sha256": "1d7f5fb47289bf7bcf0c04787ebc3157325b005f7fd0f7804d777f05b534e6ed"
+      },
+      {
+        "name": "core-after.log",
+        "sha256": "7e7c1daad0ce4d060f146bbcb6a9348566bb1f8200c71b11a891db8123250e1e"
+      },
+      {
+        "name": "core-before.log",
+        "sha256": "df54b13c98dcbc87b81f565c3866822939ca4b17381ceb5531916c6a22fd5fbc"
+      },
+      {
+        "name": "core-cli-final.log",
+        "sha256": "55eb170cec63f47fffab7552445dfc69e0e6d7aa5688c02264653ec0bd644cae"
+      },
+      {
+        "name": "core-revision-before.log",
+        "sha256": "cfe92b87bfedb08187c695a5f2fdc0125a636be49061b07e2d7a78fc6f724b2f"
+      },
+      {
+        "name": "gui-after.log",
+        "sha256": "f2f66337cb9318a4c7991c100aaf865b657293a6b3a68c81d980e9a2943b77c6"
+      },
+      {
+        "name": "gui-before.log",
+        "sha256": "53b5fe7ca12954420796be472f66600aaafa898805f266cc539ef2866066f8ba"
+      },
+      {
+        "name": "gui-final.log",
+        "sha256": "54326476d3e9f517f77c2b63adccc6d7f4922d918604c94fd68fdc99f7e08e49"
+      },
+      {
+        "name": "gui-typecheck.log",
+        "sha256": "d89ef7d9ef579f83d84dfa3a56e7436baf11652bb4e2ea03b8583c728f220242"
+      },
+      {
+        "name": "native-before.log",
+        "sha256": "f9ada3274fcd1236f8150497cd343f9ba46c5c3176f5fb46f069e42eb5b35fea"
+      },
+      {
+        "name": "native-final.log",
+        "sha256": "2febc339347b544695f448b7ea06f5b5bdc4461649ba67784585f29ebcdd7dd9"
+      },
+      {
+        "name": "native-frozen.log",
+        "sha256": "b307e0964311c6931530bf01c6f9305f3e1f2ef03b84eb2a897fdc74e80874b2"
+      },
+      {
+        "name": "native-start.log",
+        "sha256": "9eb18893ff815dc7a9974f9bf692a093a71d4f44f1d19d6529cb6e08754aec8b"
+      },
+      {
+        "name": "test-prepush.log",
+        "sha256": "c50de0cebdcc5589b3b3b426ff73d45b074c654dcd0280b73b6f9ec98fd74565"
+      },
+      {
+        "name": "tui-fields-after.log",
+        "sha256": "e24a6c3af6a628e75eb623cad7733616dfb0dcab8afdf93301e83af5bc5487ca"
+      },
+      {
+        "name": "tui-fields-before.log",
+        "sha256": "aba1c2d77e9ed9d406b86e7c2104bcbdee0a5338f7e09f74896f3c7075695db3"
+      },
+      {
+        "name": "typecheck.log",
+        "sha256": "cbb42fd266ce9276fbe53d078d7db753211008be172a7c7b8ec8b6f275b6c597"
+      }
+    ]
+  }
+}

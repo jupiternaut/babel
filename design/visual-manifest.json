@@ -4,10 +4,10 @@
   "fixtureFile": "demo-fixtures.json",
   "fixtureVersion": 1,
   "references": [
-    {"id": "REF-v2", "path": "babel-dashboard-v2.png", "status": "direction-reference", "actualPixels": [1586, 992], "note": "Existing direction image; corrections VC-01 through VC-08 are required."},
+    {"id": "REF-v2", "path": "babel-dashboard-v2.png", "status": "direction-reference", "actualPixels": [1586, 992], "note": "Historical structure and density reference; corrections VC-01 through VC-08 and the 2026-09-16 material contract apply. Not an approved glass baseline."},
     {"id": "REF-native", "path": "reference/nimbalyst-trackers-user.png", "status": "user-provided-reference", "actualPixels": [2541, 1372], "note": "Native Trackers Releases view. Installed version is not established by this screenshot."}
   ],
-  "plannedDefault": {"theme": "light", "targetViewportCssPx": [1586, 992], "generationOrder": ["V01", "V03", "V02", "V04", "V05"], "note": "Viewport is a design target, not a promise about generated pixel dimensions."},
+  "plannedDefault": {"theme": "light", "targetViewportCssPx": [1586, 992], "generationOrder": ["V01", "V03", "V02", "V04", "V05"], "note": "UI/UX-led light frosted master with dark adaptation. CSS frost is the baseline; simple-liquid-glass is a local-refraction candidate pending native input, readability and performance checks. Reduced-motion and opaque fallbacks are required. Acceptance uses MacBook M3 Electron captures; viewport is a design target, not generated image metadata."},
   "views": [
     {"viewId": "V01", "fixtureId": "board-home", "status": "planned", "artifact": null, "actualPixels": null},
     {"viewId": "V02", "fixtureId": "todo-detail", "status": "planned", "artifact": null, "actualPixels": null},
@@ -26,6 +26,7 @@
   "interactionSuites": [
     {"suiteId": "X01", "status": "not-implemented", "evidence": []},
     {"suiteId": "X02", "status": "not-implemented", "evidence": []},
-    {"suiteId": "X03", "status": "not-implemented", "evidence": []}
+    {"suiteId": "X03", "status": "not-implemented", "evidence": []},
+    {"suiteId": "X04", "status": "planned", "evidence": []}
   ]
 }

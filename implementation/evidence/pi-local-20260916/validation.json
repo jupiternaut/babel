@@ -1,0 +1,36 @@
+{
+  "sourceCommit": "7b24529cbb967dc5e3ac43880d545fc4a601d3ee",
+  "baseline": "e37b51eb0e9c1473f8f2bb453b48ecf2fa7f59af",
+  "cwd": "/Users/gengrf/Projects/babel",
+  "branch": "ui/macos-glass",
+  "task": "M1-02b",
+  "developmentComplete": true,
+  "independentAcceptance": false,
+  "realProviderModelVerified": false,
+  "evidenceKind": "native-and-real-PTY-with-RPC-protocol-double",
+  "nativePassed": true,
+  "hostFull": {
+    "passed": 14211,
+    "skipped": 26
+  },
+  "babelFull": {
+    "passed": 361,
+    "skipped": 4
+  },
+  "finalFocused": {
+    "runtime": 8,
+    "domain": 7,
+    "guiConfirmationAndMessages": 24
+  },
+  "fullSuitesBeforeFinalFocusedFixes": true,
+  "identities": {
+    "trackerId": "afcb74dd-943a-497e-bd9e-e9633d9fe84b",
+    "runId": "run-b61e4a74-5994-4bc3-9639-459c1e7f1756",
+    "sessionId": "protocol-double-session"
+  },
+  "next": [
+    "M1-02c",
+    "M1-03",
+    "M1-03a"
+  ]
+}

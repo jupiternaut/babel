@@ -1,0 +1,44 @@
+
+> @nimbalyst/babel@0.1.0-m0 test
+> vitest run --environment node --run tests/pi-rpc-client.test.ts tests/pi-probe.test.ts
+
+
+ RUN  v3.2.7 /Users/gengrf/Projects/babel/implementation/nimbalyst/packages/babel
+
+ ✓ tests/pi-probe.test.ts (3 tests) 180ms
+ ✓ tests/pi-rpc-client.test.ts (9 tests) 34ms
+⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯
+
+Vitest caught 1 unhandled error during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.
+
+⎯⎯⎯⎯⎯ Uncaught Exception ⎯⎯⎯⎯⎯
+Error: write after end
+ ❯ _write node:internal/streams/writable:487:11
+ ❯ PassThrough.Writable.write node:internal/streams/writable:508:10
+ ❯ src/pi/rpc-client.ts:76:28
+     74|       this.pending.set(id, { command: command.type, timer, resolve, re…
+     75|       try {
+     76|         this.options.input.write(line, (error) => { if (error) this.on…
+       |                            ^
+     77|       } catch (error) {
+     78|         this.onError(error instanceof Error ? error : new Error(String…
+ ❯ PiRpcClient.request src/pi/rpc-client.ts:69:12
+ ❯ tests/pi-rpc-client.test.ts:109:32
+ ❯ processTicksAndRejections node:internal/process/task_queues:104:5
+ ❯ node_modules/@vitest/runner/dist/chunk-hooks.js:752:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { code: 'ERR_STREAM_WRITE_AFTER_END' }
+This error originated in "tests/pi-rpc-client.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "reports EOF and write failure promptly, including an unfinished UTF-8 record". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+
+ Test Files  2 passed (2)
+      Tests  12 passed (12)
+     Errors  1 error
+   Start at  07:45:37
+   Duration  698ms (transform 98ms, setup 0ms, collect 132ms, tests 214ms, environment 0ms, prepare 107ms)

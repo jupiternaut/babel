@@ -1,0 +1,34 @@
+
+> @nimbalyst/babel@0.1.0-m0 test
+> vitest run --environment node --run tests/tui-pty-input.test.ts
+
+
+ RUN  v3.2.7 /Users/gengrf/Projects/babel/implementation/nimbalyst/packages/babel
+
+ ❯ tests/tui-pty-input.test.ts (1 test | 1 failed) 6030ms
+   × POSIX PTY: single Escape discards fields, keeps split input intact and restores terminal modes 6029ms
+     → expected 'J' to contain '已连接'
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/tui-pty-input.test.ts > POSIX PTY: single Escape discards fields, keeps split input intact and restores terminal modes
+AssertionError: expected 'J' to contain '已连接'
+
+Expected: "已连接"
+Received: "J"
+
+ ❯ tests/tui-pty-input.test.ts:32:41
+     30|   const waitFor = (check: () => void) => vi.waitFor(check, { timeout: …
+     31|   try {
+     32|     await waitFor(() => expect(frame()).toContain("已连接"));
+       |                                         ^
+     33|     terminal.write("/终端取消输入验证\r");
+     34|     await waitFor(() => expect(frame()).toContain("标题 终端取消输入验证"));
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed (1)
+   Start at  08:59:14
+   Duration  6.29s (transform 69ms, setup 0ms, collect 98ms, tests 6.03s, environment 0ms, prepare 27ms)

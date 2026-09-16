@@ -1,0 +1,603 @@
+// @vitest-environment jsdom
+import React from 'react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { Provider, createStore } from 'jotai';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { InboxSection } from '../InboxSection';
+import { createInboxFixtures } from '../inboxFixtures';
+import { createFixtureInboxProvider } from '../inboxFixtureProvider';
+import { requestInboxRowSelection } from '../../orgWindowCommandBus';
+import {
+  ORG_WINDOW_SURFACE_ID,
+  inboxRoute,
+  orgWindowRouteAtomFamily,
+} from '../../orgWindowState';
+import type { InboxFilterId } from '../inboxTypes';
+
+const NOW = Date.parse('2026-07-26T18:00:00.000Z');
+
+function installApi() {
+  Object.defineProperty(window, 'electronAPI', {
+    configurable: true,
+    value: { invoke: vi.fn().mockResolvedValue(undefined) },
+  });
+}
+
+// The reason filter is route state now, which outlives a component. Each test
+// gets its own store, or one that ends on Mentions silently narrows the next.
+let store = createStore();
+
+function wrap(ui: React.ReactElement) {
+  return <Provider store={store}>{ui}</Provider>;
+}
+
+/** What clicking the sidebar's Inbox row does: it is the only way in now. */
+function selectFilter(filter: InboxFilterId) {
+  act(() => {
+    store.set(orgWindowRouteAtomFamily(ORG_WINDOW_SURFACE_ID), inboxRoute(filter));
+  });
+}
+
+function renderInbox(overrides: Parameters<typeof createFixtureInboxProvider>[0] = {}) {
+  const provider = createFixtureInboxProvider({ now: NOW, ...overrides });
+  const utils = render(wrap(<InboxSection provider={provider} now={NOW} />));
+  return { provider, ...utils };
+}
+
+describe('InboxSection', () => {
+  beforeEach(() => {
+    installApi();
+    store = createStore();
+  });
+  afterEach(() => cleanup());
+
+  it('renders the grouped list with unread markers and agent attribution', async () => {
+    renderInbox();
+
+    await waitFor(() => screen.getByTestId('inbox-list'));
+    screen.getByTestId('inbox-group-today');
+
+    const agentRow = screen.getByTestId('inbox-row-delivery-agent-reply');
+    within(agentRow).getByTestId('inbox-row-agent-glyph');
+    expect(agentRow.textContent).toContain('packaging-audit');
+    expect(agentRow.textContent).toContain('for Marcus Lee');
+
+    // An agent mention dispatched but not yet picked up shows as pending.
+    within(screen.getByTestId('inbox-row-delivery-agent-mention')).getByTestId('inbox-row-agent-pending');
+
+    expect(screen.getByTestId('inbox-row-delivery-mention-room').getAttribute('data-unread')).toBe('true');
+    expect(screen.getByTestId('inbox-row-delivery-dm').getAttribute('data-unread')).toBe('false');
+  });
+
+  it('shows nothing about the former source on an access-removed row', async () => {
+    renderInbox();
+
+    const row = await screen.findByTestId('inbox-row-delivery-access-removed');
+    expect(within(row).getByTestId('inbox-row-unavailable').textContent).toContain('No longer available');
+    for (const leak of ['Corp dev', 'term sheet', 'Alex Fenn', 'Corp Dev']) {
+      expect(row.textContent).not.toContain(leak);
+    }
+    // It stays dismissible — dismissal is the only exit from a dead row.
+    within(row).getByTestId('inbox-row-dismiss-delivery-access-removed');
+  });
+
+  it('follows the route filter, and composes the search query with it', async () => {
+    renderInbox();
+    await screen.findByTestId('inbox-list');
+
+    // The list has no reason control of its own any more: navigating the
+    // surface is what filters it, so the sidebar row and the list cannot
+    // disagree about which reason is in force.
+    expect(screen.queryByTestId('inbox-filter-assigned')).toBeNull();
+
+    selectFilter('assigned');
+    screen.getByTestId('inbox-row-delivery-assignment');
+    expect(screen.queryByTestId('inbox-row-delivery-mention-room')).toBeNull();
+
+    selectFilter('mentions');
+    fireEvent.change(screen.getByTestId('inbox-search-input'), { target: { value: 'priya' } });
+
+    // Priya authored both a mention and the assignment; the mentions filter
+    // still holds, so only the mention survives.
+    screen.getByTestId('inbox-row-delivery-mention-room');
+    expect(screen.queryByTestId('inbox-row-delivery-assignment')).toBeNull();
+  });
+
+  it('offers the federated escalation in the empty and partial result states', async () => {
+    renderInbox();
+    await screen.findByTestId('inbox-list');
+
+    fireEvent.change(screen.getByTestId('inbox-search-input'), { target: { value: 'priya' } });
+    screen.getByTestId('inbox-search-all');
+
+    fireEvent.change(screen.getByTestId('inbox-search-input'), { target: { value: 'nothing-matches-this' } });
+    const empty = screen.getByTestId('inbox-empty-state');
+    within(empty).getByTestId('inbox-search-all');
+    within(empty).getByTestId('inbox-empty-clear-filters');
+  });
+
+  it('explains each empty filter on its own terms', async () => {
+    const { rerender } = renderInbox({ deliveries: [] });
+    await waitFor(() => screen.getByTestId('inbox-empty-state'));
+    expect(screen.getByTestId('inbox-empty-state').textContent).toContain('Your inbox is clear');
+
+    rerender(wrap(<InboxSection provider={createFixtureInboxProvider({ now: NOW, deliveries: [] })} />));
+    selectFilter('follows');
+    expect(screen.getByTestId('inbox-empty-state').getAttribute('data-filter')).toBe('follows');
+    expect(screen.getByTestId('inbox-empty-state').textContent).toContain('not following');
+
+    // The two rows the reason axis gained have their own copy, not a fallback.
+    selectFilter('awaiting');
+    expect(screen.getByTestId('inbox-empty-state').textContent).toContain('waiting on you');
+    selectFilter('archived');
+    expect(screen.getByTestId('inbox-empty-state').textContent).toContain('Nothing archived');
+  });
+
+  it('renders the loading skeleton with the controls disabled', () => {
+    renderInbox({ status: 'loading' });
+
+    screen.getByTestId('inbox-skeleton');
+    expect(screen.queryByTestId('inbox-list')).toBeNull();
+    expect((screen.getByTestId('inbox-unread-toggle') as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByTestId('inbox-search-input') as HTMLInputElement).disabled).toBe(true);
+  });
+
+  it('labels cached previews as stale when offline', async () => {
+    renderInbox({ status: 'offlineWithCache' });
+
+    await screen.findByTestId('inbox-list');
+    expect(screen.getByTestId('inbox-status-banner').textContent).toContain('Offline');
+    expect(screen.getAllByTestId('inbox-row-stale-label').length).toBeGreaterThan(0);
+  });
+
+  it('explains that the inbox needs a connection when there is no cache', () => {
+    renderInbox({ status: 'offlineWithoutCache', deliveries: [] });
+
+    expect(screen.getByTestId('inbox-offline-empty').textContent).toContain('needs a connection');
+    expect(screen.queryByTestId('inbox-list')).toBeNull();
+  });
+
+  it('selects a row without navigating or consuming read state', async () => {
+    // The whole click model rests on this: a plain click is safe to spend on a
+    // row you are not sure about, because it cannot move you or mark anything.
+    const navigate = vi.fn().mockResolvedValue(true);
+    renderInbox({ navigate });
+    await screen.findByTestId('inbox-list');
+
+    fireEvent.click(screen.getByTestId('inbox-row-delivery-mention-room'));
+
+    await screen.findByTestId('inbox-context-open');
+    expect(navigate).not.toHaveBeenCalled();
+    expect(screen.getByTestId('inbox-row-delivery-mention-room').getAttribute('data-unread')).toBe('true');
+  });
+
+  it('marks a row read only after navigation succeeds', async () => {
+    const navigate = vi.fn().mockResolvedValue(true);
+    renderInbox({ navigate });
+    await screen.findByTestId('inbox-list');
+
+    fireEvent.doubleClick(screen.getByTestId('inbox-row-delivery-mention-room'));
+
+    await waitFor(() => expect(
+      screen.getByTestId('inbox-row-delivery-mention-room').getAttribute('data-unread'),
+    ).toBe('false'));
+    expect(navigate).toHaveBeenCalled();
+  });
+
+  it('opens from the row action as well as the keyboard', async () => {
+    const navigate = vi.fn().mockResolvedValue(true);
+    renderInbox({ navigate });
+    await screen.findByTestId('inbox-list');
+
+    fireEvent.click(screen.getByTestId('inbox-row-open-delivery-mention-room'));
+    await waitFor(() => expect(navigate).toHaveBeenCalledTimes(1));
+
+    fireEvent.keyDown(screen.getByTestId('inbox-row-delivery-dm'), { key: 'Enter' });
+    await waitFor(() => expect(navigate).toHaveBeenCalledTimes(2));
+  });
+
+  it('keeps a row unread and says so when navigation fails', async () => {
+    renderInbox({ navigate: vi.fn().mockResolvedValue(false) });
+    await screen.findByTestId('inbox-list');
+
+    fireEvent.doubleClick(screen.getByTestId('inbox-row-delivery-mention-room'));
+
+    await waitFor(() => screen.getByTestId('inbox-activation-notice'));
+    expect(screen.getByTestId('inbox-row-delivery-mention-room').getAttribute('data-unread')).toBe('true');
+  });
+
+  it('explains the missing permission in the context pane for a read-only source', async () => {
+    renderInbox();
+    await screen.findByTestId('inbox-list');
+
+    fireEvent.click(screen.getByTestId('inbox-row-delivery-read-only'));
+
+    await waitFor(() => screen.getByTestId('inbox-composer-read-only'));
+    expect(screen.getByTestId('inbox-composer-read-only').textContent).toContain('viewer access');
+  });
+
+  it('reveals nothing in the context pane for an access-removed delivery', async () => {
+    renderInbox();
+    await screen.findByTestId('inbox-list');
+
+    fireEvent.click(screen.getByTestId('inbox-row-delivery-access-removed'));
+
+    const pane = await screen.findByTestId('inbox-context-pane');
+    within(pane).getByTestId('inbox-context-unavailable');
+    for (const leak of ['Corp dev', 'term sheet', 'Alex Fenn']) {
+      expect(pane.textContent).not.toContain(leak);
+    }
+  });
+
+  it('scopes mark-all-read to the active filter', async () => {
+    const { provider } = renderInbox();
+    await screen.findByTestId('inbox-list');
+    const markRead = vi.spyOn(provider, 'markRead');
+
+    selectFilter('assigned');
+    fireEvent.click(screen.getByTestId('inbox-mark-all-read'));
+
+    expect(markRead).toHaveBeenCalledWith(['delivery-assignment']);
+  });
+
+  it('dismisses a row out of the list', async () => {
+    renderInbox();
+    await screen.findByTestId('inbox-list');
+
+    fireEvent.click(screen.getByTestId('inbox-row-dismiss-delivery-access-removed'));
+
+    await waitFor(() => expect(screen.queryByTestId('inbox-row-delivery-access-removed')).toBeNull());
+  });
+
+  it('narrows the list with the org scope control', async () => {
+    renderInbox();
+    await screen.findByTestId('inbox-list');
+
+    fireEvent.click(screen.getByTestId('inbox-scope-trigger'));
+    const menu = await screen.findByTestId('inbox-scope-menu');
+    // Every org starts checked; unchecking Acme leaves Northwind.
+    fireEvent.click(within(menu).getByText('Acme'));
+
+    await waitFor(() => expect(screen.queryByTestId('inbox-row-delivery-mention-room')).toBeNull());
+    screen.getByTestId('inbox-row-delivery-read-only');
+  });
+
+  it('drops the scope control when there is nothing to scope by', async () => {
+    // One org and no project stamps is what production actually delivers today
+    // — the menu used to open onto an empty box.
+    const deliveries = createInboxFixtures({ now: NOW })
+      .filter((delivery) => delivery.orgId === 'org-acme')
+      .map(({ projectId: _projectId, projectName: _projectName, ...rest }) => rest);
+    renderInbox({ deliveries });
+    await screen.findByTestId('inbox-list');
+
+    expect(screen.queryByTestId('inbox-scope-trigger')).toBeNull();
+  });
+
+  it('resizes the context pane and remembers the width', async () => {
+    const invoke = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { invoke } });
+
+    renderInbox();
+    await waitFor(() => expect(invoke).toHaveBeenCalledWith('app-settings:get', 'inboxViewPreferences'));
+    expect(screen.getByTestId('inbox-context-slot').getAttribute('data-width')).toBe('340');
+
+    const resizer = screen.getByTestId('inbox-context-resizer');
+    fireEvent.keyDown(resizer, { key: 'ArrowLeft' });
+
+    expect(screen.getByTestId('inbox-context-slot').getAttribute('data-width')).toBe('364');
+    await waitFor(() => expect(invoke).toHaveBeenCalledWith(
+      'app-settings:set',
+      'inboxViewPreferences',
+      expect.objectContaining({ contextPaneWidth: 364 }),
+    ));
+  });
+
+  it('restores the persisted pane width, clamped to a usable range', async () => {
+    Object.defineProperty(window, 'electronAPI', {
+      configurable: true,
+      // A width captured on a much wider display must not squeeze the list out.
+      value: { invoke: vi.fn().mockResolvedValue({ scope: {}, contextPaneWidth: 4000 }) },
+    });
+
+    renderInbox();
+
+    await waitFor(() => expect(screen.getByTestId('inbox-context-slot').getAttribute('data-width')).toBe('1600'));
+  });
+
+  it('persists the filter and scope through app settings, never localStorage', async () => {
+    const invoke = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(window, 'electronAPI', { configurable: true, value: { invoke } });
+    const localStorageSpy = vi.spyOn(Storage.prototype, 'setItem');
+
+    renderInbox();
+    await waitFor(() => expect(invoke).toHaveBeenCalledWith('app-settings:get', 'inboxViewPreferences'));
+
+    selectFilter('mentions');
+
+    // The reason axis moved into the route, but it is still remembered on the
+    // existing preferences path — this slice adds no new storage.
+    await waitFor(() => expect(invoke).toHaveBeenCalledWith(
+      'app-settings:set',
+      'inboxViewPreferences',
+      expect.objectContaining({ filter: 'mentions' }),
+    ));
+    expect(localStorageSpy).not.toHaveBeenCalled();
+    localStorageSpy.mockRestore();
+  });
+
+  it('restores the persisted filter onto the route, so the nav row agrees', async () => {
+    Object.defineProperty(window, 'electronAPI', {
+      configurable: true,
+      value: { invoke: vi.fn().mockResolvedValue({ filter: 'assigned', scope: {} }) },
+    });
+
+    renderInbox();
+
+    // The route is what the sidebar's rows read; restoring the preference into
+    // local state instead would light up All while the list showed Assigned.
+    await waitFor(() => expect(
+      store.get(orgWindowRouteAtomFamily(ORG_WINDOW_SURFACE_ID)),
+    ).toEqual({ view: 'inbox', filter: 'assigned' }));
+    expect(screen.queryByTestId('inbox-row-delivery-mention-room')).toBeNull();
+  });
+
+  it('does not let the remembered filter overrule a row a link already chose', async () => {
+    // A feedback-request deep link points the surface before this mounts, and
+    // the preferences read resolves afterwards. Restoring then would move the
+    // recipient off the row the link sent them to.
+    Object.defineProperty(window, 'electronAPI', {
+      configurable: true,
+      value: { invoke: vi.fn().mockResolvedValue({ filter: 'assigned', scope: {} }) },
+    });
+    store.set(orgWindowRouteAtomFamily(ORG_WINDOW_SURFACE_ID), inboxRoute('awaiting'));
+
+    renderInbox();
+    await waitFor(() => expect(screen.getByTestId('inbox-empty-state')).toBeTruthy());
+
+    expect(store.get(orgWindowRouteAtomFamily(ORG_WINDOW_SURFACE_ID)))
+      .toEqual({ view: 'inbox', filter: 'awaiting' });
+  });
+
+  it('does not let the remembered filter overrule All, picked mid-read', async () => {
+    // All is a row the user picks, not the absence of one. When the click lands
+    // while the preferences read is still in flight, a stored `mentions` has to
+    // lose to it exactly as it does for every other row.
+    let resolveStored: (value: unknown) => void = () => {};
+    Object.defineProperty(window, 'electronAPI', {
+      configurable: true,
+      value: {
+        invoke: vi.fn((channel: string, key?: string) => (
+          channel === 'app-settings:get' && key === 'inboxViewPreferences'
+            ? new Promise((resolve) => { resolveStored = resolve; })
+            : Promise.resolve(undefined)
+        )),
+      },
+    });
+
+    renderInbox();
+    selectFilter('all');
+    await act(async () => { resolveStored({ filter: 'mentions', scope: {} }); });
+
+    expect(store.get(orgWindowRouteAtomFamily(ORG_WINDOW_SURFACE_ID)))
+      .toEqual({ view: 'inbox', filter: 'all' });
+  });
+
+  it('offers the fixture state picker only while the fixtures are the source', async () => {
+    renderInbox();
+    await screen.findByTestId('inbox-list');
+    screen.getByTestId('inbox-state-picker');
+
+    cleanup();
+
+    const realish = createFixtureInboxProvider({ now: NOW });
+    delete (realish as { simulateStatus?: unknown }).simulateStatus;
+    render(wrap(<InboxSection provider={realish} />));
+    await screen.findByTestId('inbox-list');
+    expect(screen.queryByTestId('inbox-state-picker')).toBeNull();
+  });
+
+  it('isolates a legacy organization with an explicit migration affordance', async () => {
+    const { provider } = renderInbox({
+      unavailableOrganizations: [{
+        orgId: 'org-legacy',
+        orgName: 'Legacy Co',
+        errorCode: 'ORG_SERVER_MANAGED_DEK_REQUIRED',
+      }],
+    });
+    const migrate = vi.spyOn(provider, 'migrateOrganization');
+
+    const unavailable = await screen.findByTestId(
+      'inbox-organization-unavailable-org-legacy',
+    );
+    expect(unavailable.textContent).toContain(
+      'Messaging is not available for Legacy Co',
+    );
+    screen.getByTestId('inbox-list');
+
+    fireEvent.click(within(unavailable).getByRole('button', {
+      name: 'Migrate organization',
+    }));
+    expect(migrate).toHaveBeenCalledWith('org-legacy');
+  });
+
+  it('shows an empty inbox rather than fixtures when no provider is mounted', async () => {
+    // Production mounts no provider until the atom-backed one is wired. The
+    // surface must reach its empty state there, never the review fixtures.
+    render(wrap(<InboxSection />));
+
+    await waitFor(() => screen.getByTestId('inbox-empty-state'));
+    expect(screen.queryByTestId('inbox-list')).toBeNull();
+    expect(screen.queryByTestId('inbox-state-picker')).toBeNull();
+    expect(document.body.textContent).not.toContain('Priya Raman');
+  });
+
+  it('hides the mute control when the provider cannot change the follow state', async () => {
+    const provider = createFixtureInboxProvider({ now: NOW });
+    delete (provider as { setSubscriptionState?: unknown }).setSubscriptionState;
+    render(wrap(<InboxSection provider={provider} now={NOW} />));
+    await screen.findByTestId('inbox-list');
+
+    // This row is followed, so the control would otherwise be offered.
+    fireEvent.click(screen.getByTestId('inbox-row-delivery-mention-room'));
+
+    await screen.findByTestId('inbox-context-pane');
+    expect(screen.queryByTestId('inbox-context-subscription')).toBeNull();
+  });
+
+  it('offers the mute control when the provider implements it', async () => {
+    renderInbox();
+    await screen.findByTestId('inbox-list');
+
+    fireEvent.click(screen.getByTestId('inbox-row-delivery-mention-room'));
+
+    expect(await screen.findByTestId('inbox-context-subscription')).toBeTruthy();
+  });
+
+  it('ages relative timestamps without waiting for new data', async () => {
+    // The ticker is driven directly rather than through fake timers, which
+    // would also stall testing-library's own polling.
+    let clock = NOW;
+    const nowSpy = vi.spyOn(Date, 'now').mockImplementation(() => clock);
+    const ticks: Array<() => void> = [];
+    const intervalSpy = vi
+      .spyOn(globalThis, 'setInterval')
+      .mockImplementation(((handler: TimerHandler) => {
+        ticks.push(handler as () => void);
+        return ticks.length as unknown as ReturnType<typeof setInterval>;
+      }) as unknown as typeof setInterval);
+
+    try {
+      // No `now` prop: the surface owns its clock, which is what has to tick.
+      render(wrap(<InboxSection provider={createFixtureInboxProvider({ now: NOW })} />));
+      const row = await screen.findByTestId('inbox-row-delivery-mention-room');
+      expect(row.textContent).toContain('12m');
+      expect(ticks.length).toBeGreaterThan(0);
+
+      clock = NOW + 11 * 60_000;
+      act(() => { for (const tick of ticks) tick(); });
+
+      expect(
+        screen.getByTestId('inbox-row-delivery-mention-room').textContent,
+      ).toContain('23m');
+    } finally {
+      intervalSpy.mockRestore();
+      nowSpy.mockRestore();
+    }
+  });
+
+  it('covers every fixture availability state so each is reachable for review', async () => {
+    renderInbox();
+    await screen.findByTestId('inbox-list');
+
+    const availabilities = new Set(
+      createInboxFixtures({ now: NOW }).map((delivery) => delivery.availability),
+    );
+    expect(availabilities).toEqual(new Set(['available', 'accessRemoved', 'deletedSource']));
+    expect(screen.getByTestId('inbox-row-delivery-deleted-source').getAttribute('data-availability')).toBe('deletedSource');
+  });
+
+  it('enables "New message" only when a compose destination picker is supplied', async () => {
+    const provider = createFixtureInboxProvider({ now: NOW });
+    const onNewMessage = vi.fn();
+
+    const { rerender } = render(wrap(<InboxSection provider={provider} now={NOW} />));
+    await screen.findByTestId('inbox-list');
+    const disabledButton = screen.getByTestId('inbox-new-message') as HTMLButtonElement;
+    expect(disabledButton.disabled).toBe(true);
+    fireEvent.click(disabledButton);
+    expect(onNewMessage).not.toHaveBeenCalled();
+
+    rerender(wrap(
+      <InboxSection provider={provider} now={NOW} onNewMessage={onNewMessage} />,
+    ));
+    const button = screen.getByTestId('inbox-new-message') as HTMLButtonElement;
+    expect(button.disabled).toBe(false);
+    fireEvent.click(button);
+    expect(onNewMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it('lets the host explain why compose is unavailable', async () => {
+    const provider = createFixtureInboxProvider({ now: NOW });
+
+    const { rerender } = render(wrap(<InboxSection provider={provider} now={NOW} />));
+    await screen.findByTestId('inbox-list');
+    // Mounted in the project window: the org window is where compose lives.
+    expect((screen.getByTestId('inbox-new-message') as HTMLButtonElement).title)
+      .toBe('Compose is available in the organization window');
+
+    // Mounted in the org window with messaging turned off, where that advice
+    // would send the user to the window they are already in.
+    rerender(wrap(
+      <InboxSection
+        provider={provider}
+        now={NOW}
+        composeUnavailableLabel="Rooms and direct messages are turned off for this organization"
+      />,
+    ));
+    expect((screen.getByTestId('inbox-new-message') as HTMLButtonElement).title)
+      .toBe('Rooms and direct messages are turned off for this organization');
+  });
+
+  /**
+   * The payoff of the whole feedback-request link: a recipient who clicks one
+   * has to end up looking at that request's respond card, which lives in this
+   * surface's context pane. Both waits are real — the window opens before the
+   * inbox has synced, and the row may be behind whatever filter the recipient
+   * left in force.
+   */
+  it('resolves a latched row-selection request against a late delivery', async () => {
+    const fixtures = createInboxFixtures({ now: NOW });
+    const feedbackDelivery = {
+      ...fixtures[0],
+      id: 'delivery-feedback',
+      source: {
+        orgId: fixtures[0].orgId,
+        sourceKind: 'feedbackRequest' as const,
+        sourceId: 'request-1',
+        commentId: '',
+      },
+    };
+    let snapshot = { status: 'ready' as const, deliveries: fixtures, lastSyncedAt: NOW };
+    const listeners = new Set<() => void>();
+    const provider = {
+      getSnapshot: () => snapshot,
+      subscribe: (listener: () => void) => {
+        listeners.add(listener);
+        return () => { listeners.delete(listener); };
+      },
+      markRead: async () => {},
+      dismiss: async () => {},
+      migrateOrganization: async () => {},
+      navigate: async () => true,
+    };
+
+    render(wrap(<InboxSection provider={provider} now={NOW} />));
+    await screen.findByTestId('inbox-list');
+
+    // A search the target row does not match, left over from before the link.
+    fireEvent.change(screen.getByTestId('inbox-search-input'), { target: { value: 'zzz-no-match' } });
+
+    requestInboxRowSelection(ORG_WINDOW_SURFACE_ID, {
+      orgId: feedbackDelivery.orgId,
+      sourceKind: 'feedbackRequest',
+      sourceId: 'request-1',
+    });
+
+    // Still nothing to select: the delivery has not synced yet, and the request
+    // has to survive that rather than being dropped on the floor.
+    expect(screen.queryByTestId('inbox-row-delivery-feedback')).toBeNull();
+
+    act(() => {
+      snapshot = { ...snapshot, deliveries: [feedbackDelivery, ...fixtures] };
+      listeners.forEach((listener) => listener());
+    });
+
+    const row = await screen.findByTestId('inbox-row-delivery-feedback');
+    expect(row.getAttribute('aria-current')).toBe('true');
+    // The stale query is cleared, because a selected row the filter hides shows
+    // the recipient an empty pane — the exact failure the link exists to avoid.
+    expect((screen.getByTestId('inbox-search-input') as HTMLInputElement).value).toBe('');
+  });
+});

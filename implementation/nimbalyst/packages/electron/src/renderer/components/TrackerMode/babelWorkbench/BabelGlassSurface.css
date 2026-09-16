@@ -1,0 +1,51 @@
+.babel-glass-surface {
+  position: relative;
+  z-index: 0;
+  min-width: 0;
+  border-radius: 8px;
+}
+
+.babel-glass-surface-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+  background: var(--nim-bg-secondary);
+  box-shadow: inset 0 0 0 1px var(--nim-border);
+}
+
+.babel-glass-surface-content {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  border-radius: inherit;
+}
+
+@supports (backdrop-filter: blur(1px)) {
+  .babel-glass-surface[data-glass-mode='frosted'] > .babel-glass-surface-backdrop {
+    background: color-mix(in srgb, var(--nim-bg-secondary) 84%, transparent);
+    backdrop-filter: blur(12px) saturate(110%);
+  }
+}
+
+.babel-glass-surface[data-glass-mode='refractive'] > .babel-glass-surface-backdrop {
+  background: transparent;
+}
+
+@media (prefers-reduced-transparency: reduce), (prefers-reduced-motion: reduce) {
+  .babel-glass-surface > .babel-glass-surface-backdrop {
+    background: var(--nim-bg-secondary);
+    backdrop-filter: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .babel-glass-surface > .babel-glass-surface-backdrop {
+    background: Canvas;
+    border: 1px solid CanvasText;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+}

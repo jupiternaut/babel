@@ -1,0 +1,33 @@
+
+> nimbalyst-monorepo@0.33.1 typecheck
+> node scripts/run-workspace-script.mjs typecheck
+
+Running "typecheck" in 26 workspaces, 7 at a time
+ok   packages/tracker-core
+ok   packages/node
+ok   packages/cli
+ok   packages/collab-protocol
+ok   packages/collab-adapters
+ok   packages/extension-sdk
+ok   packages/extensions/animation
+ok   packages/extensions/browser
+ok   packages/extensions/calc-sheets
+ok   packages/collab-client
+ok   packages/extensions/datamodellm
+ok   packages/extensions/extension-dev-kit
+ok   packages/extensions/excalidraw
+ok   packages/extensions/csv-spreadsheet
+ok   packages/extensions/github-issues-importer
+ok   packages/extensions/math
+ok   packages/extensions/git
+ok   packages/extensions/media-viewer
+ok   packages/extensions/pdf-viewer
+ok   packages/extensions/playwright
+ok   packages/extensions/nimbalyst-memory
+ok   packages/extensions/rtl-support
+ok   packages/extensions/project-graph
+ok   packages/runtime
+ok   packages/collab-bundle
+ok   packages/electron
+
+"typecheck" passed in 26 workspaces (75.1s)

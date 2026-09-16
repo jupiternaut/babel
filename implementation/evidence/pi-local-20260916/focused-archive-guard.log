@@ -1,0 +1,14 @@
+
+> @nimbalyst/babel@0.1.0-m0 test
+> vitest run --environment node tests/local-pi-domain.test.ts
+
+
+ RUN  v3.2.7 /Users/gengrf/Projects/babel/implementation/nimbalyst/packages/babel
+
+ ✓ tests/local-pi-domain.test.ts (7 tests) 48ms
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  08:39:47
+   Duration  347ms (transform 69ms, setup 0ms, collect 83ms, tests 48ms, environment 0ms, prepare 76ms)
+

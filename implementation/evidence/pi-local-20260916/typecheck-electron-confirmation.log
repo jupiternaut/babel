@@ -1,0 +1,4 @@
+
+> @nimbalyst/electron@0.77.5 typecheck
+> tsc --noEmit
+

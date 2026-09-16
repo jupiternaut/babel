@@ -1,0 +1,6 @@
+
+> @nimbalyst/babel@0.1.0-m0 typecheck
+> tsc --noEmit
+
+tests/tui-pty-input.test.ts(12,35): error TS2345: Argument of type '{ host: string; port: number; domain: DomainService; }' is not assignable to parameter of type 'ServerOptions'.
+  Property 'serviceToken' is missing in type '{ host: string; port: number; domain: DomainService; }' but required in type 'ServerOptions'.

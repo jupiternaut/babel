@@ -1,0 +1,79 @@
+{
+  "projectId": "fixture-project-babel",
+  "mode": "demo",
+  "results": [
+    {
+      "scope": "open",
+      "trackerIds": [
+        "fixture-tracker-pdf",
+        "fixture-tracker-research",
+        "fixture-tracker-sync",
+        "trk-0f0e0169-589a-4f18-a372-71a721acb1d4",
+        "trk-184fdc9e-bfb5-4f57-9d4e-e139da41c1fb",
+        "trk-24acc444-f8ea-4b48-b721-f1d1935831be",
+        "trk-25fc8283-f1df-4216-a377-db40a925cfbb",
+        "trk-2d7146e8-535f-4444-b602-e06d86b23080",
+        "trk-518330d4-b9d1-46a7-a907-daec6512f45b",
+        "trk-6cec8f26-d6e0-4149-9c83-e313c06e0752",
+        "trk-6e342b74-6e43-45f6-a753-59c525c5bc9c",
+        "trk-8622cba5-5110-44c4-b372-a3627dfbbcc7",
+        "trk-a312ba91-64f8-4449-a5a0-3fa71656568f",
+        "trk-b0db8185-f6ac-418c-a96d-97859489acd4",
+        "trk-c7f7b019-3e0b-4036-8571-ec2d4763b60f",
+        "trk-d51b76e4-8be8-4c92-9df5-c7d6147205b1",
+        "trk-dc2b41f9-3069-4401-9aff-69db5fd4c538",
+        "trk-eb6ca53a-4082-4b9d-873a-a377ab906c19",
+        "trk-ec2f80c1-db99-4012-87f6-faaeaf1e9485",
+        "trk-f0fc97bb-b8bc-4d19-a2f7-6a5a48afcd82",
+        "trk-ffbcd712-edec-4acb-830c-2d3b57412bd9"
+      ]
+    },
+    {
+      "scope": "closed",
+      "trackerIds": [
+        "c529a070-15f9-4ee6-86da-a34e3d2658dd",
+        "fixture-tracker-layout",
+        "fixture-tracker-state",
+        "trk-1446aabd-9eb5-4a8a-9793-1e7048251182"
+      ]
+    },
+    {
+      "scope": "all",
+      "trackerIds": [
+        "c529a070-15f9-4ee6-86da-a34e3d2658dd",
+        "fixture-tracker-layout",
+        "fixture-tracker-pdf",
+        "fixture-tracker-research",
+        "fixture-tracker-state",
+        "fixture-tracker-sync",
+        "trk-0f0e0169-589a-4f18-a372-71a721acb1d4",
+        "trk-1446aabd-9eb5-4a8a-9793-1e7048251182",
+        "trk-184fdc9e-bfb5-4f57-9d4e-e139da41c1fb",
+        "trk-24acc444-f8ea-4b48-b721-f1d1935831be",
+        "trk-25fc8283-f1df-4216-a377-db40a925cfbb",
+        "trk-2d7146e8-535f-4444-b602-e06d86b23080",
+        "trk-518330d4-b9d1-46a7-a907-daec6512f45b",
+        "trk-6cec8f26-d6e0-4149-9c83-e313c06e0752",
+        "trk-6e342b74-6e43-45f6-a753-59c525c5bc9c",
+        "trk-8622cba5-5110-44c4-b372-a3627dfbbcc7",
+        "trk-a312ba91-64f8-4449-a5a0-3fa71656568f",
+        "trk-b0db8185-f6ac-418c-a96d-97859489acd4",
+        "trk-c7f7b019-3e0b-4036-8571-ec2d4763b60f",
+        "trk-d51b76e4-8be8-4c92-9df5-c7d6147205b1",
+        "trk-dc2b41f9-3069-4401-9aff-69db5fd4c538",
+        "trk-eb6ca53a-4082-4b9d-873a-a377ab906c19",
+        "trk-ec2f80c1-db99-4012-87f6-faaeaf1e9485",
+        "trk-f0fc97bb-b8bc-4d19-a2f7-6a5a48afcd82",
+        "trk-ffbcd712-edec-4acb-830c-2d3b57412bd9"
+      ]
+    }
+  ],
+  "search": {
+    "q": "关注更新",
+    "trackerIds": [
+      "trk-8622cba5-5110-44c4-b372-a3627dfbbcc7",
+      "trk-a312ba91-64f8-4449-a5a0-3fa71656568f",
+      "trk-eb6ca53a-4082-4b9d-873a-a377ab906c19"
+    ]
+  }
+}

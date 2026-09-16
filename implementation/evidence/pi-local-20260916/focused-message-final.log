@@ -1,0 +1,12 @@
+
+ RUN  v4.1.8 /Users/gengrf/Projects/babel/implementation/nimbalyst
+
+ ✓ |jsdom| packages/electron/src/renderer/components/TrackerMode/__tests__/babelRunActions.events.test.tsx (17 tests) 2588ms
+   ✓ isolates drafts and viewed runs by endpoint and restores a stable task identity  388ms
+   ✓ isolates drafts and viewed runs by projectId and restores a stable task identity  371ms
+
+ Test Files  1 passed (1)
+      Tests  17 passed (17)
+   Start at  08:40:28
+   Duration  3.61s (transform 69ms, setup 44ms, import 147ms, tests 2.59s, environment 425ms)
+

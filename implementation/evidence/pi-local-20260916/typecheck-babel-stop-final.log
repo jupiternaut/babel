@@ -1,0 +1,4 @@
+
+> @nimbalyst/babel@0.1.0-m0 typecheck
+> tsc --noEmit
+

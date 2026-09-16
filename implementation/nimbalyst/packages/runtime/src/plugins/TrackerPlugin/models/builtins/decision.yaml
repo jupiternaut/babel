@@ -1,0 +1,137 @@
+type: decision
+displayName: Decision
+displayNamePlural: Decisions
+icon: gavel
+color: "#8b5cf6"
+
+modes:
+  inline: true
+  fullDocument: true
+
+sharing: team
+draftByDefault: false
+
+idPrefix: dec
+idFormat: ulid
+
+fields:
+  - name: decisionId
+    type: string
+    required: true
+    displayInline: false
+
+  - name: title
+    type: string
+    required: true
+    displayInline: true
+
+  - name: status
+    type: select
+    default: to-do
+    options:
+      - value: to-do
+        label: To Decide
+        icon: help
+        category: unstarted
+      - value: in-progress
+        label: Evaluating
+        icon: psychology
+        category: started
+      - value: decided
+        label: Decided
+        icon: check_circle
+        category: done
+      - value: implemented
+        label: Implemented
+        icon: done_all
+        category: done
+
+  - name: chosen
+    type: string
+    displayInline: true
+
+  - name: priority
+    type: select
+    required: false
+    default: medium
+    options:
+      - value: low
+        label: Low
+      - value: medium
+        label: Medium
+      - value: high
+        label: High
+      - value: critical
+        label: Critical
+
+  - name: owner
+    type: user
+    displayInline: false
+
+  - name: stakeholders
+    type: array
+    itemType: string
+    displayInline: false
+
+  # Dependency pair. `dependsOn` records work this item waits on; `blocks` records
+  # work waiting on this item. Writing either side materializes the other.
+  - name: dependsOn
+    type: relationship
+    relationshipTypeKey: depends-on
+    inverseRelationshipTypeKey: blocks
+    inverseFieldId: blocks
+    targetTrackerTypes: "*"
+    multiValue: true
+
+  - name: blocks
+    type: relationship
+    relationshipTypeKey: blocks
+    inverseRelationshipTypeKey: depends-on
+    inverseFieldId: dependsOn
+    targetTrackerTypes: "*"
+    multiValue: true
+
+  # Collection membership. Written directly, or by inverse propagation when an
+  # item is added to a milestone/release from the collection side.
+  - name: collection
+    type: relationship
+    relationshipTypeKey: in-collection
+    inverseRelationshipTypeKey: has-item
+    inverseFieldId: items
+    targetTrackerTypes:
+      - milestone
+      - release
+    multiValue: true
+
+  - name: tags
+    type: array
+    itemType: string
+    displayInline: false
+
+  - name: created
+    type: datetime
+    displayInline: false
+    readOnly: true
+
+  - name: updated
+    type: datetime
+    displayInline: false
+    readOnly: true
+
+statusBarLayout:
+  - row:
+    - field: status
+      width: 200
+    - field: chosen
+      width: 300
+    - field: priority
+      width: 150
+
+inlineTemplate: "{icon} {title} {status}"
+
+roles:
+  title: title
+  workflowStatus: status
+  priority: priority
+  assignee: owner
+  tags: tags

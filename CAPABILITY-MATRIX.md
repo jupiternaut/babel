@@ -1,6 +1,10 @@
 # GUI / TUI / CLI / Hooks 功能对照表
 
-版本：v2.3。当前所有条目为**待实现、待验证**，下表是交付要求，不是已支持能力清单。依据：[主 SPEC](NIMBALYST-DEVELOPMENT-SPEC.md)、[TUI/Hooks 契约](NIMBALYST-TUI-HOOKS-SPEC.md)。
+## 当前开发方向（2026-09-16）
+
+后续主开发与原生桌面验收平台为 **MacBook M3 / macOS**，执行 [macOS 开发交接](MACOS-DEVELOPMENT-HANDOFF.md)。Windows 历史路径/阶段顺序不覆盖此决定；保留 Windows/Ubuntu 的适配与回归要求。Wayland 指 getwayland.com 的 AI 工作台，对标以 [Wayland / Devin 指标](WAYLAND-DEVIN-BENCHMARK.md) 为准。已有实现继续收口，不重新制作另一套独立看板；历史测试通过不代表 macOS 已验收。
+
+版本：v2.3。下表是交付要求；当前逐项实现、证据与剩余缺口见 [M0 能力状态](implementation/M0-CAP-STATUS.md)，本轮 Mac 验证见 [TASK_EVIDENCE](TASK_EVIDENCE.md)。部分 demo 子路径已通过，完整 M0 尚未签收。依据：[主 SPEC](NIMBALYST-DEVELOPMENT-SPEC.md)、[TUI/Hooks 契约](NIMBALYST-TUI-HOOKS-SPEC.md)。
 
 表中命令/事件是语义角色，NB-01 固定精确名称、Schema、错误码与权限。读取动作不必伪造业务变更事件：使用查询结果及 correlationId/可选 trace 进行断言。变更动作在权威事务提交后产生真实事件。界面选择/滚动属于客户端状态，不复制成任务业务字段。
 
@@ -51,3 +55,6 @@ M0 中设备、Google 来源与真实执行数据使用演示场景；只读继�
 PAR-01/02 对同一 fixture 比较三端结果及交叉操作；HEADLESS-01 证明无窗口可运行；CLI-01 与 TUI-01 分别验证非交互合同和真实终端输入；HOOK-01/02 验证校验和可恢复投递；EVIDENCE-01 结合查询断言；LIFE-01 验证视图退出不杀 run。具体通过条件见契约第 6 节。
 
 每项证据记录：提交/版本、平台/终端、mode、projectId/trackerId/runId、输入、命令结果、关联eventId/cursor、前后revision、查询断言与日志/截图。图像生成与Hook日志本身都不能把未执行条目标为通过。
+## 2026-09-16 真实系统模块
+
+SYS-01～09 的实现与验收独立记录在 [系统控制 SPEC](SYSTEM-CONSOLE-SPEC.md)。服务启停、自启动、进程终止在 GUI/TUI/CLI 共用同一命令核心，资源/日志/历史共用查询，Hook 消费持久事件。真实 ConPTY 验收与原生窗口验收分别计数；系统权限不足和未验证平台不算通过。历史任务域的当前验收以 implementation/ACCEPTANCE.md 为准。

@@ -1,0 +1,350 @@
+import { BrowserWindow, shell, nativeImage, app, powerMonitor } from 'electron';
+import { safeHandle, safeOn } from '../utils/ipcRegistry';
+import { windowStates, windows, getWindowId } from '../window/WindowManager';
+import { syncRepresentedFilename } from '../window/windowState';
+import { basename, join } from 'path';
+import { writeFileSync, existsSync, mkdirSync } from 'fs';
+import { tmpdir } from 'os';
+import { reportDesktopActivity, setWindowFocused, setScreenLocked, setIdleThresholdMs, attemptReconnect } from '../services/SyncManager';
+import { startNetworkAvailability, onNetworkAvailable, notifyNetworkAvailable } from '../services/NetworkAvailability';
+import { AnalyticsService } from '../services/analytics/AnalyticsService';
+import { hasFocusedWindow } from '../services/analytics/dailyActiveHeartbeat';
+import { getPackageRoot } from '../utils/appPaths';
+import { resolveImageExtension } from '../utils/imageFormat';
+import { resolveWorkspaceAttachmentStagingDirectory } from '../services/attachments/attachmentStagingRoot';
+
+/** Timestamp of last app_foregrounded event, used to throttle to once per 30 minutes */
+let lastForegroundedEventAt = 0;
+const FOREGROUND_THROTTLE_MS = 30 * 60 * 1000; // 30 minutes
+
+/**
+ * How often to re-check whether the daily-active heartbeat is due while the app
+ * simply stays focused. Focus alone is not enough: someone who leaves Nimbalyst
+ * open across local midnight never fires another focus event, and would go
+ * missing from DAU for the whole of the new day.
+ *
+ * The tick itself emits nothing — it is a date comparison — so the interval is
+ * about how fast a rolled-over day is noticed, not about volume.
+ */
+const DAILY_ACTIVE_CHECK_MS = 10 * 60 * 1000; // 10 minutes
+
+export function registerWindowHandlers() {
+    // Get initial window state
+    safeHandle('get-initial-state', (event) => {
+        const window = BrowserWindow.fromWebContents(event.sender);
+        if (!window) return null;
+
+        const windowId = [...windows.entries()].find(([, win]) => win === window)?.[0];
+        if (windowId === undefined) return null;
+
+        const state = windowStates.get(windowId);
+        if (!state) return null;
+
+        if (state.mode === 'workspace' && state.workspacePath) {
+            const openProjectPaths = [state.workspacePath, ...(state.additionalWorkspacePaths ?? [])]
+                .filter((path, index, paths) => typeof path === 'string' && path.length > 0 && paths.indexOf(path) === index);
+            const activeWorkspacePath =
+                state.activeWorkspacePath && openProjectPaths.includes(state.activeWorkspacePath)
+                    ? state.activeWorkspacePath
+                    : state.workspacePath;
+            return {
+                mode: 'workspace',
+                workspacePath: state.workspacePath,
+                workspaceName: basename(state.workspacePath),
+                activeWorkspacePath,
+                openProjectPaths,
+            };
+        }
+
+        return {
+            mode: 'document'
+        };
+    });
+
+    // Open external URL in default browser
+    safeHandle('open-external', async (event, url: string) => {
+        if (url && typeof url === 'string') {
+            await shell.openExternal(url);
+        }
+    });
+
+    safeHandle('legal:open-third-party-notices', async () => {
+        const noticesPath = app.isPackaged
+            ? join(process.resourcesPath, 'legal', 'THIRD_PARTY_NOTICES.txt')
+            : join(getPackageRoot(), 'resources', 'generated', 'THIRD_PARTY_NOTICES.txt');
+
+        if (!existsSync(noticesPath)) {
+            return { success: false, error: `Third-party notices file not found at: ${noticesPath}` };
+        }
+
+        const result = await shell.openPath(noticesPath);
+        if (result) {
+            return { success: false, error: result };
+        }
+
+        return { success: true };
+    });
+
+    // Get current workspace path for the calling window
+    safeHandle('workspace:get-current', (event) => {
+        const window = BrowserWindow.fromWebContents(event.sender);
+        if (!window) return null;
+
+        const windowId = [...windows.entries()].find(([, win]) => win === window)?.[0];
+        if (windowId === undefined) return null;
+
+        const state = windowStates.get(windowId);
+        if (!state || state.mode !== 'workspace') return null;
+
+        return {
+            path: state.workspacePath,
+            name: state.workspacePath ? basename(state.workspacePath) : null
+        };
+    });
+    // Set document edited state
+    safeOn('set-document-edited', (event, edited: boolean) => {
+        const window = BrowserWindow.fromWebContents(event.sender);
+        if (!window) return;
+
+        window.setDocumentEdited(edited);
+    });
+
+    // Set window title
+    safeOn('set-title', (event, title: string) => {
+        const window = BrowserWindow.fromWebContents(event.sender);
+        if (window) {
+            window.setTitle(title);
+        }
+    });
+
+    // Keep the window's represented file (AXDocument) on the visible document.
+    // The renderer sends null when none is visible, which clears it instead of
+    // leaving a stale path behind.
+    safeOn('set-represented-file', (event, filePath: string | null) => {
+        const window = BrowserWindow.fromWebContents(event.sender);
+        if (!window) return;
+
+        syncRepresentedFilename(window, filePath);
+    });
+
+
+    // Open image in default application
+    safeHandle('image:open-in-default-app', async (event, imagePath: string) => {
+        try {
+            // Handle data URLs by creating a temp file
+            if (imagePath.startsWith('data:')) {
+                const tempPath = await createTempFileFromDataURL(imagePath, workspacePathForEvent(event));
+                if (tempPath) {
+                    await shell.openPath(tempPath);
+                    return { success: true };
+                } else {
+                    return { success: false, error: 'Failed to create temp file from data URL' };
+                }
+            }
+
+            // Handle file:// URLs
+            let filePath = imagePath;
+            if (filePath.startsWith('file://')) {
+                filePath = filePath.replace('file://', '');
+            }
+
+            // Check if file exists
+            if (!existsSync(filePath)) {
+                return { success: false, error: 'File does not exist' };
+            }
+
+            // Open in default application
+            const result = await shell.openPath(filePath);
+            if (result) {
+                // openPath returns an error string if it failed, empty string on success
+                return { success: false, error: result };
+            }
+            return { success: true };
+        } catch (error: any) {
+            console.error('[IMAGE] Failed to open image:', error);
+            return { success: false, error: error.message };
+        }
+    });
+
+    // Start native drag for image
+    safeHandle('image:start-drag', async (event, imagePath: string) => {
+        try {
+            const window = BrowserWindow.fromWebContents(event.sender);
+            if (!window) {
+                return { success: false, error: 'Window not found' };
+            }
+
+            // Handle data URLs by creating a temp file
+            if (imagePath.startsWith('data:')) {
+                const tempPath = await createTempFileFromDataURL(imagePath, workspacePathForEvent(event));
+                if (!tempPath) {
+                    return { success: false, error: 'Failed to create temp file from data URL' };
+                }
+                imagePath = tempPath;
+            }
+
+            // Handle file:// URLs
+            let filePath = imagePath;
+            if (filePath.startsWith('file://')) {
+                filePath = filePath.replace('file://', '');
+            }
+
+            // Check if file exists
+            if (!existsSync(filePath)) {
+                return { success: false, error: 'File does not exist' };
+            }
+
+            // Create icon for drag preview
+            const icon = nativeImage.createFromPath(filePath);
+
+            // Start drag operation
+            event.sender.startDrag({
+                file: filePath,
+                icon: icon.resize({ width: 64, height: 64 })
+            });
+
+            return { success: true };
+        } catch (error: any) {
+            console.error('[IMAGE] Failed to start drag:', error);
+            return { success: false, error: error.message };
+        }
+    });
+
+    // Report user activity from renderer (for sync presence awareness)
+    safeOn('user-activity', () => {
+        reportDesktopActivity();
+    });
+
+    // Authoritative per-window focus state for renderers (NIM-849).
+    //
+    // The renderer's own `document.hasFocus()` is true for EVERY window while the
+    // app is the active application — it cannot tell the OS-key window from a
+    // background one. That misfire let background-project Claude CLI sessions all
+    // spawn on app activation, each firing an upstream request and stampeding the
+    // subscription rate limit. `browser-window-focus`/`blur` fire only for the
+    // specific window that gained/lost OS focus, so reporting THIS window's state
+    // to its own renderer is the reliable signal the CLI launch gate needs.
+    safeHandle('window:is-focused', (event) => {
+        const win = BrowserWindow.fromWebContents(event.sender);
+        return !!win && !win.isDestroyed() && win.isFocused();
+    });
+
+    // Track window focus for sync presence and DAU analytics
+    // Note: setWindowFocused() is app-level; the per-window send below is not.
+    app.on('browser-window-focus', (_event, win) => {
+        setWindowFocused(true);
+
+        if (win && !win.isDestroyed()) {
+            win.webContents.send('window:focus-changed', true);
+        }
+
+        // Focus is our cleanest "a human is here" signal, so it drives the
+        // daily-active heartbeat. At most one event per install per local day.
+        AnalyticsService.getInstance().maybeEmitDailyActive();
+
+        // Emit app_foregrounded for DAU tracking when a window gains focus,
+        // throttled to once per 30 minutes to keep event volume low
+        const now = Date.now();
+        if (now - lastForegroundedEventAt >= FOREGROUND_THROTTLE_MS) {
+            lastForegroundedEventAt = now;
+            AnalyticsService.getInstance().sendEvent('app_foregrounded');
+        }
+    });
+
+    // Catch the day rolling over under an app that is focused but idle. Gated on
+    // a window actually being focused so an install nobody has touched stays out
+    // of DAU -- background-only installs were a third of the old inflated number.
+    setInterval(() => {
+        if (hasFocusedWindow(BrowserWindow.getAllWindows())) {
+            AnalyticsService.getInstance().maybeEmitDailyActive();
+        }
+    }, DAILY_ACTIVE_CHECK_MS).unref();
+
+    app.on('browser-window-blur', (_event, win) => {
+        // Check if any window is still focused
+        const anyFocused = BrowserWindow.getAllWindows().some(w => w.isFocused());
+        setWindowFocused(anyFocused);
+
+        if (win && !win.isDestroyed()) {
+            win.webContents.send('window:focus-changed', false);
+        }
+    });
+
+    // Track screen lock state for sync presence. Note: reconnect logic itself
+    // lives in NetworkAvailability -- this handler is only for presence.
+    powerMonitor.on('lock-screen', () => {
+        setScreenLocked(true);
+    });
+
+    powerMonitor.on('unlock-screen', () => {
+        setScreenLocked(false);
+    });
+
+    // Start the centralized NetworkAvailability broker and subscribe the sync
+    // reconnect cascade to it. The broker owns all OS-level network signals
+    // (resume, unlock, net.isOnline polling, renderer online events) and
+    // debounces them so attemptReconnect runs at most once per burst.
+    startNetworkAvailability();
+    onNetworkAvailable(() => {
+        attemptReconnect().catch(() => {
+            // Errors are logged in attemptReconnect
+        });
+    });
+
+    // Allow the renderer to forward `window.online` events. Chromium fires
+    // these on network-interface changes even when macOS doesn't deliver
+    // a powerMonitor event (e.g. hotel wifi handoff without sleep/lock).
+    safeOn('sync:network-came-online', () => {
+        notifyNetworkAvailable('renderer:window.online');
+    });
+
+    // IPC handler to set idle threshold for testing
+    safeHandle('sync:set-idle-threshold', (_event, ms: number) => {
+        if (typeof ms === 'number' && ms > 0) {
+            setIdleThresholdMs(ms);
+            return { success: true };
+        }
+        return { success: false, error: 'Invalid threshold value' };
+    });
+}
+
+// Helper function to create a temp file from a data URL
+function workspacePathForEvent(event: Electron.IpcMainInvokeEvent): string | undefined {
+    const window = BrowserWindow.fromWebContents(event.sender);
+    if (!window) return undefined;
+    const windowId = getWindowId(window);
+    if (windowId === null) return undefined;
+    return windowStates.get(windowId)?.workspacePath ?? undefined;
+}
+
+async function createTempFileFromDataURL(dataURL: string, workspacePath?: string): Promise<string | null> {
+    try {
+        // Parse data URL: data:image/png;base64,iVBORw0KGgo...
+        const matches = dataURL.match(/^data:([^;]+);base64,(.+)$/);
+        if (!matches) {
+            console.error('[IMAGE] Invalid data URL format');
+            return null;
+        }
+
+        const mimeType = matches[1];
+        const base64Data = matches[2];
+        const buffer = Buffer.from(base64Data, 'base64');
+
+        // Name the temp file after its actual bytes -- a blind `png` default hands downstream
+        // consumers a file no decoder can open (NIM-2211).
+        const extension = resolveImageExtension(mimeType, buffer);
+
+        // Create temp file
+        const root = workspacePath
+            ? join(resolveWorkspaceAttachmentStagingDirectory(workspacePath), 'images')
+            : tmpdir();
+        mkdirSync(root, { recursive: true });
+        const tempPath = join(root, `image-${Date.now()}.${extension}`);
+        writeFileSync(tempPath, buffer);
+
+        return tempPath;
+    } catch (error) {
+        console.error('[IMAGE] Failed to create temp file:', error);
+        return null;
+    }
+}

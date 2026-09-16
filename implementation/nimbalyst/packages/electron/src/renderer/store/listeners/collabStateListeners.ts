@@ -1,0 +1,74 @@
+import type {
+  DocumentSyncStatus,
+  LocalDocumentReplicaOutboxState,
+  LocalDocumentReplicaState,
+} from '@nimbalyst/runtime/sync';
+import { store } from '@nimbalyst/runtime/store';
+import {
+  DEFAULT_COLLAB_DOCUMENT_STATE,
+  collabDocumentStateAtom,
+} from '../atoms/collabEditor';
+
+const TRANSPORT_DEBOUNCE_MS = 120;
+const transportTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+/**
+ * Tracker body documents have a live Y.Doc transport but no durable local
+ * replica. Preserve any already-published transport/outbox values so a second
+ * mount sharing the same cache entry cannot make the status dot flap.
+ */
+export function markCollabDocumentTransportOnly(filePath: string): void {
+  const atom = collabDocumentStateAtom(filePath);
+  const { replica: _replica, ...transportOnlyState } = store.get(atom);
+  store.set(atom, transportOnlyState);
+}
+
+export function setCollabReplicaState(
+  filePath: string,
+  replica: LocalDocumentReplicaState,
+): void {
+  const atom = collabDocumentStateAtom(filePath);
+  store.set(atom, { ...store.get(atom), replica });
+}
+
+export function setCollabOutboxState(
+  filePath: string,
+  outbox: LocalDocumentReplicaOutboxState,
+): void {
+  const atom = collabDocumentStateAtom(filePath);
+  store.set(atom, { ...store.get(atom), outbox });
+}
+
+/**
+ * Latch a render failure for this document. Not debounced and never cleared
+ * here: a binding that threw once cannot be assumed healthy again until the
+ * document is reopened, and the whole point of the flag is that nothing else
+ * in the state makes the failure visible.
+ */
+export function markCollabRenderFailed(filePath: string): void {
+  const atom = collabDocumentStateAtom(filePath);
+  const current = store.get(atom);
+  if (current.renderFailed) return;
+  store.set(atom, { ...current, renderFailed: true });
+}
+
+/** Debounces transport-only flaps while replica/outbox safety remains immediate. */
+export function publishCollabTransportState(
+  filePath: string,
+  transport: DocumentSyncStatus,
+): void {
+  const existing = transportTimers.get(filePath);
+  if (existing) clearTimeout(existing);
+  transportTimers.set(filePath, setTimeout(() => {
+    transportTimers.delete(filePath);
+    const atom = collabDocumentStateAtom(filePath);
+    store.set(atom, { ...store.get(atom), transport });
+  }, TRANSPORT_DEBOUNCE_MS));
+}
+
+export function resetCollabDocumentState(filePath: string): void {
+  const existing = transportTimers.get(filePath);
+  if (existing) clearTimeout(existing);
+  transportTimers.delete(filePath);
+  store.set(collabDocumentStateAtom(filePath), DEFAULT_COLLAB_DOCUMENT_STATE);
+}

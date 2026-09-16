@@ -1,0 +1,2838 @@
+/**
+ * TeamService - Manages team CRUD operations via collabv3 REST API.
+ *
+ * Architecture: Per-workspace org context. The user's personal org (global auth)
+ * is NEVER replaced. Team operations use org-scoped JWTs obtained via Stytch
+ * session exchange, cached per-org with TTL. Different projects can use different
+ * orgs simultaneously.
+ *
+ * This service handles:
+ * - Creating teams (new Stytch orgs + D1 metadata)
+ * - Listing team members with roles
+ * - Inviting/removing members
+ * - Per-org JWT caching via session exchange
+ * - Git remote detection for workspace identity
+ *
+ * Follows the TrackerSyncManager pattern:
+ * - Module-level functions (no class)
+ * - safeHandle() for IPC registration
+ * - REST calls with JWT auth to collabv3
+ */
+
+import { BrowserWindow, net } from 'electron';
+import { createHash } from 'crypto';
+import { existsSync } from 'fs';
+import { basename } from 'path';
+import { mkdir, stat } from 'fs/promises';
+import { safeHandle } from '../utils/ipcRegistry';
+import { logger } from '../utils/logger';
+import { getGitRemoteIdentities, getRawGitRemote, normalizeGitRemote } from '../utils/gitUtils';
+import type { GitRemoteIdentities } from '../utils/gitUtils';
+import { resolveTeamForRemoteHash } from './teamProjectResolver';
+import { getCollabSyncHttpUrl } from '../utils/collabSyncUrl';
+import { assertJwtMatchesOrg, getJwtExp, getSubFromJwt, AuthContextMismatchError } from './jwtOrg';
+import { createSingleFlight } from '../utils/asyncCache';
+import { getWorkspaceState, updateWorkspaceState } from '../utils/store';
+import { setHasOrganizationsForMenu } from '../menu/organizationMenuState';
+import {
+  getAccounts,
+  getPersonalSessionJwt,
+  getPersonalSessionJwtForAccount,
+  getSessionToken,
+  getSessionTokenForAccount,
+  isAuthenticated,
+  refreshPersonalSession,
+  refreshPersonalSessionForAccount,
+  onAuthStateChange,
+  updateSessionToken,
+  updateSessionTokenForAccount,
+  getUserEmail,
+  getPersonalOrgId,
+  getPersonalUserId,
+  getSyncAccount,
+} from './StytchAuthService';
+import {
+  asTeamJwt,
+  asTeamMemberId,
+  asPersonalMemberId,
+  type PersonalJwt,
+  type TeamJwt,
+  type TeamMemberId,
+} from '@nimbalyst/runtime';
+import type {
+  ConversationDirectoryEntry,
+  ConversationDirectoryMembersResult,
+  ConversationMutationResult,
+  CreateConversationInput,
+  CreateConversationResult,
+  ListConversationsOptions,
+  SetConversationMembershipInput,
+  SetConversationMembershipResult,
+  UpdateConversationInput,
+} from '../../shared/conversationDirectory';
+import type { OrgSettings } from '../../shared/orgSettings';
+import { normalizeOrgSettings } from '../../shared/orgSettings';
+import { getDatabase } from '../database/initialize';
+import {
+  backfillProjection,
+  reconcileProjectAccessFromServer,
+  applyMemberUpserted,
+  applyMemberRemoved,
+  applyMemberRoleChanged,
+  applyProjectGrant,
+  applyProjectRevoke,
+  upsertProject,
+  upsertOrg,
+  type OrgWithRoster,
+  type MemberInput,
+  type ProjectionDb,
+  type ProjectRole,
+} from './OrgProjectionService';
+import {
+  canAccess,
+  type AccessDatabase,
+  type AccessViewerIdentity,
+  type CanAccessInput,
+} from './OrgAccessResolver';
+import { setTeamServerManagedCustody } from './TeamCustodyService';
+// TrackerSyncManager already imports from this module (findTeamForWorkspace).
+// The cycle is safe because both sides only reference the imported symbols
+// inside function bodies, never at module-init time -- by the time
+// autoMatchTeamForWorkspace runs, both modules are fully loaded.
+import { ensureTrackerSyncForWorkspace } from './TrackerSyncManager';
+import { getCollabBackupService } from './CollabBackupService';
+import { createTeamAuthBootstrap } from './TeamAuthBootstrap';
+import {
+  findBindingsWithMissingOrg,
+  repairAccountOrgBindingFromEmail,
+  resolveTeamOrgAccountBinding,
+  upsertAccountOrgBinding,
+  type AccountOrgBindingSource,
+} from './AccountOrgBindingService';
+import { getRecentItems } from '../utils/store';
+import { windowReferencesWorkspace, windowStates } from '../window/windowState';
+import {
+  resolveOrgProjectLocalStates,
+  type OrgProjectLocalState,
+  type WorkspaceBindingState,
+  type WorkspaceRemoteState,
+} from './orgProjectLocalState';
+
+// ============================================================================
+// Server URL Helper
+// ============================================================================
+
+// Team operations resolve to the same host the renderer's DocumentSync /
+// TrackerSync use; the canonical helper is `getCollabSyncHttpUrl` in
+// utils/collabSyncUrl.ts. Re-exported under the original name so this
+// module's many callers (and any external imports) don't churn.
+const getCollabServerUrl = getCollabSyncHttpUrl;
+
+// ============================================================================
+// Types
+// ============================================================================
+
+export interface TeamDetails {
+  orgId: string;
+  name: string;
+  gitRemoteHash: string | null;
+  /**
+   * Server-minted UUID that names this team's tracker room
+   * (tracker-sync-redesign D8 / NIM-404). May be null for snapshots from
+   * old worker versions that predate the field; the tracker host adapter
+   * fails closed in that case rather than falling back to gitRemoteHash.
+   */
+  teamProjectId?: string | null;
+  createdAt: string;
+  role: string;
+  /** Stytch membership type: active_member, pending_member, or invited_member */
+  membershipType?: string;
+  /**
+   * Epic H3 P0/A: the full project registry for this org. The server returns
+   * every project (primary + secondary), each with its own tracker-room routing
+   * key (`teamProjectId`) and `gitRemoteHash`. Used to resolve a workspace whose
+   * git remote matches a SECONDARY project, not just the primary one. May be
+   * absent for snapshots from worker versions predating the registry.
+   */
+  projects?: TeamProjectSummary[];
+  /** Personal account whose JWT discovered this membership. Public metadata only. */
+  sourcePersonalOrgId?: string;
+  sourceEmail?: string | null;
+  /** Explicit server-side account binding projected from the org TeamRoom. */
+  owningPersonalOrgId?: string | null;
+  /** The Stytch member id in this team org (different from the personal member id). */
+  teamMemberId?: TeamMemberId | null;
+  /** All explicit bindings when more than one signed-in account belongs to the same org. */
+  accountBindings?: Array<{ personalOrgId: string; teamMemberId: TeamMemberId }>;
+  /** Account selected from the explicit local binding for workspace operations. */
+  boundPersonalOrgId?: string | null;
+}
+
+// identity-scope-allow: raw team-list response is branded by brandTeamDetails
+type RawTeamDetails = Omit<TeamDetails, 'teamMemberId' | 'accountBindings'> & {
+  teamMemberId?: string | null;
+  // identity-scope-allow: raw team-list binding is branded by brandTeamDetails
+  accountBindings?: Array<{ personalOrgId: string; teamMemberId: string }>;
+};
+
+function brandTeamDetails(team: RawTeamDetails): TeamDetails {
+  return {
+    ...team,
+    teamMemberId: team.teamMemberId == null ? null : asTeamMemberId(team.teamMemberId),
+    accountBindings: team.accountBindings?.map((binding) => ({
+      ...binding,
+      teamMemberId: asTeamMemberId(binding.teamMemberId),
+    })),
+  };
+}
+
+/**
+ * Epic H3 P0/A: one project in an org's registry. `teamProjectId` names the
+ * project's tracker room (`org:{orgId}:tracker:{teamProjectId}`); `projectId` is
+ * the stable id used for grants / discovery.
+ */
+export interface TeamProjectSummary {
+  projectId: string;
+  teamProjectId: string;
+  gitRemoteHash: string | null;
+  slug: string | null;
+  name: string | null;
+  /**
+   * The project's git remote in clonable form, when the org has one recorded.
+   *
+   * Genuinely optional: the hash is one-way, so projects created before this
+   * field existed can never be backfilled server-side and will simply never
+   * have it. Every consumer must degrade to choose-a-folder rather than
+   * offering a clone that cannot run.
+   */
+  remoteUrl?: string;
+}
+
+/** Epic H3 P3: per-member row in the move wizard's pre-flight preview. */
+export interface MovePreviewMember {
+  email: string | null;
+  projectRole: string;
+  inDest: boolean;     // already a member of the destination org
+  willInvite: boolean; // not in dest -> will be invited as a paid seat
+}
+
+/** Epic H3 P3: move-project pre-flight (read-only). */
+export interface MovePreview {
+  projectId: string;
+  slug: string | null;
+  slugCollision: boolean; // dest already has a project with this slug
+  custodyBlocked: boolean; // either org was never converted to server-managed custody
+  members: MovePreviewMember[];
+  seatDelta: number; // # of members who'll be invited (new paid seats)
+}
+
+/** Epic H3 P1/P2: move-project result. */
+export interface MoveResultSummary {
+  projectId: string;
+  destOrgId: string;
+  destTeamProjectId: string;
+  movedDocuments: number;
+  grantsTransferred: number;
+  grantsPending: number;
+  grantsDropped: number;
+  grantsSkipped: number;
+}
+
+/** Epic H3 P4: merge-orgs result. */
+export interface MergeResultSummary {
+  survivorOrgId: string;
+  drainedOrgId: string;
+  movedProjects: Array<{ projectId: string; destTeamProjectId: string }>;
+  rosterElevated: number;
+  rosterToInvite: number;
+  drainedDeleted: boolean;
+  partial: boolean;
+  failedProjectId?: string;
+  error?: string;
+}
+
+export interface TeamMember {
+  memberId: TeamMemberId;
+  email: string;
+  name: string;
+  status: string;
+  role: string;
+  createdAt: string;
+}
+
+type InviteMemberRole = 'owner' | 'admin' | 'member' | 'viewer' | 'guest';
+
+/**
+ * An extra project an invitation should grant.
+ *
+ * `teamProjectId` is the routing key, not `projectId`: the server's
+ * `project_access.project_id` column holds `team_project_id`, so a grant sent
+ * under the other identifier writes a row that authorizes nothing.
+ */
+export interface InviteProjectGrant {
+  teamProjectId: string;
+  projectRole: 'project-admin' | 'project-editor' | 'project-viewer';
+}
+
+export interface InviteMemberOutcome {
+  projectGrantsApplied: number;
+  /** `teamProjectId`s the server accepted the invitation for but could not grant. */
+  projectGrantsFailed: string[];
+}
+
+// ============================================================================
+// Per-Org JWT Cache
+// ============================================================================
+
+interface CachedOrgJwt {
+  jwt: TeamJwt;
+  expiresAt: number;
+}
+
+/** Cache of org-scoped JWTs. Key is orgId. */
+const orgJwtCache = new Map<string, CachedOrgJwt>();
+const orgJwtExchangeSingleFlight = createSingleFlight<string, TeamJwt>();
+const teamAccountBindingHints = new Map<string, string>();
+
+/** Buffer before JWT exp to refresh early (60 seconds). */
+const JWT_REFRESH_BUFFER_MS = 60 * 1000;
+
+function getProjectionDatabase(): ProjectionDb | null {
+  try {
+    return typeof getDatabase === 'function'
+      ? getDatabase() as ProjectionDb | null
+      : null;
+  } catch {
+    // Some isolated unit suites intentionally omit the database initializer.
+    return null;
+  }
+}
+
+/**
+ * Get an org-scoped JWT via session exchange. Caches per-org.
+ * This does NOT touch the global auth state -- the personal org session is preserved.
+ *
+ * Cache TTL is derived from the actual JWT `exp` claim (minus a 60s buffer)
+ * so we never serve an expired token.
+ *
+ * NIM-949: the exchanged token is asserted to actually be scoped to `orgId`
+ * (its `organization_id` claim). A session refresh can demote a team session
+ * toward the personal org, in which case `/switch` may hand back a personal-org
+ * token; serving that for a team document room causes the room to reject the ws
+ * upgrade (400) and the doc renders blank. We throw AuthContextMismatchError
+ * rather than cache/serve a wrong-org token. Pass `forceRefresh` to bypass the
+ * cache and re-exchange (used by reconnect after an auth-style rejection).
+ */
+export async function getOrgScopedJwt(
+  orgId: string,
+  accountOrgId?: string,
+  forceRefresh = false,
+): Promise<TeamJwt> {
+  let resolvedAccountOrgId = accountOrgId;
+  if (!resolvedAccountOrgId) {
+    const db = getProjectionDatabase();
+    const signedInAccounts = getAccounts();
+    const signedInAccountIds = signedInAccounts.map((account) => account.personalOrgId);
+    let binding = db
+      ? await resolveTeamOrgAccountBinding(
+        db,
+        orgId,
+        signedInAccountIds,
+        getSyncAccount()?.personalOrgId,
+      )
+      : null;
+    const discoveryHint = teamAccountBindingHints.get(orgId);
+    resolvedAccountOrgId = binding?.personalOrgId
+      ?? (discoveryHint && signedInAccountIds.includes(discoveryHint) ? discoveryHint : undefined);
+
+    // Upgrade safety net: background collaboration can request an org JWT
+    // before listTeams has had a chance to persist or hint the A1 binding.
+    // Try the same logged, once-per-pair email repair as the access resolver
+    // before considering the single-account compatibility shortcut.
+    if (!resolvedAccountOrgId && db) {
+      for (const account of signedInAccounts) {
+        if (!account.email) continue;
+        await repairAccountOrgBindingFromEmail(
+          db,
+          account.personalOrgId,
+          orgId,
+          account.email,
+        );
+        binding = await resolveTeamOrgAccountBinding(
+          db,
+          orgId,
+          signedInAccountIds,
+          getSyncAccount()?.personalOrgId,
+        );
+        if (binding) {
+          resolvedAccountOrgId = binding.personalOrgId;
+          break;
+        }
+      }
+    }
+
+    if (!resolvedAccountOrgId && signedInAccounts.length === 1) {
+      resolvedAccountOrgId = signedInAccounts[0].personalOrgId;
+      logger.main.warn('[TeamService] getOrgScopedJwt: using sole signed-in account without a persisted team binding', {
+        orgId,
+        personalOrgId: resolvedAccountOrgId,
+      });
+    }
+
+    if (!resolvedAccountOrgId) {
+      if (signedInAccounts.length > 1) {
+        logger.main.error('[TeamService] getOrgScopedJwt: ambiguous team account; refusing to use the sync account', {
+          orgId,
+          signedInPersonalOrgIds: signedInAccountIds,
+        });
+      }
+      throw new Error(`No signed-in account binding exists for team org ${orgId}`);
+    }
+  }
+
+  // Check cache
+  const cached = orgJwtCache.get(orgId);
+  if (!forceRefresh && cached && cached.expiresAt > Date.now()) {
+    return cached.jwt;
+  }
+
+  const exchangeKey = `${resolvedAccountOrgId}:${orgId}`;
+  return orgJwtExchangeSingleFlight(
+    exchangeKey,
+    () => exchangeOrgScopedJwt(orgId, resolvedAccountOrgId),
+  );
+}
+
+/** Resolve the team JWT and the member id carried by that same JWT together. */
+export async function getOrgScopedIdentity(
+  orgId: string,
+  accountOrgId?: string,
+  forceRefresh = false,
+): Promise<{ jwt: TeamJwt; teamMemberId: TeamMemberId }> {
+  const jwt = await getOrgScopedJwt(orgId, accountOrgId, forceRefresh);
+  const teamMemberId = getSubFromJwt(jwt);
+  if (!teamMemberId) {
+    throw new Error(`Org-scoped JWT for ${orgId} has no member identity`);
+  }
+  return { jwt, teamMemberId };
+}
+
+async function exchangeOrgScopedJwt(
+  orgId: string,
+  accountOrgId?: string,
+): Promise<TeamJwt> {
+  // logger.main.info(`[TeamService] Org JWT cache miss for ${orgId}, exchanging session...`);
+
+  // Need to exchange -- use the correct account's session token
+  const sessionToken = accountOrgId
+    ? getSessionTokenForAccount(accountOrgId)
+    : getSessionToken();
+  if (!sessionToken) {
+    logger.main.warn('[TeamService] getOrgScopedJwt: no session token available');
+    throw new Error('Not authenticated. Sign in first.');
+  }
+
+  const httpUrl = getCollabServerUrl();
+
+  // Use the correct account's JWT to authenticate the exchange request
+  const personalJwt = accountOrgId
+    ? getPersonalSessionJwtForAccount(accountOrgId)
+    : getPersonalSessionJwt();
+  if (!personalJwt) {
+    throw new Error('Not authenticated. Sign in first.');
+  }
+
+  const doExchange = async (jwt: PersonalJwt, token: string) =>
+    net.fetch(`${httpUrl}/api/teams/${orgId}/switch`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${jwt}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ sessionToken: token }),
+    });
+
+  let response = await doExchange(personalJwt, sessionToken);
+
+  // On 401, refresh the personal session and retry once.
+  // The personal JWT expires after ~5 minutes; reconnecting tracker sync
+  // after a WebSocket drop hits this path routinely.
+  if (response.status === 401) {
+    // logger.main.info(`[TeamService] getOrgScopedJwt: 401 for ${orgId}, refreshing session...`);
+    let refreshed = false;
+    try {
+      if (accountOrgId) {
+        const freshJwt = await refreshPersonalSessionForAccount(accountOrgId);
+        refreshed = !!freshJwt;
+      } else {
+        refreshed = await refreshPersonalSession(httpUrl);
+      }
+    } catch {
+      // Network error -- can't retry
+    }
+    if (refreshed) {
+      const freshJwt = accountOrgId
+        ? getPersonalSessionJwtForAccount(accountOrgId)
+        : getPersonalSessionJwt();
+      const freshToken = accountOrgId
+        ? getSessionTokenForAccount(accountOrgId)
+        : getSessionToken();
+      if (freshJwt && freshToken) {
+        response = await doExchange(freshJwt, freshToken);
+      }
+    }
+  }
+
+  if (!response.ok) {
+    const errData = await response.json().catch(() => ({ error: `HTTP ${response.status}` })) as { error?: string };
+    throw new Error(errData.error || `Failed to get org-scoped JWT: ${response.status}`);
+  }
+
+  const data = await response.json() as {
+    sessionJwt: string;
+    sessionToken: string;
+    // identity-scope-allow: raw org-switch response is branded after org validation
+    teamMemberId?: string;
+    owningPersonalOrgId?: string;
+    bindingRecorded?: boolean;
+  };
+
+  if (!data.sessionJwt) {
+    throw new Error('Session exchange returned no JWT');
+  }
+
+  // NIM-949: never cache/serve a token scoped to a different org than requested.
+  // A demoted (personal-org) token here is the root cause of server-only docs
+  // rendering blank: the team room rejects it on the ws upgrade.
+  try {
+    assertJwtMatchesOrg(data.sessionJwt, orgId);
+  } catch (err) {
+    if (err instanceof AuthContextMismatchError) {
+      orgJwtCache.delete(orgId);
+      logger.main.warn(
+        `[TeamService] getOrgScopedJwt: exchange returned wrong-org token for ${orgId} ` +
+          `(token org: ${err.tokenOrgId ?? '(none)'}); refusing to serve it`,
+      );
+    }
+    throw err;
+  }
+
+  const sourcePersonalOrgId = accountOrgId ?? getPersonalOrgId();
+  if (data.bindingRecorded && sourcePersonalOrgId && data.teamMemberId && data.owningPersonalOrgId) {
+    const db = getDatabase() as ProjectionDb | null;
+    if (db) {
+      await persistServerAccountOrgBinding(
+        db,
+        sourcePersonalOrgId,
+        orgId,
+        asTeamMemberId(data.teamMemberId),
+        data.owningPersonalOrgId,
+        'server-exchange',
+      );
+    }
+  } else {
+    logger.main.warn('[TeamService] Org session exchange did not return a recorded account binding', {
+      orgId,
+      sourcePersonalOrgId,
+      bindingRecorded: data.bindingRecorded ?? false,
+    });
+  }
+
+  // Stytch session exchange replaces the session token -- the old one is now
+  // invalid. We MUST persist the new token so that refreshSession() and
+  // getSessionToken() continue to work.
+  //
+  // NIM-2466: persisting only for the singleton dropped the replacement token
+  // whenever the exchange named an account explicitly, which the org-creation
+  // wizard always does. That account was then holding a revoked token, so
+  // /api/teams 401'd, listTeams returned nothing, the account menu read back
+  // "No organization", and the org projection could never backfill. Route the
+  // token to its owning account instead -- a secondary account's exchange still
+  // never touches the sync account's singleton.
+  if (data.sessionToken) {
+    if (accountOrgId) {
+      updateSessionTokenForAccount(accountOrgId, data.sessionToken);
+    } else {
+      updateSessionToken(data.sessionToken);
+    }
+  }
+
+  // Derive cache TTL from the actual JWT exp claim (with 60s buffer).
+  // Fall back to 5 minutes if we can't parse it.
+  const exp = getJwtExp(data.sessionJwt);
+  const expiresAt = exp
+    ? (exp * 1000) - JWT_REFRESH_BUFFER_MS
+    : Date.now() + 5 * 60 * 1000;
+
+  // Cache the org-scoped JWT (do NOT update global auth state -- the global
+  // session JWT stays personal-org-scoped, only the token is shared)
+  const teamJwt = asTeamJwt(data.sessionJwt);
+  orgJwtCache.set(orgId, {
+    jwt: teamJwt,
+    expiresAt,
+  });
+
+  // logger.main.info('[TeamService] Obtained org-scoped JWT for:', orgId, 'expires in', Math.round((expiresAt - Date.now()) / 1000), 's');
+  return teamJwt;
+}
+
+// ============================================================================
+// REST API Helper
+// ============================================================================
+
+/**
+ * Per-request deadline for `fetchTeamApi`. `net.fetch` has no default
+ * timeout, so without this an unresponsive worker (e.g. the Stytch B2B
+ * JWKS outage on 2026-05-20) can hang IPC handlers indefinitely. NIM-638
+ * was a stuck tracker editor caused by `team:list-members` waiting on
+ * such a hung request forever. 15s is generous for these calls -- a
+ * healthy worker responds in under a second.
+ */
+const TEAM_API_TIMEOUT_MS = 15_000;
+// Migration verification intentionally fans out across every not-yet-sealed
+// document room. Large organizations can take longer than the normal
+// interactive API deadline while Durable Objects wake and seal in batches.
+// Keep this override scoped to the background finalizer so document opens and
+// ordinary team operations still fail quickly when the API is unhealthy.
+const MIGRATION_FINALIZATION_API_TIMEOUT_MS = 120_000;
+
+interface FetchTeamApiOptions {
+  timeoutMs?: number;
+  /** Already-resolved TEAM authorization for an org-scoped request. */
+  teamJwt?: TeamJwt;
+}
+
+/**
+ * Make an authenticated REST call to the collabv3 team API.
+ * Uses the personal org JWT for team-listing endpoints.
+ * Uses org-scoped JWT when orgId is provided (for member operations).
+ * When accountOrgId is provided, uses that account's JWT instead of the primary.
+ */
+async function fetchTeamApi(
+  path: string,
+  method: string,
+  body?: unknown,
+  orgId?: string,
+  accountOrgId?: string,
+  options?: FetchTeamApiOptions,
+): Promise<any> {
+  const httpUrl = getCollabServerUrl();
+  const timeoutMs = options?.timeoutMs ?? TEAM_API_TIMEOUT_MS;
+
+  const jwtSource = orgId ? 'org-scoped' : 'personal';
+  // logger.main.info(`[TeamService] ${method} ${path} (jwt: ${jwtSource}${orgId ? `, org: ${orgId}` : ''}${accountOrgId ? `, account: ${accountOrgId}` : ''})`);
+
+  const makeRequest = async (jwt: TeamJwt | PersonalJwt) => {
+    const headers: Record<string, string> = {
+      'Authorization': `Bearer ${jwt}`,
+    };
+    if (body !== undefined) {
+      headers['Content-Type'] = 'application/json';
+    }
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const reqStart = Date.now();
+    try {
+      const resp = await net.fetch(`${httpUrl}${path}`, {
+        method,
+        headers,
+        body: body !== undefined ? JSON.stringify(body) : undefined,
+        signal: controller.signal,
+      });
+      const reqMs = Date.now() - reqStart;
+      // Log slow (and any non-2xx) responses so a degraded team API surfaces
+      // before it hits the 15s timeout. The happy-path 200s under 500ms stay
+      // silent.
+      if (reqMs >= 500 || !resp.ok) {
+        logger.main.info(`[TeamService] ${method} ${path} -> ${resp.status} in ${reqMs}ms (jwt: ${jwtSource})`);
+      }
+      return resp;
+    } catch (err) {
+      const reqMs = Date.now() - reqStart;
+      if ((err as { name?: string })?.name === 'AbortError') {
+        logger.main.warn(`[TeamService] ${method} ${path} timed out after ${reqMs}ms (jwt: ${jwtSource})`);
+        throw new Error(`Team API timeout after ${timeoutMs}ms: ${method} ${path}`);
+      }
+      logger.main.warn(`[TeamService] ${method} ${path} threw after ${reqMs}ms (jwt: ${jwtSource}):`, err);
+      throw err;
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+
+  // Use org-scoped JWT if orgId provided, otherwise personal JWT
+  // When accountOrgId is set, use that specific account's JWT
+  let jwt = orgId
+    ? options?.teamJwt ?? await getOrgScopedJwt(orgId, accountOrgId)
+    : accountOrgId
+      ? getPersonalSessionJwtForAccount(accountOrgId)
+      : getPersonalSessionJwt();
+  if (!jwt) {
+    // Debug logging - uncomment if needed. Being signed out is an expected
+    // steady state, and every caller already logs its own failure, so this
+    // fired on every poll for no added signal.
+    // logger.main.warn(`[TeamService] No JWT available (source: ${jwtSource})`);
+    throw new Error('Not authenticated. Sign in first.');
+  }
+
+  // Personal JWTs are short-lived. Refresh before sending one that is already
+  // inside the same 60s safety window used by the org-JWT cache, so routine
+  // team discovery does not pay for an expected 401 on every expiry cycle.
+  if (!orgId) {
+    const exp = getJwtExp(jwt);
+    if (exp && (exp * 1000) - JWT_REFRESH_BUFFER_MS <= Date.now()) {
+      try {
+        if (accountOrgId) {
+          const freshJwt = await refreshPersonalSessionForAccount(accountOrgId);
+          if (freshJwt) jwt = freshJwt;
+        } else if (await refreshPersonalSession(getCollabServerUrl())) {
+          const freshJwt = getPersonalSessionJwt();
+          if (freshJwt) jwt = freshJwt;
+        }
+      } catch {
+        // Keep the current token and let the existing 401 recovery path make
+        // the final authentication decision.
+      }
+    }
+  }
+
+  let response = await makeRequest(jwt);
+
+  // On 401, retry once: refresh personal session or re-exchange org JWT
+  if (response.status === 401) {
+    if (accountOrgId && !orgId) {
+      // Refresh the account's PERSONAL lane. For the sync account the active
+      // Stytch session may currently be team-scoped, so a generic refresh is not
+      // sufficient to replace an expired personalSessionJwt.
+      logger.main.info(`[TeamService] Got 401 on account JWT for ${accountOrgId}, attempting refresh...`);
+      const freshJwt = await refreshPersonalSessionForAccount(accountOrgId);
+      if (freshJwt) {
+        logger.main.info(`[TeamService] Account ${accountOrgId} personal JWT refreshed, retrying request...`);
+        response = await makeRequest(freshJwt);
+      } else {
+        logger.main.warn(`[TeamService] Account ${accountOrgId} personal JWT refresh failed`);
+      }
+    } else if (!orgId) {
+      logger.main.info('[TeamService] Got 401 on personal JWT, refreshing session...');
+      let refreshed = false;
+      try {
+        refreshed = await refreshPersonalSession(getCollabServerUrl());
+      } catch {
+        // Network error -- can't retry
+      }
+      if (refreshed) {
+        const freshJwt = getPersonalSessionJwt();
+        if (freshJwt) {
+          logger.main.info('[TeamService] Session refreshed, retrying request...');
+          response = await makeRequest(freshJwt);
+        } else {
+          logger.main.warn('[TeamService] Session refreshed but getPersonalSessionJwt() returned null');
+        }
+      } else {
+        logger.main.warn('[TeamService] Session refresh failed, cannot retry');
+      }
+    } else {
+      // Org-scoped JWT rejected -- invalidate cache and re-exchange
+      logger.main.info(`[TeamService] Got 401 on org-scoped JWT for ${orgId}, invalidating cache and re-exchanging...`);
+      orgJwtCache.delete(orgId);
+      try {
+        const freshOrgJwt = await getOrgScopedJwt(orgId, accountOrgId, true);
+        logger.main.info('[TeamService] Org JWT re-exchanged, retrying request...');
+        response = await makeRequest(freshOrgJwt);
+      } catch (exchangeErr) {
+        logger.main.error('[TeamService] Org JWT re-exchange failed:', exchangeErr);
+      }
+    }
+  }
+
+  if (!response.ok) {
+    const errText = await response.text().catch(() => '');
+    let errMsg: string;
+    try {
+      const errData = JSON.parse(errText) as { error?: string };
+      errMsg = errData.error || `HTTP ${response.status}`;
+    } catch {
+      errMsg = `HTTP ${response.status}${errText ? `: ${errText.slice(0, 200)}` : ''}`;
+    }
+    logger.main.error(`[TeamService] ${method} ${path} failed: ${response.status} - ${errMsg}`);
+    throw new Error(errMsg);
+  }
+
+  return response.json();
+}
+
+// ============================================================================
+// Git Remote Detection
+// ============================================================================
+
+/**
+ * Hash a git remote URL with SHA-256 for the cross-entity remote -> org lookup.
+ * The shared D1 database only ever holds this digest, never the URL.
+ */
+function hashGitRemote(remote: string): string {
+  return createHash('sha256').update(remote).digest('hex');
+}
+
+/**
+ * Every hash a workspace could legitimately be stored under, newest first.
+ *
+ * A project shared before `normalizeGitRemote` was corrected is keyed on the
+ * legacy form, and SHA-256 cannot be migrated -- so matching has to accept both
+ * or those workspaces silently lose their organization. Writes are canonical
+ * only; a legacy row is healed when an admin relinks the project, deliberately
+ * and not as a side effect of a lookup.
+ */
+function remoteHashCandidates(remote: GitRemoteIdentities | null): string[] {
+  if (!remote) return [];
+  const canonical = hashGitRemote(remote.canonical);
+  const legacy = hashGitRemote(remote.legacy);
+  return canonical === legacy ? [canonical] : [canonical, legacy];
+}
+
+/** `resolveTeamForRemoteHash` over each candidate hash, first match wins. */
+function resolveTeamForAnyRemoteHash(
+  teams: TeamDetails[],
+  remoteHashes: readonly string[],
+): TeamDetails | null {
+  for (const hash of remoteHashes) {
+    const match = resolveTeamForRemoteHash(teams, hash);
+    if (match) return match;
+  }
+  return null;
+}
+
+/**
+ * Strip credentials before a clone remote leaves the desktop process.
+ *
+ * This is the deliberate desktop twin of `collabv3/src/projectRemote.ts` in
+ * nimbalyst-collab. The two sanitizers must stay in step so the client and
+ * server apply exactly the same credential-removal rules.
+ */
+function sanitizeRemoteUrl(value: string): string | null {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+      parsed.username = '';
+      parsed.password = '';
+    } else if (parsed.password) {
+      // SSH usernames such as `git` are part of a valid clone URL, but a
+      // password embedded in any URL must never be transmitted.
+      parsed.password = '';
+    }
+    // A clone remote never needs a query string, and every spelling a token can
+    // hide behind (`token`, `api_key`, `access-token`, ...) is unguessable, so
+    // drop the whole thing rather than denylisting names.
+    parsed.search = '';
+    return parsed.toString();
+  } catch {
+    // Preserve SCP-style SSH remotes (`git@host:org/repo.git`). If a malformed
+    // URL uses hierarchical userinfo syntax, fail closed rather than sending
+    // credentials that could not be safely separated from the remote.
+    if (/^[a-z][a-z\d+.-]*:\/\/[^/\s]*@/i.test(trimmed)) return null;
+    return trimmed;
+  }
+}
+
+/**
+ * A workspace's git remote in both forms the server wants: the hash it routes
+ * on, and the URL a teammate can clone.
+ *
+ * The URL is org-sensitive (a private repository address), so it lives only in
+ * the organization's own Durable Object -- never in the shared D1 database,
+ * which keeps the hash. It is what lets the post-sign-in project walk offer a
+ * clone; without it that step degrades to choose-a-folder.
+ */
+async function captureWorkspaceRemote(
+  workspacePath: string | undefined,
+): Promise<{ gitRemoteHash?: string; remoteUrl?: string }> {
+  if (!workspacePath) return {};
+  const raw = await getRawGitRemote(workspacePath);
+  // A newly minted identity is always the canonical form, so a teammate who
+  // clones this repository cleanly hashes to the same value.
+  const normalized = normalizeGitRemote(raw);
+  if (!raw || !normalized) return {};
+  const remoteUrl = sanitizeRemoteUrl(raw);
+  return {
+    gitRemoteHash: hashGitRemote(normalized),
+    ...(remoteUrl ? { remoteUrl } : {}),
+  };
+}
+
+async function persistServerAccountOrgBinding(
+  db: ProjectionDb,
+  expectedPersonalOrgId: string,
+  teamOrgId: string,
+  teamMemberId: TeamMemberId,
+  serverPersonalOrgId: string,
+  source: AccountOrgBindingSource,
+): Promise<boolean> {
+  if (serverPersonalOrgId !== expectedPersonalOrgId) {
+    logger.main.error('[TeamService] Refusing mismatched server account/org binding', {
+      expectedPersonalOrgId,
+      serverPersonalOrgId,
+      teamOrgId,
+      teamMemberId,
+    });
+    return false;
+  }
+  await upsertAccountOrgBinding(db, {
+    personalOrgId: expectedPersonalOrgId,
+    teamOrgId,
+    teamMemberId,
+    source,
+  });
+  return true;
+}
+
+// ============================================================================
+// Public API
+// ============================================================================
+
+function requireConversationIdentifier(
+  value: string,
+  name: string,
+): string {
+  if (!value?.trim()) {
+    throw new Error(`${name} is required`);
+  }
+  return value;
+}
+
+/**
+ * List the caller-visible conversation directory for one organization.
+ *
+ * Team JWT authentication is mandatory: passing `orgId` to `fetchTeamApi`
+ * selects `getOrgScopedJwt` and its org-binding checks. Direct conversations
+ * are included by default because the org window renders rooms and DMs from
+ * this one directory.
+ */
+export async function listConversations(
+  orgId: string,
+  options: ListConversationsOptions = {},
+): Promise<ConversationDirectoryEntry[]> {
+  requireConversationIdentifier(orgId, 'Organization id');
+  const params = new URLSearchParams();
+  if (options.includeDirect !== false) params.set('includeDirect', 'true');
+  if (options.includeArchived === true) params.set('includeArchived', 'true');
+  const suffix = params.size > 0 ? `?${params.toString()}` : '';
+  const result = await fetchTeamApi(
+    `/api/teams/${encodeURIComponent(orgId)}/conversations${suffix}`,
+    'GET',
+    undefined,
+    orgId,
+  ) as { conversations?: ConversationDirectoryEntry[] };
+  // A server old enough to omit capabilities must not take the directory down
+  // with it: the row arrives with no grants and the renderer filters it out.
+  return (result.conversations ?? []).map((conversation) => ({
+    ...conversation,
+    capabilities: conversation.capabilities ?? [],
+  }));
+}
+
+export async function createConversation(
+  orgId: string,
+  input: CreateConversationInput,
+): Promise<CreateConversationResult> {
+  requireConversationIdentifier(orgId, 'Organization id');
+  if (!input?.kind || !input.visibility) {
+    throw new Error('Conversation kind and visibility are required');
+  }
+  return await fetchTeamApi(
+    `/api/teams/${encodeURIComponent(orgId)}/conversations`,
+    'POST',
+    input,
+    orgId,
+  ) as CreateConversationResult;
+}
+
+/**
+ * Rename an organization room or change its topic.
+ *
+ * Only the supplied fields are serialized: the server treats a present `topic`
+ * key as "replace" (with `null` clearing it) and an absent one as "leave
+ * alone", so sending `undefined` fields would silently wipe the topic on a
+ * rename. Rooms are the only kind with editable titles — the server rejects
+ * DMs and document discussions.
+ */
+export async function updateConversation(
+  orgId: string,
+  conversationId: string,
+  input: UpdateConversationInput,
+): Promise<ConversationMutationResult> {
+  requireConversationIdentifier(orgId, 'Organization id');
+  requireConversationIdentifier(conversationId, 'Conversation id');
+  const body: Record<string, unknown> = {};
+  if (input?.title !== undefined) {
+    if (typeof input.title !== 'string' || !input.title.trim()) {
+      throw new Error('Conversation title must be a non-empty string');
+    }
+    body.title = input.title.trim();
+  }
+  if (input?.topic !== undefined) {
+    if (input.topic !== null && typeof input.topic !== 'string') {
+      throw new Error('Conversation topic must be a string or null');
+    }
+    body.topic = typeof input.topic === 'string' && input.topic.trim()
+      ? input.topic.trim()
+      : null;
+  }
+  if (Object.keys(body).length === 0) {
+    throw new Error('Conversation title or topic is required');
+  }
+  return await fetchTeamApi(
+    `/api/teams/${encodeURIComponent(orgId)}/conversations/${encodeURIComponent(conversationId)}`,
+    'PUT',
+    body,
+    orgId,
+  ) as ConversationMutationResult;
+}
+
+export async function archiveConversation(
+  orgId: string,
+  conversationId: string,
+): Promise<ConversationMutationResult> {
+  requireConversationIdentifier(orgId, 'Organization id');
+  requireConversationIdentifier(conversationId, 'Conversation id');
+  return await fetchTeamApi(
+    `/api/teams/${encodeURIComponent(orgId)}/conversations/${encodeURIComponent(conversationId)}/archive`,
+    'POST',
+    undefined,
+    orgId,
+  ) as ConversationMutationResult;
+}
+
+export async function setConversationMembership(
+  orgId: string,
+  conversationId: string,
+  teamMemberId: TeamMemberId,
+  input: SetConversationMembershipInput,
+): Promise<SetConversationMembershipResult> {
+  requireConversationIdentifier(orgId, 'Organization id');
+  requireConversationIdentifier(conversationId, 'Conversation id');
+  requireConversationIdentifier(teamMemberId, 'Conversation member user id');
+  if (typeof input?.active !== 'boolean') {
+    throw new Error('Conversation membership active state is required');
+  }
+  if (
+    input.role !== undefined
+    && input.role !== 'member'
+    && input.role !== 'roomAdmin'
+  ) {
+    throw new Error('Conversation membership role is invalid');
+  }
+  return await fetchTeamApi(
+    `/api/teams/${encodeURIComponent(orgId)}/conversations/${encodeURIComponent(conversationId)}/members/${encodeURIComponent(teamMemberId)}`,
+    input.active ? 'PUT' : 'DELETE',
+    input.active ? { role: input.role ?? 'member' } : undefined,
+    orgId,
+  ) as SetConversationMembershipResult;
+}
+
+export async function listConversationMembers(
+  orgId: string,
+  conversationId: string,
+): Promise<ConversationDirectoryMembersResult> {
+  requireConversationIdentifier(orgId, 'Organization id');
+  requireConversationIdentifier(conversationId, 'Conversation id');
+  const result = await fetchTeamApi(
+    `/api/teams/${encodeURIComponent(orgId)}/conversations/${encodeURIComponent(conversationId)}/members`,
+    'GET',
+    undefined,
+    orgId,
+  ) as ConversationDirectoryMembersResult;
+  return { memberships: result.memberships ?? [] };
+}
+
+/**
+ * Read one organization's settings.
+ *
+ * Team JWT authentication (any active member may read). Pre-settings servers
+ * and never-configured orgs answer with an absent or partial object, so the
+ * result is defaulted field by field rather than trusted as complete.
+ */
+export async function getOrgSettings(orgId: string): Promise<OrgSettings> {
+  requireConversationIdentifier(orgId, 'Organization id');
+  const result = await fetchTeamApi(
+    `/api/teams/${encodeURIComponent(orgId)}/settings`,
+    'GET',
+    undefined,
+    orgId,
+  ) as { settings?: unknown };
+  return normalizeOrgSettings(result?.settings);
+}
+
+/**
+ * Replace one organization's settings (organization admins only, enforced
+ * server-side).
+ *
+ * The server's PUT is a whole-object replace — omitted fields fall back to
+ * their defaults rather than keeping their current value — so callers send the
+ * complete settings they want stored, not a patch.
+ */
+export async function updateOrgSettings(
+  orgId: string,
+  settings: OrgSettings,
+): Promise<OrgSettings> {
+  requireConversationIdentifier(orgId, 'Organization id');
+  if (!settings || typeof settings !== 'object') {
+    throw new Error('Organization settings are required');
+  }
+  const result = await fetchTeamApi(
+    `/api/teams/${encodeURIComponent(orgId)}/settings`,
+    'PUT',
+    normalizeOrgSettings(settings),
+    orgId,
+  ) as { settings?: unknown };
+  return normalizeOrgSettings(result?.settings);
+}
+
+export async function renameOrganization(
+  orgId: string,
+  name: string,
+): Promise<{ orgId: string; name: string }> {
+  requireConversationIdentifier(orgId, 'Organization id');
+  const normalizedName = name?.trim();
+  if (!normalizedName) {
+    throw new Error('Organization name is required');
+  }
+  await fetchTeamApi(
+    `/api/teams/${encodeURIComponent(orgId)}`,
+    'PUT',
+    { name: normalizedName },
+    orgId,
+  );
+  invalidateListTeamsCache();
+  return { orgId, name: normalizedName };
+}
+
+export async function setAgentPosting(
+  orgId: string,
+  conversationId: string,
+  enabled: boolean,
+): Promise<ConversationMutationResult> {
+  requireConversationIdentifier(orgId, 'Organization id');
+  requireConversationIdentifier(conversationId, 'Conversation id');
+  if (typeof enabled !== 'boolean') {
+    throw new Error('Agent posting enabled state is required');
+  }
+  return await fetchTeamApi(
+    `/api/teams/${encodeURIComponent(orgId)}/conversations/${encodeURIComponent(conversationId)}/agent-posting`,
+    'PUT',
+    { enabled },
+    orgId,
+  ) as ConversationMutationResult;
+}
+
+/**
+ * List all teams the current user belongs to, across all signed-in accounts.
+ * Queries each account's teams and deduplicates by orgId.
+ */
+// findTeamForWorkspace is fanned out from many sites (workspace open, sync
+// init, tracker init, body-doc service, etc.) and each listTeams call hits
+// /api/teams once per signed-in account. A short TTL just turned that into a
+// steady-state poll -- org/team membership changes ~never mid-session, so the
+// cache is long-lived and correctness comes from event-driven invalidation
+// (auth change, team join/leave/create/delete, manual refresh -- see
+// invalidateListTeamsCache() call sites) rather than a short expiry.
+// collab-open-latency investigation (RC4), 2026-07-14.
+let listTeamsCache: { promise: Promise<TeamDirectory>; expiresAt: number } | null = null;
+const LIST_TEAMS_TTL_MS = 5 * 60_000;
+
+// The request currently on the wire, held separately from the cache so that
+// invalidating the cache cannot abandon it.
+//
+// NIM-3711: `fetchTeamApi` refreshes an expiring personal JWT, that refresh
+// emits an authenticated auth-state change, and the change handler calls
+// `invalidateListTeamsCache()` -- all while the request that triggered the
+// refresh is still in flight. The next caller therefore missed the cache and
+// started a *second* identical request, which could refresh again. At startup,
+// where three workspaces each run autoMatch and tracker-sync init, that put
+// four concurrent `GET /api/teams` calls on an endpoint whose cold latency is
+// already seconds; two of them blew the 15s deadline.
+//
+// Invalidation now means "do not cache the answer", not "start another one".
+let listTeamsInFlight: Promise<TeamDirectory> | null = null;
+// Set when an invalidation landed while `listTeamsInFlight` was outstanding.
+// Callers already waiting still get that answer -- it is the same answer they
+// would have got a moment earlier -- but it is not cached, so the next caller
+// re-reads.
+let listTeamsInFlightInvalidated = false;
+
+/**
+ * The team list plus whether it can be trusted as the whole truth.
+ *
+ * `complete` is false when we could not enumerate every signed-in account --
+ * a failed request, or no usable session yet. An empty `teams` only means
+ * "this user has no teams" when `complete` is true. Reading "couldn't tell"
+ * as "no team" is what left tracker sync off for a whole app session: the
+ * personal JWT arrived a beat after `isAuthenticated()` went true, the single
+ * lookup in that gap failed, and every caller took the empty list as final.
+ */
+export interface TeamDirectory {
+  teams: TeamDetails[];
+  complete: boolean;
+}
+
+export function invalidateListTeamsCache(): void {
+  listTeamsCache = null;
+  if (listTeamsInFlight) listTeamsInFlightInvalidated = true;
+  teamAccountBindingHints.clear();
+}
+
+export interface ListTeamsOptions {
+  /**
+   * Open a new request even if one is already on the wire.
+   *
+   * For callers that just changed team membership themselves, or are acting on
+   * a change made elsewhere (the manual Refresh affordance, an invite accepted
+   * in the browser): an outstanding request was issued before that change and
+   * cannot answer for it. Ordinary discovery callers must leave this unset so
+   * they coalesce -- see `listTeamsInFlight`.
+   */
+  forceFresh?: boolean;
+}
+
+export async function listTeams(options?: ListTeamsOptions): Promise<TeamDetails[]> {
+  return (await listTeamDirectory(options)).teams;
+}
+
+export async function listTeamDirectory(options?: ListTeamsOptions): Promise<TeamDirectory> {
+  if (!isAuthenticated()) {
+    logger.main.info('[TeamService] listTeams: not authenticated, skipping');
+    return { teams: [], complete: false };
+  }
+
+  const now = Date.now();
+  if (!options?.forceFresh) {
+    if (listTeamsCache && listTeamsCache.expiresAt > now) {
+      return listTeamsCache.promise;
+    }
+    // A request is already on the wire for exactly this question. Join it
+    // rather than opening a second one; see `listTeamsInFlight`.
+    if (listTeamsInFlight) {
+      return listTeamsInFlight;
+    }
+  }
+
+  const promise = (async (): Promise<TeamDirectory> => {
+    let allAccountLookupsSucceeded = true;
+    const allAccounts = getAccounts();
+    const teamsByOrgId = new Map<string, TeamDetails>();
+    const allTeams: TeamDetails[] = [];
+
+    // Query teams for each signed-in account in parallel
+    const results = await Promise.allSettled(
+      allAccounts.map(async (account) => {
+        const data = await fetchTeamApi('/api/teams', 'GET', undefined, undefined, account.personalOrgId) as { teams: RawTeamDetails[] };
+        return (data.teams || []).map((rawTeam) => ({
+          ...brandTeamDetails(rawTeam),
+          sourcePersonalOrgId: account.personalOrgId,
+          sourceEmail: account.email,
+        }));
+      })
+    );
+
+    for (const [index, result] of results.entries()) {
+      if (result.status === 'fulfilled') {
+        for (const team of result.value) {
+          if (team.sourcePersonalOrgId && team.owningPersonalOrgId
+              && team.owningPersonalOrgId !== team.sourcePersonalOrgId) {
+            logger.main.error('[TeamService] Ignoring mismatched discovered account/org binding', {
+              teamOrgId: team.orgId,
+              sourcePersonalOrgId: team.sourcePersonalOrgId,
+              owningPersonalOrgId: team.owningPersonalOrgId,
+            });
+          }
+          const binding = team.sourcePersonalOrgId && team.teamMemberId
+            && team.owningPersonalOrgId === team.sourcePersonalOrgId
+            ? { personalOrgId: team.sourcePersonalOrgId, teamMemberId: team.teamMemberId }
+            : null;
+          if (binding) {
+            const db = getProjectionDatabase();
+            if (db) {
+              await persistServerAccountOrgBinding(
+                db,
+                binding.personalOrgId,
+                team.orgId,
+                binding.teamMemberId,
+                binding.personalOrgId,
+                'server-sync',
+              );
+            }
+          }
+          const existing = teamsByOrgId.get(team.orgId);
+          if (!existing) {
+            if (binding) team.accountBindings = [binding];
+            teamsByOrgId.set(team.orgId, team);
+            allTeams.push(team);
+          } else if (binding && !existing.accountBindings?.some((candidate) =>
+            candidate.personalOrgId === binding.personalOrgId
+            && candidate.teamMemberId === binding.teamMemberId)) {
+            existing.accountBindings = [...(existing.accountBindings ?? []), binding];
+          }
+        }
+      } else {
+        allAccountLookupsSucceeded = false;
+        const email = allAccounts[index]?.email ?? 'unknown';
+        // A signed-out account rejects with "Not authenticated" on every poll.
+        // That is an expected steady state, not a fault, so log it as a single
+        // warn line -- passing the Error made us write a full stack trace each
+        // time, which was the bulk of this tag's ~13% share of main.log.
+        if (result.reason instanceof Error && result.reason.message.startsWith('Not authenticated')) {
+          logger.main.warn(`[TeamService] listTeams skipped for account ${email}: not signed in`);
+        } else {
+          logger.main.error(`[TeamService] listTeams error for account ${email}:`, result.reason);
+        }
+      }
+    }
+
+    const db = getProjectionDatabase();
+    const signedInAccountIds = allAccounts.map((account) => account.personalOrgId);
+    for (const team of allTeams) {
+      const resolved = db
+        ? await resolveTeamOrgAccountBinding(
+          db,
+          team.orgId,
+          signedInAccountIds,
+          getSyncAccount()?.personalOrgId,
+        )
+        : null;
+      team.boundPersonalOrgId = resolved?.personalOrgId
+        ?? [...(team.accountBindings ?? [])]
+          .sort((a, b) => a.personalOrgId.localeCompare(b.personalOrgId))[0]?.personalOrgId
+        ?? team.sourcePersonalOrgId
+        ?? null;
+      if (team.boundPersonalOrgId) {
+        teamAccountBindingHints.set(team.orgId, team.boundPersonalOrgId);
+      }
+    }
+
+    return { teams: allTeams, complete: allAccountLookupsSucceeded };
+  })();
+
+  listTeamsCache = { promise, expiresAt: now + LIST_TEAMS_TTL_MS };
+  listTeamsInFlight = promise;
+  listTeamsInFlightInvalidated = false;
+  // A partial/failed account lookup is not authoritative. Return any teams we
+  // did resolve to this caller, but evict the result immediately so a timeout
+  // cannot pin "no teams" (or an incomplete list) for the full five minutes.
+  void promise.then(
+    (directory) => {
+      const invalidatedWhileInFlight = listTeamsInFlightInvalidated;
+      if (listTeamsInFlight === promise) listTeamsInFlight = null;
+      if ((!directory.complete || invalidatedWhileInFlight)
+          && listTeamsCache?.promise === promise) {
+        listTeamsCache = null;
+      }
+      // Drive the Organization Messages menu item's visibility. A partial lookup
+      // may under-report, so only an authoritative empty result hides the item.
+      if (directory.teams.length > 0) {
+        setHasOrganizationsForMenu(true);
+      } else if (directory.complete) {
+        setHasOrganizationsForMenu(false);
+      }
+    },
+    () => {
+      if (listTeamsInFlight === promise) listTeamsInFlight = null;
+      if (listTeamsCache?.promise === promise) listTeamsCache = null;
+    },
+  );
+
+  return promise;
+}
+
+/**
+ * Get a specific team's details by orgId.
+ */
+async function getTeamByOrgId(orgId: string): Promise<TeamDetails | null> {
+  if (!isAuthenticated()) return null;
+
+  try {
+    const teams = await listTeams();
+    return teams.find(t => t.orgId === orgId) || null;
+  } catch (err) {
+    logger.main.error('[TeamService] getTeamByOrgId error:', err);
+    return null;
+  }
+}
+
+/**
+ * The org recorded against a workspace that cannot be identified by git remote.
+ * See `WorkspaceState.localOrgBinding`.
+ */
+function getLocalOrgBinding(workspacePath: string): { orgId: string; teamProjectId?: string } | null {
+  try {
+    return getWorkspaceState(workspacePath).localOrgBinding ?? null;
+  } catch (err) {
+    logger.main.warn('[TeamService] Could not read the local org binding:', err);
+    return null;
+  }
+}
+
+function setLocalOrgBinding(workspacePath: string, orgId: string, teamProjectId?: string): void {
+  updateWorkspaceState(workspacePath, (state) => {
+    state.localOrgBinding = teamProjectId ? { orgId, teamProjectId } : { orgId };
+  });
+}
+
+/**
+ * Point a bound team at the project the workspace was actually added as.
+ *
+ * Mirrors the secondary-project branch of `resolveTeamForRemoteHash`: the team
+ * carries its PRIMARY project's routing key, so a workspace that joined as a
+ * secondary project has to override it or its tracker items land in another
+ * project's room. A binding whose project has since left the registry resolves
+ * to nothing rather than silently falling back to the primary.
+ */
+function pinBoundProject(team: TeamDetails, teamProjectId?: string): TeamDetails | null {
+  if (!teamProjectId || teamProjectId === team.teamProjectId) return team;
+  const project = team.projects?.find(p => p.teamProjectId === teamProjectId);
+  if (!project) {
+    if (!team.projects) return { ...team, teamProjectId };
+    logger.main.warn('[TeamService] Bound project is no longer in the org registry', {
+      orgId: team.orgId,
+      teamProjectId,
+    });
+    return null;
+  }
+  return {
+    ...team,
+    name: project.name || project.slug || team.name,
+    teamProjectId,
+  };
+}
+
+/**
+ * Tell every window that a workspace's organization may have changed.
+ *
+ * The surfaces that show it resolve once per workspace, so without this only
+ * the window that ran the creation wizard learns about the new org -- any other
+ * project window keeps offering "Set up" for an org that already exists.
+ */
+export function broadcastWorkspaceOrgChanged(payload: { orgId: string; workspacePath?: string }): void {
+  for (const win of BrowserWindow.getAllWindows()) {
+    win.webContents.send('team:workspace-org-changed', payload);
+  }
+}
+
+/**
+ * Find a team matching a workspace's git remote, or the org recorded locally
+ * when the workspace has no remote to match on.
+ * Pass precomputedRemote to skip the git spawn when the caller already has it.
+ */
+export async function findTeamForWorkspace(
+  workspacePath: string,
+  precomputedRemote?: GitRemoteIdentities,
+): Promise<TeamDetails | null> {
+  return (await resolveTeamForWorkspace(workspacePath, precomputedRemote)).team;
+}
+
+/**
+ * A workspace's team, plus whether a `null` answer is the truth.
+ *
+ * `complete: false` means the lookup could not be carried out (no session yet,
+ * or the team directory fetch failed) -- the caller must treat it as "ask
+ * again later", never as "this workspace has no team". Callers that only act
+ * on a match can keep using `findTeamForWorkspace`.
+ */
+export interface WorkspaceTeamResolution {
+  team: TeamDetails | null;
+  complete: boolean;
+}
+
+export async function resolveTeamForWorkspace(
+  workspacePath: string,
+  precomputedRemote?: GitRemoteIdentities,
+): Promise<WorkspaceTeamResolution> {
+  if (!isAuthenticated()) {
+    // logger.main.info('[TeamService] findTeamForWorkspace: not authenticated');
+    return { team: null, complete: false };
+  }
+
+  const remote = precomputedRemote ?? await getGitRemoteIdentities(workspacePath);
+  const binding = getLocalOrgBinding(workspacePath);
+  if (!remote && !binding) {
+    // Nothing to match on is a real answer, not a failed lookup: no remote and
+    // no recorded binding means this workspace cannot belong to a team.
+    // logger.main.info('[TeamService] findTeamForWorkspace: no git remote for', workspacePath);
+    return { team: null, complete: true };
+  }
+
+  const remoteHashes = remoteHashCandidates(remote);
+
+  try {
+    const { teams, complete } = await listTeamDirectory();
+    // Epic H3 P0/A: resolve across ALL projects in each org (primary + secondary),
+    // so a workspace whose remote matches a SECONDARY project routes to that
+    // project's tracker room. The project registry rides along on listTeams
+    // (cached), so this adds no extra fetch. See teamProjectResolver.ts.
+    const match = resolveTeamForAnyRemoteHash(teams, remoteHashes);
+    if (match) {
+      // logger.main.info('[TeamService] findTeamForWorkspace: matched', match.orgId, match.teamProjectId);
+      return { team: match, complete: true };
+    }
+
+    // The remote is the shared identifier and always wins. Fall back to the
+    // local binding only once it has failed to match -- membership still gates
+    // the result, so leaving the org drops the binding's resolution with it.
+    if (binding) {
+      const bound = teams.find(t => (
+        t.orgId === binding.orgId
+        && (!t.membershipType || t.membershipType === 'active_member')
+      ));
+      if (bound) return { team: pinBoundProject(bound, binding.teamProjectId), complete: true };
+    }
+
+    if (teams.length > 0) {
+      // Don't dump the full team list on every miss -- this is on a hot path
+      // (called from many sites during workspace init) and the full dump was
+      // burning measurable CPU on JSON.stringify alone.
+      logger.main.debug('[TeamService] findTeamForWorkspace: no hash match', { remoteHashes, teamCount: teams.length });
+    }
+    // A miss against a partial directory is not a miss -- the account whose
+    // lookup failed may be the one that carries this workspace's team.
+    return { team: null, complete };
+  } catch (err) {
+    logger.main.error('[TeamService] findTeamForWorkspace error:', err);
+    return { team: null, complete: false };
+  }
+}
+
+/**
+ * Find a pending invite matching a workspace's git remote.
+ * Used by the UI to show "Join Team" for invites that match the current project.
+ */
+export async function findPendingInviteForWorkspace(workspacePath: string): Promise<TeamDetails | null> {
+  if (!isAuthenticated()) return null;
+
+  const remote = await getGitRemoteIdentities(workspacePath);
+  if (!remote) return null;
+
+  const remoteHashes = remoteHashCandidates(remote);
+
+  try {
+    const teams = await listTeams();
+    const pendingTeams = teams.filter(t => t.membershipType && t.membershipType !== 'active_member');
+    const match = pendingTeams.find(t => !!t.gitRemoteHash && remoteHashes.includes(t.gitRemoteHash)) || null;
+    if (match) {
+      logger.main.info('[TeamService] findPendingInviteForWorkspace: matched pending invite:', match.name, 'orgId:', match.orgId, 'membershipType:', match.membershipType);
+    }
+    return match;
+  } catch (err) {
+    logger.main.error('[TeamService] findPendingInviteForWorkspace error:', err);
+    return null;
+  }
+}
+
+export function pendingInviteForEmail(
+  teams: readonly TeamDetails[],
+  email: string,
+): TeamDetails | null {
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!normalizedEmail) return null;
+  return teams.find((team) => (
+    team.membershipType !== undefined
+    && team.membershipType !== 'active_member'
+    && team.sourceEmail?.trim().toLowerCase() === normalizedEmail
+  )) ?? null;
+}
+
+/**
+ * Find an invitation owned by the signed-in account for `email`.
+ *
+ * The team directory is already account-attributed by `listTeams`, so this is
+ * the same lookup seam as the workspace matcher without requiring a git remote
+ * before a new user has chosen a project.
+ */
+export async function findPendingInviteForEmail(email: string): Promise<TeamDetails | null> {
+  if (!isAuthenticated()) return null;
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!normalizedEmail) return null;
+  const ownsEmail = getAccounts().some((account) => (
+    account.sessionStatus === 'active'
+    && account.email?.trim().toLowerCase() === normalizedEmail
+  ));
+  if (!ownsEmail) return null;
+
+  try {
+    const teams = await listTeams();
+    return pendingInviteForEmail(teams, normalizedEmail);
+  } catch (error) {
+    logger.main.error('[TeamService] findPendingInviteForEmail error:', error);
+    return null;
+  }
+}
+
+/**
+ * `complete: false` carries `WorkspaceTeamResolution`'s meaning to the renderer:
+ * the lookup could not be carried out (no session yet, or the directory fetch
+ * failed), so a `null` team means "ask again later", never "this workspace has
+ * no organization".
+ */
+type FindForWorkspaceResult = { success: true; team: TeamDetails | null; complete: boolean };
+
+async function findTeamOrPendingInviteForWorkspace(workspacePath: string): Promise<FindForWorkspaceResult> {
+  // Try active team match first
+  const { team, complete } = await resolveTeamForWorkspace(workspacePath);
+  if (team) {
+    return { success: true, team, complete: true };
+  }
+  // Also check for pending invites matching this workspace
+  const pendingInvite = await findPendingInviteForWorkspace(workspacePath);
+  if (pendingInvite) {
+    return { success: true, team: pendingInvite, complete: true };
+  }
+  return { success: true, team: null, complete };
+}
+
+// Collapses a burst of concurrent `team:find-for-workspace` IPC calls for the
+// same workspace (e.g. many tracker rooms opening at once) into one
+// findTeamForWorkspace/findPendingInviteForWorkspace run. collab-open-latency
+// investigation (RC4): these calls were seen staircasing 5-deep, 2.8-6.7s.
+const findForWorkspaceSingleFlight = createSingleFlight<string, FindForWorkspaceResult>();
+
+/**
+ * Create a new team (Stytch org + D1 metadata + encryption key setup).
+ * Returns the new team details. Does NOT modify global auth state.
+ */
+/** Email of the account performing an org operation, for the local roster row. */
+function creatorEmailForAccount(accountOrgId?: string): string | null {
+  if (!accountOrgId) return getUserEmail();
+  return getAccounts().find((account) => account.personalOrgId === accountOrgId)?.email ?? null;
+}
+
+async function createTeam(name: string, workspacePath?: string, accountOrgId?: string): Promise<TeamDetails> {
+  const { gitRemoteHash, remoteUrl } = await captureWorkspaceRemote(workspacePath);
+
+  // Create team using the specified account's JWT (or primary if not specified)
+  const sourcePersonalOrgId = accountOrgId ?? getPersonalOrgId();
+  const result = await fetchTeamApi('/api/teams', 'POST', {
+    name,
+    gitRemoteHash,
+    remoteUrl,
+  }, undefined, accountOrgId) as {
+    orgId: string;
+    name: string;
+    creatorMemberId: string;
+    // identity-scope-allow: raw create-team response is branded before projection or return
+    teamMemberId?: string;
+    owningPersonalOrgId?: string;
+  };
+
+  logger.main.info('[TeamService] Team created:', result.orgId, name);
+
+  if (sourcePersonalOrgId && result.teamMemberId && result.owningPersonalOrgId) {
+    const db = getDatabase() as ProjectionDb | null;
+    if (db) {
+      await persistServerAccountOrgBinding(
+        db,
+        sourcePersonalOrgId,
+        result.orgId,
+        asTeamMemberId(result.teamMemberId),
+        result.owningPersonalOrgId,
+        'server-create',
+      );
+    }
+  } else {
+    logger.main.warn('[TeamService] Team create response omitted explicit account/org binding', {
+      orgId: result.orgId,
+      sourcePersonalOrgId,
+    });
+  }
+
+  // NIM-2466: mint the local catalog rows with the create rather than leaving
+  // them to a later sync. The binding alone is not enough -- `canAccess` and the
+  // org projection resolve through `orgs`/`org_members`, and an install whose
+  // sync could not run was left with a binding pointing at rows that never
+  // existed. 'admin' mirrors the role the server records for a creator, so the
+  // next roster sync is a no-op instead of a role flip.
+  {
+    const db = getDatabase() as ProjectionDb | null;
+    const creatorMemberId = asTeamMemberId(result.teamMemberId ?? result.creatorMemberId);
+    if (db && creatorMemberId) {
+      try {
+        await upsertOrg(db, { orgId: result.orgId, name: result.name, flavor: 'team', gitOriginHash: gitRemoteHash ?? null });
+        await applyMemberUpserted(db, result.orgId, {
+          teamMemberId: creatorMemberId,
+          email: creatorEmailForAccount(accountOrgId),
+          role: 'admin',
+        });
+      } catch (err) {
+        // A create that cannot be seen locally is a broken setup, not a success.
+        logger.main.error('[TeamService] Failed to write the local org projection after create:', err);
+        throw err instanceof Error ? err : new Error(String(err));
+      }
+    }
+  }
+
+  // A project with no git remote produces no hash for the server to key on, so
+  // nothing would ever match this workspace back to the org it just created.
+  // Record it locally, which is as far as the association can reach anyway.
+  if (workspacePath && !gitRemoteHash) {
+    setLocalOrgBinding(workspacePath, result.orgId);
+  }
+
+  // Team collaboration is server-managed, and only server-managed. Mark the
+  // new org before anything tries to sync into it; the server refuses content
+  // for an org without this marker.
+  {
+    const orgJwt = await getOrgScopedJwt(result.orgId, accountOrgId);
+    await setTeamServerManagedCustody(result.orgId, orgJwt);
+  }
+  logger.main.info('[TeamService] Server-managed encryption enabled for team:', result.orgId);
+
+  // The new org must be visible to findTeamForWorkspace/listTeams immediately
+  // (e.g. the "Create Team" flow expects to route this workspace to it right
+  // away), not after the long listTeams TTL expires.
+  invalidateListTeamsCache();
+
+  return {
+    orgId: result.orgId,
+    name: result.name,
+    gitRemoteHash: gitRemoteHash || null,
+    createdAt: new Date().toISOString(),
+    role: 'admin',
+    teamMemberId: asTeamMemberId(result.teamMemberId ?? result.creatorMemberId),
+    sourcePersonalOrgId: sourcePersonalOrgId ?? undefined,
+  };
+}
+
+/**
+ * Add a project to an EXISTING org (Epic H3 P0) — distinct from createTeam,
+ * which mints a brand-new Stytch org + primary project. This adds a second
+ * (third, …) project under an org the caller already administers, with no
+ * Stytch round trip: the server DO mints a fresh tracker-room routing key and
+ * the org's existing DEK already covers the new project's data.
+ *
+ * Returns the new project's ids; also mirrors a local `projects` row so the
+ * client projection (migration 0013 tables) reflects the new project.
+ */
+async function addProjectToOrg(
+  orgId: string,
+  workspacePath?: string,
+  name?: string,
+): Promise<{ projectId: string; teamProjectId: string }> {
+  const { gitRemoteHash, remoteUrl } = await captureWorkspaceRemote(workspacePath);
+
+  // With no remote the name is the only thing that identifies the project in
+  // the org's registry, so fall back to the folder name rather than minting a
+  // nameless row.
+  const projectName = name
+    ?? (!gitRemoteHash && workspacePath ? basename(workspacePath) || null : null);
+
+  const result = await fetchTeamApi(`/api/teams/${orgId}/projects`, 'POST', {
+    name: projectName,
+    gitRemoteHash,
+    remoteUrl,
+  }, orgId) as { projectId: string; teamProjectId: string };
+
+  logger.main.info('[TeamService] Project added to org:', orgId, 'project:', result.projectId);
+
+  // Nothing can match a remote-less workspace back to the project the server
+  // just minted; record which project it is so this machine still routes there.
+  if (workspacePath && !gitRemoteHash) {
+    setLocalOrgBinding(workspacePath, orgId, result.teamProjectId);
+  }
+
+  // Mirror into the local projection so canAccess + UI see the new project
+  // without waiting for a full re-sync. Best-effort (server is authoritative).
+  try {
+    const db = getDatabase() as ProjectionDb | null;
+    if (db) {
+      await upsertProject(db, {
+        projectId: result.teamProjectId,
+        orgId,
+        slug: name,
+        gitOriginHash: gitRemoteHash ?? null,
+      });
+    }
+  } catch (err) {
+    logger.main.warn('[TeamService] Local projection upsert for new project failed (non-fatal):', err);
+  }
+
+  return result;
+}
+
+/**
+ * List every project in an org (Epic H3 P0/A). Member-gated on the server; any
+ * member can read the registry. Used by the UI to enumerate projects in an org
+ * (e.g. an Organization → Projects management surface).
+ */
+async function listProjectsForOrg(orgId: string): Promise<TeamProjectSummary[]> {
+  const result = await fetchTeamApi(`/api/teams/${orgId}/projects`, 'GET', undefined, orgId) as {
+    projects: TeamProjectSummary[];
+  };
+  return result.projects || [];
+}
+
+function isWorkspaceOpen(workspacePath: string): boolean {
+  for (const state of windowStates.values()) {
+    if (windowReferencesWorkspace(state, workspacePath)) return true;
+  }
+  return false;
+}
+
+async function getRecentWorkspaceRemoteStates(
+  projectGitRemoteHashes: ReadonlySet<string>,
+): Promise<WorkspaceRemoteState[]> {
+  const states: WorkspaceRemoteState[] = [];
+  for (const workspace of getRecentItems('workspaces')) {
+    if (!workspace.path || !existsSync(workspace.path)) continue;
+    const remote = await getGitRemoteIdentities(workspace.path);
+    if (!remote) continue;
+    const gitRemoteHash = remoteHashCandidates(remote)
+      .find((hash) => projectGitRemoteHashes.has(hash));
+    if (!gitRemoteHash) continue;
+    states.push({
+      workspacePath: workspace.path,
+      gitRemoteHash,
+      open: isWorkspaceOpen(workspace.path),
+    });
+  }
+  return states;
+}
+
+/**
+ * Recent workspaces bound to one of `teamProjectIds` by name rather than by
+ * remote. Without this a folder opened through the shared-project flow keeps
+ * reporting "not local" in the org's Projects list even while it is open.
+ */
+function getRecentWorkspaceBindingStates(
+  orgId: string,
+  teamProjectIds: ReadonlySet<string>,
+): WorkspaceBindingState[] {
+  const states: WorkspaceBindingState[] = [];
+  for (const workspace of getRecentItems('workspaces')) {
+    if (!workspace.path || !existsSync(workspace.path)) continue;
+    const binding = getLocalOrgBinding(workspace.path);
+    if (!binding || binding.orgId !== orgId) continue;
+    if (!binding.teamProjectId || !teamProjectIds.has(binding.teamProjectId)) continue;
+    states.push({
+      workspacePath: workspace.path,
+      teamProjectId: binding.teamProjectId,
+      open: isWorkspaceOpen(workspace.path),
+    });
+  }
+  return states;
+}
+
+async function resolveLocalProjectStatesForOrg(
+  orgId: string,
+): Promise<OrgProjectLocalState[]> {
+  if (!orgId || typeof orgId !== 'string') {
+    throw new Error('team:resolve-org-projects-local-state requires orgId');
+  }
+  const projects = await listProjectsForOrg(orgId);
+  const hashes = new Set(
+    projects
+      .map((project) => project.gitRemoteHash)
+      .filter((hash): hash is string => !!hash),
+  );
+  const teamProjectIds = new Set(
+    projects
+      .map((project) => project.teamProjectId)
+      .filter((id): id is string => !!id),
+  );
+  const workspaces = await getRecentWorkspaceRemoteStates(hashes);
+  const bound = getRecentWorkspaceBindingStates(orgId, teamProjectIds);
+  return resolveOrgProjectLocalStates(projects, workspaces, bound);
+}
+
+/**
+ * Attach a local directory to a shared project that has no git remote.
+ *
+ * This is the join half of the git-free flow: the creator's machine records the
+ * binding when the org is made, and every other member records it here. The
+ * guards are the important part -- rebinding a directory that already belongs
+ * to another project is the one destructive outcome available, so both the
+ * recorded binding and the directory's own remote are checked first.
+ */
+export async function bindWorkspaceToSharedProject(input: {
+  orgId: string;
+  teamProjectId: string;
+  directoryPath: string;
+}): Promise<void> {
+  const { orgId, teamProjectId, directoryPath } = input;
+  if (!orgId) throw new Error('Opening a shared project requires orgId');
+  if (!teamProjectId) throw new Error('Opening a shared project requires teamProjectId');
+  if (!directoryPath) throw new Error('Opening a shared project requires a directory');
+  if (!isAuthenticated()) throw new Error('Sign in to open a shared project');
+
+  const teams = await listTeams();
+  const team = teams.find(t => (
+    t.orgId === orgId && (!t.membershipType || t.membershipType === 'active_member')
+  ));
+  if (!team) {
+    throw new Error('You are not a member of that organization');
+  }
+
+  // The registry is the authority when present; an org whose listing predates
+  // per-project rows can still name its primary project.
+  const project = team.projects?.find(p => p.teamProjectId === teamProjectId)
+    ?? (team.teamProjectId === teamProjectId ? { gitRemoteHash: team.gitRemoteHash } : undefined);
+  if (!project) {
+    throw new Error('That project is no longer part of this organization');
+  }
+  if (project.gitRemoteHash) {
+    throw new Error(
+      'That project is matched to teammates by its git remote. Clone the repository and open it instead.',
+    );
+  }
+
+  const existingBinding = getLocalOrgBinding(directoryPath);
+  if (existingBinding && (
+    existingBinding.orgId !== orgId || existingBinding.teamProjectId !== teamProjectId
+  )) {
+    throw new Error('That folder already belongs to a different project');
+  }
+
+  if (existsSync(directoryPath)) {
+    const stats = await stat(directoryPath);
+    if (!stats.isDirectory()) {
+      throw new Error('That path is a file, not a folder');
+    }
+    const remote = await getGitRemoteIdentities(directoryPath);
+    if (remote) {
+      const remoteMatch = resolveTeamForAnyRemoteHash(teams, remoteHashCandidates(remote));
+      if (remoteMatch && remoteMatch.teamProjectId !== teamProjectId) {
+        throw new Error(
+          "That folder's git remote already connects it to a different project",
+        );
+      }
+    }
+  } else {
+    await mkdir(directoryPath, { recursive: true });
+  }
+
+  setLocalOrgBinding(directoryPath, orgId, teamProjectId);
+  logger.main.info('[TeamService] Bound workspace to shared project:', directoryPath, orgId, teamProjectId);
+}
+
+/** Epic H3 P3: read-only pre-flight for the "Move to another org" wizard.
+ *  Admin on BOTH orgs (server-enforced). */
+async function previewMoveProject(
+  srcOrgId: string, projectId: string, destOrgId: string,
+): Promise<MovePreview> {
+  return await fetchTeamApi(
+    `/api/teams/${srcOrgId}/move-project/preview?projectId=${encodeURIComponent(projectId)}&destOrgId=${encodeURIComponent(destOrgId)}`,
+    'GET', undefined, srcOrgId,
+  ) as MovePreview;
+}
+
+/**
+ * Epic H3 P1/P2: move a project (its trackers + docs + grants) into another org.
+ * Admin on BOTH orgs (server-enforced). `dropMemberEmails` opts individual
+ * members out of the grant transfer (§12 #3). On success the server has flipped
+ * D1 routing; we drop the listTeams cache so the project re-resolves into the
+ * destination org on the next workspace open / sync re-init.
+ */
+async function moveProjectToOrg(
+  srcOrgId: string, projectId: string, destOrgId: string, dropMemberEmails?: string[],
+): Promise<MoveResultSummary> {
+  const result = await fetchTeamApi(`/api/teams/${srcOrgId}/move-project`, 'POST', {
+    projectId, destOrgId, dropMemberEmails,
+  }, srcOrgId) as MoveResultSummary;
+  logger.main.info('[TeamService] Project moved:', projectId, srcOrgId, '->', destOrgId, result);
+  try {
+    await getCollabBackupService().markSuperseded(
+      { orgId: srcOrgId, projectId },
+      { orgId: destOrgId, projectId: result.destTeamProjectId },
+    );
+  } catch (error) {
+    logger.main.warn('[TeamService] Could not mark pre-move collaboration backup as superseded', error);
+  }
+  invalidateListTeamsCache();
+  return result;
+}
+
+/**
+ * Epic H3 P4: merge one org into another — move ALL of the drained org's
+ * projects into the survivor, union the rosters, optionally delete the drained
+ * org. Admin on BOTH (server-enforced). Composes the move engine server-side.
+ */
+async function mergeOrg(
+  drainedOrgId: string, survivorOrgId: string, deleteDrained: boolean, dropMemberEmails?: string[],
+): Promise<MergeResultSummary> {
+  const result = await fetchTeamApi(`/api/teams/${drainedOrgId}/merge-into`, 'POST', {
+    survivorOrgId, deleteDrained, dropMemberEmails,
+  }, drainedOrgId) as MergeResultSummary;
+  logger.main.info('[TeamService] Org merged:', drainedOrgId, '->', survivorOrgId, result);
+  try {
+    for (const project of result.movedProjects) {
+      await getCollabBackupService().markSuperseded(
+        { orgId: drainedOrgId, projectId: project.projectId },
+        { orgId: survivorOrgId, projectId: project.destTeamProjectId },
+      );
+    }
+  } catch (error) {
+    logger.main.warn('[TeamService] Could not mark pre-merge collaboration backups as superseded', error);
+  }
+  invalidateListTeamsCache();
+  return result;
+}
+
+/**
+ * Accept a pending team invite. Exchanges the personal session for an
+ * org-scoped session (promoting the user from pending/invited to active
+ * in Stytch automatically), then sets up encryption keys.
+ */
+async function acceptInvite(orgId: string): Promise<TeamDetails> {
+  const pendingTeam = (await listTeams()).find((team) => team.orgId === orgId);
+  const inviteAccountOrgId = pendingTeam?.boundPersonalOrgId
+    ?? pendingTeam?.sourcePersonalOrgId;
+  if (!inviteAccountOrgId) {
+    throw new Error(`No signed-in account owns the pending invite for ${orgId}`);
+  }
+  // 1. Exchange session for the team org -- Stytch promotes pending -> active_member
+  const orgJwt = await getOrgScopedJwt(orgId, inviteAccountOrgId);
+
+  // 2. Fetch team details now that we're an active member. Invalidate first --
+  // with the long listTeams TTL, a pre-join cache entry would otherwise make
+  // this lookup miss the team we just joined.
+  invalidateListTeamsCache();
+  const teams = await listTeams();
+  const team = teams.find(t => t.orgId === orgId);
+  if (!team) {
+    throw new Error('Joined team but could not find it in team list');
+  }
+
+  logger.main.info('[TeamService] Accepted invite for team:', team.name, 'orgId:', orgId);
+  return team;
+}
+
+/**
+ * Outcome of following a `nimbalyst://invite/{orgId}` deep link.
+ *
+ * `sign-in-required` is the expected first-run case: the invitee installed the
+ * app because of the invitation email, so no account owns the invite yet.
+ */
+export type InviteDeepLinkOutcome =
+  | { status: 'accepted'; orgId: string; teamName: string }
+  | { status: 'already-member'; orgId: string; teamName: string }
+  | { status: 'sign-in-required'; orgId: string; email?: string }
+  | { status: 'not-found'; orgId: string; email?: string }
+  | { status: 'error'; orgId: string; message: string };
+
+/**
+ * Resolve a team-invitation deep link against the signed-in accounts.
+ *
+ * The link carries no token, so this re-derives everything from the server's
+ * team directory: an invitation is acceptable only when some signed-in account
+ * can already see the pending membership. An `email` that no signed-in account
+ * owns is reported as `sign-in-required` rather than silently accepting under a
+ * different account — following a link must never join the wrong identity to a
+ * team.
+ */
+export async function resolveInviteDeepLink(
+  orgId: string,
+  email?: string,
+): Promise<InviteDeepLinkOutcome> {
+  // Normalize here rather than trusting the caller: this is exported, and a
+  // casing mismatch must not be the difference between accepting an invitation
+  // and telling the user to sign in again.
+  const normalizedEmail = email?.trim().toLowerCase() || undefined;
+
+  if (!isAuthenticated()) return { status: 'sign-in-required', orgId, email: normalizedEmail };
+
+  if (normalizedEmail) {
+    const ownsEmail = getAccounts().some((account) => (
+      account.sessionStatus === 'active'
+      && account.email?.trim().toLowerCase() === normalizedEmail
+    ));
+    if (!ownsEmail) return { status: 'sign-in-required', orgId, email: normalizedEmail };
+  }
+
+  try {
+    // The console already flipped this membership to active when it accepted
+    // the invitation in the browser, so a stale directory would report a team
+    // the user "isn't in" moments after they joined it.
+    invalidateListTeamsCache();
+    const team = (await listTeams({ forceFresh: true })).find((candidate) => candidate.orgId === orgId);
+    if (!team) return { status: 'not-found', orgId, email: normalizedEmail };
+
+    if (team.membershipType && team.membershipType !== 'active_member') {
+      const joined = await acceptInvite(orgId);
+      return { status: 'accepted', orgId, teamName: joined.name };
+    }
+
+    return { status: 'already-member', orgId, teamName: team.name };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    logger.main.error('[TeamService] resolveInviteDeepLink failed:', message);
+    return { status: 'error', orgId, message };
+  }
+}
+
+/**
+ * List members of a team. Requires explicit orgId.
+ */
+export async function listMembers(orgId: string): Promise<{ members: TeamMember[]; callerRole: string }> {
+  const teamJwt = await getOrgScopedJwt(orgId);
+  return listMembersWithTeamJwt(orgId, teamJwt);
+}
+
+/**
+ * List an organization's members using authorization that is branded as
+ * team-scoped. Agent-facing directory reads use this boundary so a personal
+ * JWT cannot be substituted accidentally.
+ */
+export async function listMembersWithTeamJwt(
+  orgId: string,
+  teamJwt: TeamJwt,
+): Promise<{ members: TeamMember[]; callerRole: string }> {
+  assertJwtMatchesOrg(teamJwt, orgId);
+  const data = await fetchTeamApi(
+    `/api/teams/${encodeURIComponent(orgId)}/members`,
+    'GET',
+    undefined,
+    orgId,
+    undefined,
+    { teamJwt },
+  ) as {
+    members: Array<Omit<TeamMember, 'memberId'> & { memberId: string }>;
+    callerRole: string;
+  };
+  return {
+    callerRole: data.callerRole,
+    members: data.members.map((member) => ({
+      ...member,
+      memberId: asTeamMemberId(member.memberId),
+    })),
+  };
+}
+
+/**
+ * Invite a member to a team by email. Requires explicit orgId.
+ *
+ * `projectGrants` covers only the projects *beyond* the org's primary one — the
+ * server already seeds every joiner an editor grant there — and is keyed by
+ * `teamProjectId`, which is what the server's `project_access` rows hold.
+ *
+ * The result carries what actually happened, because a grant can fail after the
+ * membership is real. Reporting a partial success as a plain success would tell
+ * the inviter they shared a project the invitee cannot open.
+ */
+async function inviteMember(
+  orgId: string,
+  email: string,
+  role?: InviteMemberRole,
+  projectGrants?: InviteProjectGrant[],
+): Promise<InviteMemberOutcome> {
+  const response = await fetchTeamApi(`/api/teams/${orgId}/invite`, 'POST', {
+    email,
+    ...(role ? { role } : {}),
+    ...(projectGrants && projectGrants.length > 0 ? { projectGrants } : {}),
+  }, orgId) as InviteMemberOutcome | undefined;
+  return {
+    projectGrantsApplied: response?.projectGrantsApplied ?? 0,
+    projectGrantsFailed: response?.projectGrantsFailed ?? [],
+  };
+}
+
+/**
+ * Remove a member from a team. Requires explicit orgId.
+ *
+ * The server holds the team DEK and revokes the member's access when the
+ * membership row goes away; there is no client-held key to rotate.
+ */
+async function removeMember(orgId: string, memberId: string): Promise<void> {
+  await fetchTeamApi(`/api/teams/${orgId}/members/${memberId}`, 'DELETE', undefined, orgId);
+  logger.main.info('[TeamService] Member removed from organization:', memberId);
+}
+
+/**
+ * Delete a team entirely. Admin only.
+ * Deletes Stytch org, D1 metadata, and TeamRoom DO state.
+ */
+async function deleteTeam(orgId: string): Promise<void> {
+  await fetchTeamApi(`/api/teams/${orgId}`, 'DELETE', undefined, orgId);
+  // Clear cached org JWT since the org no longer exists
+  orgJwtCache.delete(orgId);
+  invalidateListTeamsCache();
+  logger.main.info('[TeamService] Team deleted:', orgId);
+}
+
+/**
+ * Update a member's role in a team. Requires explicit orgId.
+ */
+async function updateMemberRole(orgId: string, memberId: string, role: string): Promise<void> {
+  await fetchTeamApi(`/api/teams/${orgId}/members/${memberId}`, 'PUT', { role }, orgId);
+}
+
+/**
+ * Set the project identity (git remote hash) for a team. Admin only.
+ */
+async function setProjectIdentity(orgId: string, gitRemoteHash: string): Promise<void> {
+  await fetchTeamApi(`/api/teams/${orgId}/project-identity`, 'PUT', { gitRemoteHash }, orgId);
+}
+
+/**
+ * Clear the project identity for a team. Admin only.
+ */
+async function clearProjectIdentity(orgId: string): Promise<void> {
+  await fetchTeamApi(`/api/teams/${orgId}/project-identity`, 'DELETE', undefined, orgId);
+}
+
+// ============================================================================
+// Epic H1: project-access grant management (admin only). These call the new
+// collab REST endpoints, which forward to the TeamRoom DO project_access table.
+// ============================================================================
+
+/** Grant a member a project-scoped role. Admin only. */
+async function grantProjectAccess(
+  orgId: string, projectId: string, teamMemberId: TeamMemberId, projectRole: string,
+): Promise<void> {
+  await fetchTeamApi(
+    `/api/teams/${orgId}/project-access`, 'POST',
+    { projectId, userId: teamMemberId, projectRole }, orgId,
+  );
+}
+
+/** Revoke a member's access to a project. Admin only. */
+async function revokeProjectAccess(orgId: string, projectId: string, teamMemberId: TeamMemberId): Promise<void> {
+  const qp = `projectId=${encodeURIComponent(projectId)}&userId=${encodeURIComponent(teamMemberId)}`;
+  await fetchTeamApi(`/api/teams/${orgId}/project-access?${qp}`, 'DELETE', undefined, orgId);
+}
+
+/** List the grants for a project. Admin only. */
+async function listProjectAccess(
+  orgId: string, projectId: string,
+): Promise<Array<{ teamMemberId: TeamMemberId; projectRole: string }>> {
+  const qp = `projectId=${encodeURIComponent(projectId)}`;
+  const data = await fetchTeamApi(
+    `/api/teams/${orgId}/project-access?${qp}`, 'GET', undefined, orgId,
+  // identity-scope-allow: raw team API wire field is branded immediately below
+  ) as { grants?: Array<{ userId: string; projectRole: string }> };
+  return (data.grants ?? []).map((grant) => ({
+    teamMemberId: asTeamMemberId(grant.userId),
+    projectRole: grant.projectRole,
+  }));
+}
+
+/**
+ * Backoff for a team match that could not be carried out. `isAuthenticated()`
+ * going true is a weaker signal than "the personal JWT the team directory
+ * needs is usable" -- the gap between them is small but real, and the previous
+ * single attempt landed inside it, leaving tracker sync off for the session.
+ */
+const AUTO_MATCH_RETRY_DELAYS_MS = [500, 2_000, 5_000, 15_000];
+
+/** Workspaces with a match attempt (or a scheduled retry) already outstanding. */
+const autoMatchInFlight = new Set<string>();
+
+/**
+ * Match a workspace to its team and start the collaboration services for it.
+ *
+ * Retries while the answer is inconclusive, and stops the moment it is not:
+ * a match, or a directory that came back whole and simply had no team for
+ * this workspace.
+ */
+export async function autoMatchTeamForWorkspace(workspacePath: string): Promise<void> {
+  logger.main.info('[TeamService] autoMatchTeamForWorkspace:', workspacePath);
+  if (autoMatchInFlight.has(workspacePath)) {
+    logger.main.info('[TeamService] autoMatch already outstanding for:', workspacePath);
+    return;
+  }
+  autoMatchInFlight.add(workspacePath);
+  await attemptAutoMatchTeam(workspacePath, 0);
+}
+
+async function attemptAutoMatchTeam(workspacePath: string, attempt: number): Promise<void> {
+  // If auth isn't ready yet (common at startup -- session restore runs before Stytch init),
+  // defer until auth becomes available.
+  if (!isAuthenticated()) {
+    logger.main.info('[TeamService] Auth not ready, deferring autoMatch for:', workspacePath);
+    const unsubscribe = onAuthStateChange((authState) => {
+      if (authState.isAuthenticated) {
+        unsubscribe();
+        logger.main.info('[TeamService] Auth now ready, retrying autoMatch for:', workspacePath);
+        // Restart the backoff: this is the first attempt that could succeed.
+        void attemptAutoMatchTeam(workspacePath, 0);
+      }
+    });
+    return;
+  }
+
+  let resolution: WorkspaceTeamResolution;
+  try {
+    resolution = await resolveTeamForWorkspace(workspacePath);
+  } catch (err) {
+    // Fire-and-forget -- never block workspace open
+    logger.main.error('[TeamService] autoMatchTeamForWorkspace error:', err);
+    resolution = { team: null, complete: false };
+  }
+
+  if (!resolution.team) {
+    if (resolution.complete) {
+      // The directory answered in full and this workspace is in no team.
+      autoMatchInFlight.delete(workspacePath);
+      return;
+    }
+    const delay = AUTO_MATCH_RETRY_DELAYS_MS[attempt];
+    if (delay === undefined) {
+      autoMatchInFlight.delete(workspacePath);
+      logger.main.warn(
+        '[TeamService] Team lookup never completed for', workspacePath,
+        '-- tracker sync stays off until an auth change or a manual reconnect',
+      );
+      return;
+    }
+    logger.main.info(
+      '[TeamService] Team lookup incomplete for', workspacePath, `-- retrying in ${delay}ms`,
+    );
+    setTimeout(() => { void attemptAutoMatchTeam(workspacePath, attempt + 1); }, delay);
+    return;
+  }
+
+  autoMatchInFlight.delete(workspacePath);
+  const team = resolution.team;
+  try {
+    logger.main.info('[TeamService] Workspace matched to team:', team.name, 'orgId:', team.orgId);
+
+    // Epic H1: refresh the local org/project/membership projection so the
+    // canAccess resolver has this team's roster + grants. Best-effort.
+    syncOrgProjectionFromServer().catch(err => {
+      logger.main.warn('[TeamService] post-match org projection sync failed:', err);
+    });
+
+    // Notify all renderer windows about the team match
+    for (const win of BrowserWindow.getAllWindows()) {
+      win.webContents.send('team:workspace-matched', {
+        orgId: team.orgId,
+        teamName: team.name,
+        workspacePath,
+        hasKey: true,
+      });
+    }
+
+    // Why: callers run autoMatch and initializeTrackerSync in parallel
+    // (WorkspaceManagerWindow, index.ts CLI open, RepositoryManager
+    // auth-change reinit). The parallel init typically races ahead, finds
+    // no team yet via findTeamForWorkspace, and bails at a debug-level
+    // log line that never makes it to main.log. We use the race-safe
+    // ensureTrackerSyncForWorkspace here: if the parallel call is still
+    // inflight, we share its promise; if it already bailed silently or
+    // bails when our shared promise resolves, ensure retries once more
+    // with a fresh init so the engine actually starts.
+    ensureTrackerSyncForWorkspace(workspacePath).catch(err => {
+      logger.main.warn('[TeamService] post-match ensureTrackerSyncForWorkspace failed for', workspacePath, err);
+    });
+  } catch (err) {
+    // Fire-and-forget -- never block workspace open
+    logger.main.error('[TeamService] autoMatchTeamForWorkspace error:', err);
+  }
+}
+
+export async function syncOrgProjectionFromServer(knownTeams?: TeamDetails[]): Promise<{
+  success: boolean;
+  counts?: { orgs: number; projects: number; members: number; grants: number };
+  error?: string;
+}> {
+  if (!isAuthenticated()) return { success: false, error: 'not-authenticated' };
+  const db = getDatabase() as AccessDatabase | null;
+  if (!db) return { success: false, error: 'db-unavailable' };
+
+  try {
+    const orgs: OrgWithRoster[] = [];
+
+    // Personal org (solo owner) so personal-context access resolves locally.
+    const personalOrgId = getPersonalOrgId();
+    const personalUserId = getPersonalUserId();
+    if (personalOrgId && personalUserId) {
+      orgs.push({
+        org: { orgId: personalOrgId, name: 'Personal', flavor: 'personal' },
+        members: [{ personalMemberId: personalUserId, email: getUserEmail(), role: 'owner' }],
+      });
+    }
+
+    const teams = knownTeams ?? await listTeams();
+    for (const team of teams) {
+      let members: MemberInput[] = [];
+      try {
+        const data = await listMembers(team.orgId);
+        members = (data.members || []).map((m) => ({
+          teamMemberId: m.memberId,
+          email: m.email,
+          role: m.role,
+        }));
+      } catch (err) {
+        // Pending/invited teams (or transient failures) can't list members --
+        // seed the org row with an empty roster; a later sync fills it in.
+        logger.main.debug('[TeamService] projection sync: listMembers failed for', team.orgId, err);
+      }
+      orgs.push({
+        org: {
+          orgId: team.orgId,
+          name: team.name,
+          flavor: 'team',
+          teamProjectId: team.teamProjectId ?? null,
+          gitOriginHash: team.gitRemoteHash,
+        },
+        members,
+      });
+    }
+
+    const counts = await backfillProjection(db, orgs);
+
+    // The backfill above derives grants from org roles, which is a guess. Where
+    // the server will actually answer, its list replaces that guess -- otherwise
+    // canAccess keeps promising edit rights the server refuses with
+    // document_read_only. Admin-only endpoint, so a non-admin member simply
+    // keeps the role-derived projection.
+    for (const team of teams) {
+      if (!team.teamProjectId) continue;
+      try {
+        const grants = await listProjectAccess(team.orgId, team.teamProjectId);
+        await reconcileProjectAccessFromServer(db, team.teamProjectId, grants);
+      } catch (err) {
+        logger.main.debug(
+          '[TeamService] projection sync: listProjectAccess failed for', team.orgId, err,
+        );
+      }
+    }
+
+    for (const team of teams) {
+      const bindings = team.accountBindings ?? (
+        team.sourcePersonalOrgId && team.teamMemberId
+          && team.owningPersonalOrgId === team.sourcePersonalOrgId
+          ? [{ personalOrgId: team.sourcePersonalOrgId, teamMemberId: team.teamMemberId }]
+          : []
+      );
+      for (const binding of bindings) {
+        await persistServerAccountOrgBinding(
+          db,
+          binding.personalOrgId,
+          team.orgId,
+          binding.teamMemberId,
+          binding.personalOrgId,
+          'server-sync',
+        );
+      }
+    }
+    // A binding pointing at an org the projection never wrote is the NIM-2466
+    // signature. The sync is the only place that can see it, and it went by in
+    // silence there -- the binding looked healthy, so nothing else ever looked.
+    const dangling = await findBindingsWithMissingOrg(db);
+    if (dangling.length > 0) {
+      logger.main.error('[TeamService] Account/org bindings reference orgs missing from the local projection', {
+        bindings: dangling,
+      });
+    }
+
+    // logger.main.info('[TeamService] org projection synced:', counts);
+    return { success: true, counts };
+  } catch (err) {
+    logger.main.error('[TeamService] syncOrgProjectionFromServer error:', err);
+    return { success: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+const runAuthenticatedTeamBootstrap = createTeamAuthBootstrap(async () => {
+  try {
+    const teams = await listTeams();
+    await Promise.all([
+      syncOrgProjectionFromServer(teams),
+    ]);
+  } catch (err) {
+    logger.main.warn('[TeamService] authenticated team bootstrap failed:', err);
+  }
+});
+
+/**
+ * Resolve the viewer's per-org member id from the team org's explicit account
+ * binding. The sync account only breaks a tie between two signed-in accounts
+ * that both bind this org. Legacy email matching remains isolated to the
+ * logged, one-time repair path.
+ */
+export async function canAccessForCurrentUser(input: CanAccessInput): Promise<{
+  allowed: boolean; orgRole: string | null; projectRole: string | null; reason: string;
+}> {
+  const db = getDatabase() as AccessDatabase | null;
+  if (!db) return { allowed: false, orgRole: null, projectRole: null, reason: 'db-unavailable' };
+
+  const signedInAccounts = getAccounts();
+  let viewer: AccessViewerIdentity | null = null;
+
+  // Resolve the org first (from projectId if needed), then resolve its bound
+  // signed-in account, preferring the sync account when the org is ambiguous.
+  let orgId = input.orgId ?? null;
+  if (!orgId && input.projectId) {
+    const pr = await db.query<{ org_id: string }>(`SELECT org_id FROM projects WHERE id = $1`, [input.projectId]);
+    orgId = pr.rows[0]?.org_id ?? null;
+  }
+  if (orgId) {
+    const personalAccount = signedInAccounts.find((account) => account.personalOrgId === orgId);
+    if (personalAccount?.personalUserId) {
+      viewer = { personalMemberId: asPersonalMemberId(personalAccount.personalUserId) };
+    } else {
+      let binding = await resolveTeamOrgAccountBinding(
+        db,
+        orgId,
+        signedInAccounts.map((account) => account.personalOrgId),
+        getSyncAccount()?.personalOrgId,
+      );
+      if (!binding) {
+        for (const account of signedInAccounts) {
+          if (!account.email) continue;
+          await repairAccountOrgBindingFromEmail(
+            db,
+            account.personalOrgId,
+            orgId,
+            account.email,
+          );
+          binding = await resolveTeamOrgAccountBinding(
+            db,
+            orgId,
+            signedInAccounts.map((candidate) => candidate.personalOrgId),
+            getSyncAccount()?.personalOrgId,
+          );
+          if (binding) break;
+        }
+      }
+      if (binding) viewer = { teamMemberId: binding.teamMemberId };
+    }
+  }
+
+  if (!viewer) {
+    return { allowed: false, orgRole: null, projectRole: null, reason: 'no-viewer' };
+  }
+  return canAccess(db, viewer, input);
+}
+
+export function registerTeamHandlers(): void {
+  safeHandle('org:sync-projection', async () => {
+    return syncOrgProjectionFromServer();
+  });
+
+  safeHandle('org:can-access', async (_event, input: CanAccessInput) => {
+    try {
+      return await canAccessForCurrentUser(input);
+    } catch (error) {
+      return {
+        allowed: false, orgRole: null, projectRole: null,
+        reason: error instanceof Error ? error.message : String(error),
+      };
+    }
+  });
+
+  safeHandle('org:grant-project-access', async (_event, orgId: string, projectId: string, teamMemberId: TeamMemberId, projectRole: string) => {
+    try {
+      await grantProjectAccess(orgId, projectId, teamMemberId, projectRole);
+      // Reflect the grant in the local projection immediately.
+      await syncOrgProjectionFromServer();
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  safeHandle('org:revoke-project-access', async (_event, orgId: string, projectId: string, teamMemberId: TeamMemberId) => {
+    try {
+      await revokeProjectAccess(orgId, projectId, teamMemberId);
+      await syncOrgProjectionFromServer();
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  safeHandle('org:list-project-access', async (_event, orgId: string, projectId: string) => {
+    try {
+      const grants = await listProjectAccess(orgId, projectId);
+      return { success: true, grants };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  // Epic H1 live write-through: the renderer's TeamSync config forwards DO
+  // broadcasts here so the local projection (org_members / project_access)
+  // stays current without a full re-sync. Each is targeted + idempotent.
+  safeHandle('org:apply-project-access', async (_event, projectId: string, teamMemberId: TeamMemberId, projectRole: string | null) => {
+    try {
+      const db = getDatabase() as ProjectionDb | null;
+      if (!db) return { success: false, error: 'db-unavailable' };
+      if (projectRole) {
+        await applyProjectGrant(db, projectId, teamMemberId, projectRole as ProjectRole);
+      } else {
+        await applyProjectRevoke(db, projectId, teamMemberId);
+      }
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  safeHandle('org:apply-member-upserted', async (_event, orgId: string, teamMemberId: TeamMemberId, email: string | null, role: string) => {
+    try {
+      const db = getDatabase() as ProjectionDb | null;
+      if (!db) return { success: false, error: 'db-unavailable' };
+      await applyMemberUpserted(db, orgId, { teamMemberId, email, role });
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  safeHandle('org:apply-member-role-changed', async (_event, orgId: string, teamMemberId: TeamMemberId, role: string) => {
+    try {
+      const db = getDatabase() as ProjectionDb | null;
+      if (!db) return { success: false, error: 'db-unavailable' };
+      await applyMemberRoleChanged(db, orgId, teamMemberId, role);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  safeHandle('org:apply-member-removed', async (_event, orgId: string, teamMemberId: TeamMemberId) => {
+    try {
+      const db = getDatabase() as ProjectionDb | null;
+      if (!db) return { success: false, error: 'db-unavailable' };
+      await applyMemberRemoved(db, orgId, teamMemberId);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  safeHandle('team:list', async (_event, options?: { forceRefresh?: boolean }) => {
+    try {
+      // The directory cache is invalidated by events (join/create/delete/auth
+      // change); `forceRefresh` backs the manual Refresh affordance in Account
+      // settings for the cases those events miss (e.g. invited from elsewhere).
+      if (options?.forceRefresh) invalidateListTeamsCache();
+      const teams = await listTeams(options?.forceRefresh ? { forceFresh: true } : undefined);
+      return { success: true, teams };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  safeHandle('team:find-for-workspace', async (_event, workspacePath: string) => {
+    try {
+      return await findForWorkspaceSingleFlight(workspacePath, () => findTeamOrPendingInviteForWorkspace(workspacePath));
+    } catch (error) {
+      // A thrown lookup answered nothing either.
+      return { success: false, complete: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  safeHandle('team:find-pending-invite-for-email', async (_event, email: string) => {
+    try {
+      if (typeof email !== 'string' || !email.trim()) {
+        return { success: false, error: 'team:find-pending-invite-for-email requires email' };
+      }
+      const invitation = await findPendingInviteForEmail(email);
+      return { success: true, invitation };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  safeHandle('team:get', async (_event, orgId: string) => {
+    try {
+      const team = await getTeamByOrgId(orgId);
+      return { success: true, team };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  safeHandle('team:rename', async (_event, orgId: string, name: string) => {
+    try {
+      const organization = await renameOrganization(orgId, name);
+      return { success: true, organization };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  });
+
+  safeHandle('team:create', async (_event, name: string, workspacePath?: string, accountOrgId?: string) => {
+    try {
+      const team = await createTeam(name, workspacePath, accountOrgId);
+      broadcastWorkspaceOrgChanged({ orgId: team.orgId, workspacePath });
+      return { success: true, team };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  safeHandle('team:add-project', async (_event, orgId: string, workspacePath?: string, name?: string) => {
+    try {
+      const project = await addProjectToOrg(orgId, workspacePath, name);
+      // The new project changes the org's registry; drop the listTeams cache so
+      // findTeamForWorkspace can resolve the new project's room on the next open.
+      invalidateListTeamsCache();
+      broadcastWorkspaceOrgChanged({ orgId, workspacePath });
+      return { success: true, project };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  safeHandle('team:list-projects', async (_event, orgId: string) => {
+    try {
+      const projects = await listProjectsForOrg(orgId);
+      return { success: true, projects };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  safeHandle('team:resolve-org-projects-local-state', async (_event, orgId: string) => {
+    try {
+      const projects = await resolveLocalProjectStatesForOrg(orgId);
+      return { success: true, projects };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  safeHandle('team:move-project-preview', async (_event, srcOrgId: string, projectId: string, destOrgId: string) => {
+    try {
+      const preview = await previewMoveProject(srcOrgId, projectId, destOrgId);
+      return { success: true, preview };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  safeHandle('team:move-project', async (_event, srcOrgId: string, projectId: string, destOrgId: string, dropMemberEmails?: string[]) => {
+    try {
+      const result = await moveProjectToOrg(srcOrgId, projectId, destOrgId, dropMemberEmails);
+      return { success: true, result };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  safeHandle('team:merge-org', async (_event, drainedOrgId: string, survivorOrgId: string, deleteDrained: boolean, dropMemberEmails?: string[]) => {
+    try {
+      const result = await mergeOrg(drainedOrgId, survivorOrgId, deleteDrained, dropMemberEmails);
+      return { success: true, result };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  safeHandle('team:accept-invite', async (_event, orgId: string) => {
+    try {
+      const team = await acceptInvite(orgId);
+      broadcastWorkspaceOrgChanged({ orgId });
+      return { success: true, team };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  safeHandle('team:list-members', async (_event, orgId: string) => {
+    try {
+      const data = await listMembers(orgId);
+      return { success: true, ...data };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  safeHandle('team:invite', async (
+    _event,
+    orgId: string,
+    email: string,
+    role?: InviteMemberRole,
+    projectGrants?: InviteProjectGrant[],
+  ) => {
+    try {
+      const outcome = await inviteMember(orgId, email, role, projectGrants);
+      return { success: true, ...outcome };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  safeHandle('team:remove-member', async (_event, orgId: string, memberId: string) => {
+    try {
+      await removeMember(orgId, memberId);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  safeHandle('team:delete', async (_event, orgId: string) => {
+    try {
+      await deleteTeam(orgId);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  safeHandle('team:update-role', async (_event, orgId: string, memberId: string, role: string) => {
+    try {
+      await updateMemberRole(orgId, memberId, role);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  safeHandle('team:get-git-remote', async (_event, workspacePath: string) => {
+    try {
+      // Display only, so it shows the canonical form -- the legacy one would
+      // put whatever credentials `origin` embeds on screen.
+      const remote = await getGitRemoteIdentities(workspacePath);
+      return { success: true, remote: remote?.canonical ?? null };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  safeHandle('team:set-project-identity', async (_event, orgId: string, workspacePath: string) => {
+    try {
+      const remote = await getGitRemoteIdentities(workspacePath);
+      if (!remote) {
+        return { success: false, error: 'No git remote found for this workspace' };
+      }
+      // Relinking rewrites the stored identity, so it writes the canonical form
+      // -- this is the deliberate path that heals a legacy-hashed project.
+      const hash = hashGitRemote(remote.canonical);
+      await setProjectIdentity(orgId, hash);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  safeHandle('team:clear-project-identity', async (_event, orgId: string) => {
+    try {
+      await clearProjectIdentity(orgId);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  // Epic H1: populate the local org/project/membership projection independently
+  // of a workspace team match, so `canAccess` resolves correctly even before (or
+  // without) opening a matched workspace. onAuthStateChange immediately supplies
+  // the current state, so this also covers launch. Keep the whole authenticated
+  // bootstrap single-flight: team API requests can refresh a token, and that
+  // refresh emits a re-entrant authenticated state before the request completes.
+  onAuthStateChange((authState) => {
+    // Any auth transition (sign-in, sign-out, account switch, token refresh)
+    // can change which orgs the caller's JWTs are valid for -- drop the long-
+    // lived listTeams cache so the next read reflects it instead of serving
+    // a pre-transition snapshot for the rest of the TTL window.
+    invalidateListTeamsCache();
+    if (authState.isAuthenticated) {
+      void runAuthenticatedTeamBootstrap();
+    }
+  });
+}

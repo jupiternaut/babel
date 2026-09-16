@@ -1,0 +1,613 @@
+/* Import theme CSS - editor class styles and unified CSS variables (--nim-* prefix) */
+@import '../../../runtime/src/editor/themes/NimbalystEditorTheme.css';
+@import '../../../runtime/src/editor/themes/NimbalystTheme.css';
+
+/* Material Symbols is bundled so startup icons never depend on network timing. */
+@font-face {
+  font-family: 'Material Symbols Outlined';
+  font-style: normal;
+  font-weight: 100 700;
+  font-display: block;
+  src: url('./assets/fonts/material-symbols-outlined.woff2') format('woff2');
+}
+
+/* Tailwind CSS - comes after theme variables so it can reference them */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+/* Shared component utilities are now imported via JS in index.tsx */
+
+/* Reset and base styles */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+  /* The canvas every surface sits on. Without it the window falls through to
+     the browser default white wherever a surface forgets its own background,
+     which is how team mode shipped white on a light extension theme. The
+     tray-panel window overrides this below; it must stay see-through. */
+  background: var(--nim-bg);
+  color: var(--nim-text);
+}
+
+#root {
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Menu-bar sessions panel window (`?mode=tray-panel`). The BrowserWindow is
+   created with `transparent: true` + `vibrancy: 'popover'`, so nothing in the
+   root chain may paint an opaque backdrop or the native material is hidden. */
+html.tray-panel-window,
+html.tray-panel-window body,
+html.tray-panel-window #root {
+  background: transparent;
+}
+
+/*
+ * The menu bar island's window is a large transparent canvas; only the island
+ * itself paints. The window is click-through everywhere else, so an opaque root
+ * here would both hide the menu bar and look like a black slab across it.
+ */
+html.menu-bar-island-window,
+html.menu-bar-island-window body,
+html.menu-bar-island-window #root {
+  background: transparent;
+}
+
+/* =============================================================================
+   Floating surfaces must opt out of the window drag region
+   =============================================================================
+   `.window-top-bar` is a full-width 38px `-webkit-app-region: drag` strip. On
+   Windows (`titleBarStyle: 'hidden'`) Electron reports that rectangle to the OS
+   as HTCAPTION, so the OS consumes the mouse event as a title-bar drag and the
+   renderer never sees a click. Anything *painted over* the strip inherits that
+   fate: Blink only subtracts rectangles that explicitly declare `no-drag`, and
+   `-webkit-app-region` is not an inherited property, so a portalled popup
+   overlapping the top 38px is simply dead.
+
+   That is issue #1052 (NIM-2243): the project rail's `+` menu is bottom-aligned
+   and grows upward, so once recent projects exist `shift()` clamps it to the top
+   of the viewport and its first item, "Open folder…", lands inside the strip.
+   The recents below y=38 stayed clickable, which is why it read as one broken
+   button rather than a positioning bug.
+
+   `[data-floating-ui-portal]` is the attribute @floating-ui/react stamps on every
+   portal root, so this covers every popover/tooltip/menu in the app at once. The
+   descendant selector is deliberate: the portal root and any intermediate wrapper
+   are usually zero-height boxes around an absolutely-positioned child, so scoping
+   to `> *` would subtract an empty rectangle and fix nothing. */
+[data-floating-ui-portal],
+[data-floating-ui-portal] * {
+  -webkit-app-region: no-drag;
+}
+
+/* The interactive surfaces that still portal to `document.body` by hand rather
+   than through @floating-ui, so they carry no portal attribute to hang the rule
+   off. Only interactive ones are listed: a non-interactive overlay (the help
+   tooltip is `pointer-events: none`) opting out would needlessly carve a hole in
+   the draggable title bar underneath it. */
+.generic-typeahead,
+.session-context-menu,
+.walkthrough-callout {
+  -webkit-app-region: no-drag;
+}
+
+/* Global scrollbar styles for macOS "Always show scrollbars" setting */
+/* These styles ensure scrollbars match the current theme */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--nim-scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--nim-scrollbar-thumb);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--nim-scrollbar-thumb-hover);
+}
+
+/* Material Symbols configuration */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  display: inline-block;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: 'liga';
+}
+
+/* Dev mode indicator - show "DEV MODE" text sideways in navigation gutter */
+body[data-dev-mode="true"] .nav-quick-access {
+  position: relative;
+}
+
+body[data-dev-mode="true"] .nav-quick-access::before {
+  content: var(--dev-mode-label, 'DEV MODE');
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-90deg);
+  transform-origin: center;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: var(--nim-warning);
+  opacity: 0.8;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 0;
+}
+
+
+/* ============================================= */
+/* Update Toast Animations                       */
+/* ============================================= */
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes extension-dev-menu-appear {
+  from {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* =============================================================================
+ * Lexical Change Group Highlighting
+ * These classes are applied to Lexical nodes when navigating through diff changes
+ * ============================================================================= */
+
+.diff-group-highlight-removed {
+  background-color: rgba(220, 38, 38, 0.15) !important;
+}
+
+.diff-group-highlight-added {
+  background-color: rgba(22, 163, 74, 0.15) !important;
+}
+
+.diff-group-highlight-modified {
+  background-color: rgba(59, 130, 246, 0.15) !important;
+}
+
+/* =============================================================================
+ * Walkthrough Guide Styles
+ * Animation and target highlight styles for the walkthrough system
+ * ============================================================================= */
+
+@keyframes walkthrough-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Marks the block a `file.md:653` link scrolled to. Block granularity is
+   approximate, so the flash is how the reader tells the target from its
+   neighbours. Duration is mirrored in revealMarkdownLine.ts. */
+@keyframes nim-revealed-block-fade {
+  from {
+    background-color: color-mix(in srgb, var(--nim-primary) 22%, transparent);
+  }
+  to {
+    background-color: transparent;
+  }
+}
+
+.nim-revealed-block {
+  animation: nim-revealed-block-fade 1.6s ease-out forwards;
+  border-radius: 3px;
+}
+
+@keyframes walkthrough-pulse {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--nim-primary) 40%, transparent);
+  }
+  50% {
+    opacity: 0.8;
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--nim-primary) 0%, transparent);
+  }
+}
+
+/* Target element highlight - applied dynamically via JS */
+.walkthrough-target-highlight {
+  position: relative;
+  z-index: 10000;
+}
+
+.walkthrough-target-highlight::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border: 2px solid var(--nim-primary);
+  border-radius: 8px;
+  pointer-events: none;
+  animation: walkthrough-pulse 1.5s ease-in-out infinite;
+}
+
+/* =============================================================================
+ * Contextual Tips Styles
+ * Animation for the tip card system
+ * ============================================================================= */
+
+@keyframes tip-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ============================================
+   File Tree Styles
+   ============================================ */
+
+.file-tree {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 13px;
+}
+
+.file-tree-item {
+  user-select: none;
+}
+
+.file-tree-directory,
+.file-tree-file {
+  display: flex;
+  align-items: center;
+  padding: 2px 8px;
+  cursor: pointer;
+  transition: background-color 0.1s;
+  white-space: nowrap;
+  overflow: hidden;
+  height: 28px;
+  border-radius: 4px;
+  color: var(--nim-text);
+}
+
+.file-tree-directory:hover,
+.file-tree-file:hover {
+  background-color: var(--nim-bg-hover);
+}
+
+.file-tree-file.active {
+  background-color: var(--nim-bg-selected);
+  color: var(--nim-text);
+}
+
+.file-tree-directory.selected {
+  background-color: var(--nim-bg-selected);
+  color: var(--nim-text);
+}
+
+/* Multi-selection styles */
+.file-tree-file.multi-selected,
+.file-tree-directory.multi-selected {
+  background-color: var(--nim-bg-selected);
+  color: var(--nim-text);
+}
+
+.file-tree-chevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  margin-right: 2px;
+  flex-shrink: 0;
+  color: var(--nim-text-muted);
+}
+
+.file-tree-spacer {
+  width: 18px;
+  flex-shrink: 0;
+}
+
+.file-tree-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 6px;
+  flex-shrink: 0;
+  color: var(--nim-text-muted);
+}
+
+.file-tree-file.active .file-tree-icon,
+.file-tree-directory.selected .file-tree-icon,
+.file-tree-directory.selected .file-tree-chevron,
+.file-tree-file.multi-selected .file-tree-icon,
+.file-tree-directory.multi-selected .file-tree-icon,
+.file-tree-directory.multi-selected .file-tree-chevron {
+  color: var(--nim-text);
+}
+
+/* Special directories (nimbalyst-local) */
+.file-tree-directory.special-directory .file-tree-icon {
+  color: var(--nim-purple);
+}
+
+.file-tree-directory.special-directory.selected .file-tree-icon {
+  color: var(--nim-purple);
+  opacity: 0.8;
+}
+
+.file-tree-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--nim-text);
+}
+
+/* Git Status Badge in File Tree */
+.file-tree-git-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  border-radius: 2px;
+  flex-shrink: 0;
+  color: white;
+  margin-left: auto;
+  margin-right: 4px;
+}
+
+.file-tree-git-status--modified {
+  background-color: var(--nim-warning);
+}
+
+.file-tree-git-status--staged {
+  background-color: var(--nim-success);
+}
+
+.file-tree-git-status--untracked {
+  background-color: var(--nim-text-faint);
+}
+
+.file-tree-git-status--deleted {
+  background-color: var(--nim-error);
+}
+
+.file-tree-git-status--inherited {
+  opacity: 0.5;
+}
+
+/* Flat virtualized file tree container */
+.file-tree-container {
+  height: 100%;
+  position: relative;
+  font-size: 13px;
+  outline: none;
+}
+
+/* Keyboard focus indicator (distinct from selection) */
+.file-tree-file.focused,
+.file-tree-directory.focused {
+  outline: 1px solid var(--nim-primary);
+  outline-offset: -1px;
+}
+
+/* Inline rename input */
+.file-tree-rename-input {
+  background: var(--nim-bg);
+  border: 1px solid var(--nim-primary);
+  border-radius: 2px;
+  color: var(--nim-text);
+  font-size: 13px;
+  font-family: inherit;
+  padding: 0 4px;
+  height: 22px;
+  width: 100%;
+  outline: none;
+}
+
+/* Drag and drop styles */
+.file-tree-directory.drag-over {
+  background-color: var(--nim-bg-selected) !important;
+  outline: 2px solid var(--nim-primary);
+  outline-offset: -2px;
+}
+
+/* Command pills: highlight known /command tokens inside the AI chat input.
+   The overlay text sits over a transparent textarea, so a pill must NOT change
+   glyph advance -- tint via background + box-shadow spread (no padding/border/
+   font-weight change) so the caret stays aligned with the text beneath. */
+.command-pill {
+  color: var(--nim-primary);
+  background-color: color-mix(in srgb, var(--nim-primary) 14%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--nim-primary) 14%, transparent);
+  border-radius: 4px;
+}
+.command-pill:hover {
+  background-color: color-mix(in srgb, var(--nim-primary) 24%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--nim-primary) 24%, transparent);
+}
+
+/* Mention pills: tint `@` file refs and `@@[title](id)` session mentions inside
+   the AI chat input. Same glyph-advance constraint as .command-pill (tint only,
+   no padding/border/font-weight). Kept visually lighter than the command tint and
+   given distinct hues: neutral/gray for files, purple accent for sessions. These
+   are pure decoration -- no hover, no pointer events. */
+.mention-pill-file {
+  color: var(--nim-text);
+  background-color: color-mix(in srgb, var(--nim-text-muted) 16%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--nim-text-muted) 16%, transparent);
+  border-radius: 4px;
+}
+.mention-pill-session {
+  color: var(--nim-purple);
+  background-color: color-mix(in srgb, var(--nim-purple) 12%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--nim-purple) 12%, transparent);
+  border-radius: 4px;
+}
+
+/* Chat sidebar header: on a narrow panel the session title truncates (flex-1)
+   while the actions stay pinned (shrink-0), so "New" never clips. Below the
+   threshold, collapse the "New" button to an icon-only primary pill to reclaim
+   space for the title. The header sets container-type via [container-type:inline-size],
+   so this native container query resolves against the header's own width. The
+   @tailwindcss/container-queries plugin is not installed, hence hand-written CSS. */
+@container (max-width: 230px) {
+  .chat-sidebar-new-label {
+    display: none;
+  }
+  .chat-sidebar-new-button {
+    padding-left: 0.375rem;
+    padding-right: 0.375rem;
+  }
+}
+
+/* Files empty state: lay the two action cards (New file / Ask the agent) side by
+   side once the welcome area is wide enough. The .workspace-welcome wrapper sets
+   container-type via [container-type:inline-size], so this native container query
+   resolves against the available width. Native CSS because the
+   @tailwindcss/container-queries plugin is not installed. */
+@container (min-width: 520px) {
+  .workspace-welcome-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Inbox (org-management window): the context pane is user-sized (see
+   InboxContextSlot), so it is dropped only once the surface cannot hold the
+   narrowest pane beside the narrowest list -- 280 + 320 in inboxPreferences.
+   Above that the drag clamp keeps both readable; the old 900px threshold hid
+   the pane at widths where it fits perfectly well.
+   .inbox-surface sets container-type/name via [container-type:inline-size], so
+   this resolves against the surface itself rather than the OS window (the left
+   nav is 200px of it). Qualified by .inbox-surface so it outranks the
+   equal-specificity Tailwind `flex` utility on the slot. Native CSS because the
+   @tailwindcss/container-queries plugin is not installed. */
+@container inbox-surface (max-width: 600px) {
+  .inbox-surface .inbox-context-slot {
+    display: none;
+  }
+}
+
+/* Narrow inbox rows: drop the org/project footer and the source glyph before
+   the preview text starts wrapping to three lines. Qualified by .inbox-surface
+   so it outranks the equal-specificity Tailwind `flex` utility on those
+   elements -- an unqualified `.inbox-row-footer { display: none }` loses that
+   tie and the rule silently does nothing. */
+@container inbox-surface (max-width: 560px) {
+  .inbox-surface .inbox-row-footer,
+  .inbox-surface .inbox-row-source-icon {
+    display: none;
+  }
+}
+
+/* Shared comment surface (rooms, document discussions, DMs, tracker comments,
+   inline document comments): the same rows serve a full-width room and a ~300px
+   conversation panel beside a tracker. .comment-thread carries both
+   [container-type:inline-size] and [container-name:comment-surface] -- the name
+   is a separate utility, and without it these queries match nothing -- so they
+   resolve against the panel rather than the OS window. Native CSS because the
+   @tailwindcss/container-queries plugin is not installed.
+
+   Selectors are qualified with .comment-thread so they outrank the
+   equal-specificity Tailwind utilities on the same elements -- an unqualified
+   rule loses that tie and silently does nothing. */
+@container comment-surface (max-width: 420px) {
+  /* A pill's secondary line and status chip are the first thing to go: the
+     primary label still identifies the target, and three-line pills make a
+     narrow panel unreadable. */
+  .comment-thread .resource-pill-secondary,
+  .comment-thread .resource-pill-state {
+    display: none;
+  }
+  /* Reclaim the avatar gutter; the avatar shrinks with it. */
+  .comment-thread .comment-row-gutter {
+    width: 1.25rem;
+  }
+  .comment-thread .comment-row-avatar {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+  .comment-thread .comment-row {
+    gap: 0.375rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+}
+
+@container comment-surface (max-width: 340px) {
+  /* Below this the composer preview costs more vertical space than it earns;
+     the attachment tray still confirms what is referenced. */
+  .comment-thread .comment-composer-preview {
+    display: none;
+  }
+  /* The session chip's label is redundant with the row header at this width. */
+  .comment-thread .comment-row-session-chip-label {
+    display: none;
+  }
+}

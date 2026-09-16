@@ -1,0 +1,13 @@
+✔ one isolated profile overrides inherited endpoints, credentials and launch arguments (2.639042ms)
+✔ refraction is an explicit exact-value experiment and does not admit other Vite overrides (1.867792ms)
+✔ profile initialization preserves data and refuses foreign or linked profiles (5.65025ms)
+✔ stop refuses an identity mismatch and terminates only its owned process group (397.848541ms)
+✔ local Pi startup is explicit, isolated from demo, and does not inherit credentials (3.978417ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 543.305209
