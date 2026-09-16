@@ -1550,6 +1550,7 @@ export const TrackerMainView: React.FC<TrackerMainViewProps> = ({
     <>
       {displaySurface === 'execution' ? (
             <BabelExecutionBoard
+              mode={babelDemoSource?.mode}
               items={executionItems}
               selectedItemId={selectedItemId}
               onItemSelect={handleItemSelect}
@@ -1558,7 +1559,7 @@ export const TrackerMainView: React.FC<TrackerMainViewProps> = ({
               onCreateInTodo={() => handleNewItem(filterType !== 'all' ? filterType : 'task')}
               canCreateInTodo={filterType === 'all' || filterType === 'task' || filterType === 'bug'}
               currentIdentity={currentIdentity}
-              scopeNote={babelScopeUnavailable ? '演示服务未接入，未按项目或设备筛选，也不显示在线。' : undefined}
+              scopeNote={babelScopeUnavailable ? '服务未接入，项目或设备状态尚未确认。' : undefined}
             />
           ) : personalStateRequired && !personalStateHydrated ? (
             <div className="h-full flex items-center justify-center text-sm text-nim-muted" data-testid="tracker-personal-state-loading">

@@ -26,6 +26,7 @@ import { boardLayoutMode } from './babelWorkbench/babelScope';
 import './babelWorkbench/BabelWorkbench.css';
 
 interface BabelExecutionBoardProps {
+  mode?: 'demo' | 'local';
   items: TrackerRecord[];
   selectedItemId?: string | null;
   onItemSelect?: (itemId: string) => void;
@@ -42,6 +43,7 @@ interface CardMenuState {
 }
 
 export const BabelExecutionBoard: React.FC<BabelExecutionBoardProps> = ({
+  mode = 'demo',
   items,
   selectedItemId,
   onItemSelect,
@@ -203,6 +205,9 @@ export const BabelExecutionBoard: React.FC<BabelExecutionBoardProps> = ({
         ) : null}
       </header>
       <div className="babel-column-cards min-h-0 flex-1 overflow-auto">
+        {mode === 'local' && stage === 'TODO' && grouped.TODO.length === 0 ? (
+          <p className="px-3 py-2 text-[12px] text-nim-muted">新建任务后，在详情中确认目录与模型并开始执行。</p>
+        ) : null}
         {grouped[stage].map((item, index) => renderCard(item, stage, index))}
       </div>
     </section>
@@ -225,7 +230,7 @@ export const BabelExecutionBoard: React.FC<BabelExecutionBoardProps> = ({
       }}
     >
       <div className="babel-board-context shrink-0">
-        <span className="babel-demo-badge">演示数据</span>
+        <span className="babel-demo-badge">{mode === 'local' ? '本机 Pi' : '演示数据'}</span>
         <span>{items.length} 条记录</span>
         <span className="babel-board-hint">卡片菜单可归档或恢复</span>
         {scopeNote ? <span className="babel-board-scope-note" role="status">{scopeNote}</span> : null}

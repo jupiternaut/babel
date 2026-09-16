@@ -136,3 +136,26 @@ it('refreshes scope after authoritative events, keeps the last snapshot on disco
   unmount();
   expect(unsubscribe).toHaveBeenCalledOnce();
 });
+
+it('uses authoritative local mode for navigation and preserves its identity after disconnect', async () => {
+  let notify: () => void = () => undefined;
+  let connected = true;
+  const source = {
+    projectId: 'p', mode: 'demo',
+    subscribe: (listener: () => void) => { notify = listener; return () => undefined; },
+    queryRaw: async (name: string) => {
+      if (!connected) throw new Error('disconnected');
+      if (name === 'task.list') return { mode: 'local', items: [{ trackerId: 'a', deviceId: 'local', runStatus: 'executing' }] };
+      if (name === 'device.list') return { mode: 'local', devices: [{ id: 'local', label: '本机', displayStatus: '已配置', available: true }] };
+      return { mode: 'local', projects: [{ id: 'p', name: '项目' }] };
+    },
+  } as unknown as BabelDemoTrackerDataSource;
+  const { result } = renderHook(() => useBabelNavQuery(source, 'p', null));
+  await waitFor(() => expect(result.current.connection).toBe('local'));
+  expect(result.current.mode).toBe('local');
+  expect(result.current.devices[0]).toMatchObject({ demo: false, activeRuns: 1 });
+  await act(async () => { connected = false; notify(); });
+  expect(result.current.connection).toBe('unavailable');
+  expect(result.current.mode).toBe('local');
+  expect(result.current.listedIds).toEqual(new Set(['a']));
+});

@@ -58,8 +58,8 @@ export const BabelWorkbenchNav: React.FC<BabelWorkbenchNavProps> = ({
           <span>项目文件</span>
           {onOpenFiles ? null : <span className="text-[10px] text-nim-faint">未接入此侧栏</span>}
         </button>
-        <DisabledRow label="Agent 会话" reason="从宿主顶栏打开，不在此侧栏启动" />
-        <DisabledRow label="知识与 PDF" reason="未接入（M0）" />
+        <DisabledRow label="Agent 会话" reason={query.mode === 'local' ? '选择任务后打开会话' : '从宿主顶栏打开，不在此侧栏启动'} />
+        <DisabledRow label="知识与 PDF" reason="尚未接入" />
         <p className="babel-workspace-label px-2 pt-1">{workspaceLabel}</p>
       </NavGroup>
 
@@ -82,7 +82,7 @@ export const BabelWorkbenchNav: React.FC<BabelWorkbenchNavProps> = ({
             data-testid={`babel-nav-project-${project.id}`}
           >
             <span className="min-w-0 truncate">{project.name}</span>
-            <span className="shrink-0 text-[10px] text-nim-faint">{query.boundProjectId && project.id !== query.boundProjectId ? '未绑定工作区' : '演示'}</span>
+            <span className="shrink-0 text-[10px] text-nim-faint">{query.boundProjectId && project.id !== query.boundProjectId ? '未绑定工作区' : query.mode === 'local' ? '本机' : '演示'}</span>
           </button>
         ))}
         {!unavailable && query.projects.length === 0 ? (
@@ -149,22 +149,22 @@ export const BabelWorkbenchFooter: React.FC<{
   query: BabelNavQuery;
 }> = ({ query }) => (
   <div className="babel-workbench-footer shrink-0 text-[11px] text-nim-muted" data-testid="babel-workbench-footer">
-    <p className="font-medium text-nim">{query.demoLabel || '演示数据'}</p>
-    <p>{query.connection === 'demo' ? '演示服务已连接' : query.connection === 'unavailable' ? '演示服务未接入' : '未连接演示服务'}</p>
+    <p className="font-medium text-nim">{query.demoLabel || (query.mode === 'local' ? '本机 Pi' : '演示数据')}</p>
+    <p>{query.connection === 'local' ? '本机 Pi 服务已连接' : query.connection === 'demo' ? '演示服务已连接' : query.connection === 'unavailable' ? '服务未接入' : '正在连接服务'}</p>
     {query.connectionNote ? <p className="text-nim-faint">{query.connectionNote}</p> : null}
   </div>
 );
 
-export const BabelWorkbenchExtras: React.FC = () => (
+export const BabelWorkbenchExtras: React.FC<{ mode?: 'demo' | 'local' }> = ({ mode = 'demo' }) => (
   <div data-testid="babel-workbench-extras">
     <NavGroup title="集成">
-      <DisabledRow label="Google Tasks" reason="未接入（M0）" />
-      <DisabledRow label="Pi" reason="未接入（M0）" />
+      <DisabledRow label="Google Tasks" reason="尚未接入" />
+      <DisabledRow label="Pi" reason={mode === 'local' ? '从任务会话执行' : '尚未接入'} />
     </NavGroup>
     <NavGroup title="运维">
-      <DisabledRow label="GitLab" reason="未接入（M0）" />
-      <DisabledRow label="MediaWiki" reason="未接入（M0）" />
-      <DisabledRow label="Hook 管理" reason="未接入（M0）" />
+      <DisabledRow label="GitLab" reason="尚未接入" />
+      <DisabledRow label="MediaWiki" reason="尚未接入" />
+      <DisabledRow label="Hook 管理" reason="尚未接入" />
     </NavGroup>
   </div>
 );

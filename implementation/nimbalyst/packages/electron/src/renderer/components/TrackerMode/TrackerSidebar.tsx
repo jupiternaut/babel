@@ -575,11 +575,11 @@ export const TrackerSidebar: React.FC<TrackerSidebarProps> = ({
           onOpenFiles={babelNav.onOpenFiles}
         />
       ) : null}
-      {babelNav ? <details className="babel-diagnostics px-3 py-2 text-[12px] text-nim-muted">
+      {babelNav && babelNav.query.mode !== 'local' ? <details className="babel-diagnostics px-3 py-2 text-[12px] text-nim-muted">
         <summary className="cursor-pointer">连接与集成诊断</summary>
       {babelNav ? (
         <BabelConnectionSettings
-          query={babelNav.query}
+          query={{ ...babelNav.query, connection: babelNav.query.connection === 'local' ? 'unavailable' : babelNav.query.connection }}
           projectId={babelNav.projectId}
           deviceId={babelNav.deviceId}
         />
@@ -680,7 +680,7 @@ export const TrackerSidebar: React.FC<TrackerSidebarProps> = ({
               </TrackerOwnershipSection>
             ))}
         </div>
-        {babelNav ? <BabelWorkbenchExtras /> : null}
+        {babelNav ? <BabelWorkbenchExtras mode={babelNav.query.mode} /> : null}
       </div>
       {babelNav ? <BabelWorkbenchFooter query={babelNav.query} /> : null}
       </div>

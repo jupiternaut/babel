@@ -35,7 +35,7 @@ it('authenticates only in main and fixes the request URL and project', async () 
 it('rejects foreign page, subframe, workspace and project before reading credentials', async () => {
   const subframe = event(); subframe.senderFrame = { url: subframe.senderFrame.url };
   for (const args of [[event('http://localhost:5273/foreign'), '/tmp/pi-work', body], [subframe, '/tmp/pi-work', body], [event(), '/tmp/other', body], [event(), '/tmp/pi-work', { ...body, projectId: 'other' }], [event(), '/tmp/pi-work', { ...body, actor: { role: 'admin' } }]] as const) {
-    expect((await call(...args)).ok).toBe(false);
+    expect((await call(args[0], args[1], args[2])).ok).toBe(false);
   }
   mocks.activeWorkspace.mockReturnValue('/tmp/another-active-workspace');
   expect((await call()).ok).toBe(false);
