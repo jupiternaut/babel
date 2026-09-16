@@ -80,3 +80,34 @@ test('stop refuses an identity mismatch and terminates only its owned process gr
   assert.doesNotThrow(() => process.kill(unrelated.pid, 0));
   await stopOwned(identity, { graceMs: 100 });
 });
+
+test('local Pi startup is explicit, isolated from demo, and does not inherit credentials', t => {
+  const directory = mkdtempSync(path.join(tmpdir(), 'babel-local-config-'));
+  t.after(() => rmSync(directory, { recursive: true, force: true }));
+  const root = path.join(directory, 'profile');
+  const file = path.join(directory, 'local.json');
+  const workdir = path.join(directory, 'code'); mkdirSync(workdir);
+  const local = { projectId: 'explicit-project', name: '本地项目', workdir, executable: '/explicit/pi',
+    agentDir: path.join(root, 'local/pi-agent'), provider: 'explicit-provider', model: 'explicit-model' };
+  writeFileSync(file, JSON.stringify(local));
+  const env = { BABEL_MODE: 'local', BABEL_LOCAL_PI_CONFIG: file, BABEL_SERVICE_TOKEN: 'never-inherit', OPENAI_API_KEY: 'never-inherit' };
+  const config = configuration(root, env);
+  assert.deepEqual(config.ports, { babel: 7783, vite: 5274, cdp: 9224 });
+  assert.equal(config.env.BABEL_PROFILE, path.join(root, 'local'));
+  assert.equal(config.env.BABEL_PROJECT_ID, local.projectId);
+  assert.equal(config.env.BABEL_DEMO_WORKSPACE, config.paths.workspace);
+  assert.equal(config.env.BABEL_ENDPOINT, 'http://127.0.0.1:7783');
+  assert.equal(config.env.BABEL_MODE, 'local');
+  assert.equal(config.env.BABEL_LOCAL_PI_CONFIG, file);
+  assert.equal(config.env.BABEL_SERVICE_TOKEN, undefined);
+  assert.equal(config.env.OPENAI_API_KEY, undefined);
+  assert.equal(config.serviceEntry, 'src/server/main.ts');
+  prepareProfile(root, '/checkout', 'local');
+  assert.throws(() => prepareProfile(root, '/checkout'), /another execution mode/);
+  assert.throws(() => configuration(root, { BABEL_LOCAL_PI_CONFIG: file }), /BABEL_MODE=local/);
+  assert.throws(() => configuration(root, { BABEL_MODE: 'local' }), /absolute JSON file/);
+  writeFileSync(file, JSON.stringify({ ...local, agentDir: '/personal/.pi/agent' }));
+  assert.throws(() => configuration(root, env), /dedicated/);
+  writeFileSync(file, JSON.stringify({ ...local, model: '' }));
+  assert.throws(() => configuration(root, env), /requires model/);
+});

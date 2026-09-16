@@ -19,7 +19,22 @@ const readJson = file => JSON.parse(readFileSync(file, 'utf8'));
 export function configuration(profile, environment = process.env, nodePath = process.execPath) {
   if (!path.isAbsolute(profile)) throw new Error('--profile must be an absolute path');
   const root = path.resolve(profile);
-  const ports = { babel: 7780, vite: 5273, cdp: 9223 };
+  const mode = environment.BABEL_MODE || 'demo';
+  if (!['demo', 'local'].includes(mode)) throw new Error('BABEL_MODE must be demo or local');
+  let localConfig;
+  if (mode === 'local') {
+    if (!environment.BABEL_LOCAL_PI_CONFIG || !path.isAbsolute(environment.BABEL_LOCAL_PI_CONFIG)) throw new Error('Local mode requires BABEL_LOCAL_PI_CONFIG as an absolute JSON file path');
+    localConfig = readJson(environment.BABEL_LOCAL_PI_CONFIG);
+    if (!localConfig || typeof localConfig !== 'object' || Array.isArray(localConfig)) throw new Error('Invalid local Pi configuration');
+    for (const key of ['projectId', 'name', 'workdir', 'executable', 'agentDir', 'provider', 'model']) {
+      if (typeof localConfig[key] !== 'string' || !localConfig[key].trim()) throw new Error(`Local Pi configuration requires ${key}`);
+    }
+    for (const key of ['workdir', 'executable', 'agentDir']) {
+      if (!path.isAbsolute(localConfig[key])) throw new Error(`Local Pi ${key} must be absolute`);
+    }
+    if (path.resolve(localConfig.agentDir) !== path.join(root, 'local/pi-agent')) throw new Error('Local Pi agentDir must be the dedicated <profile>/local/pi-agent directory');
+  } else if (environment.BABEL_LOCAL_PI_CONFIG) throw new Error('Set BABEL_MODE=local to use BABEL_LOCAL_PI_CONFIG');
+  const ports = mode === 'local' ? { babel: 7783, vite: 5274, cdp: 9224 } : { babel: 7780, vite: 5273, cdp: 9223 };
   for (const [key, variable] of Object.entries({ babel: 'BABEL_PORT', vite: 'VITE_PORT', cdp: 'NIMBALYST_CDP_PORT' })) {
     if (environment[variable]) ports[key] = Number(environment[variable]);
     if (!Number.isInteger(ports[key]) || ports[key] < 1024 || ports[key] > 65535) throw new Error(`Invalid ${variable}`);
@@ -29,28 +44,30 @@ export function configuration(profile, environment = process.env, nodePath = pro
   const paths = {
     root, demo: path.join(root, 'demo'), electron: path.join(root, 'electron'),
     system: path.join(root, 'system'), logs: path.join(root, 'logs'), cache: path.join(root, 'cache'),
-    workspace: path.join(root, 'demo/workspaces/babel'),
+    workspace: localConfig ? realpathSync(localConfig.workdir) : path.join(root, 'demo/workspaces/babel'),
+    service: path.join(root, mode === 'local' ? 'local' : 'demo'),
   };
   const inherited = Object.fromEntries(Object.entries(environment).filter(([key]) =>
     !/^(BABEL_|NIMBALYST_|ELECTRON_|VITE_BABEL_|PLAYWRIGHT)/.test(key)));
   const env = {
     ...inherited, PATH: `${path.dirname(nodePath)}${path.delimiter}${environment.PATH || ''}`,
-    BABEL_PROFILE: paths.demo, BABEL_DEMO_WORKSPACE: paths.workspace,
+    BABEL_MODE: mode, BABEL_PROFILE: paths.service, BABEL_DEMO_WORKSPACE: paths.workspace,
     BABEL_ENDPOINT: `http://127.0.0.1:${ports.babel}`, VITE_BABEL_ENDPOINT: `http://127.0.0.1:${ports.babel}`,
-    BABEL_PROJECT_ID: 'fixture-project-babel', BABEL_PORT: String(ports.babel),
+    BABEL_PROJECT_ID: localConfig?.projectId ?? 'fixture-project-babel', BABEL_PORT: String(ports.babel),
     NIMBALYST_USER_DATA_DIR: paths.electron, NIMBALYST_USER_DATA_PATH: paths.electron,
     BABEL_SYSTEM_PROFILE: paths.system,
     NIMBALYST_CDP_PORT: String(ports.cdp), VITE_PORT: String(ports.vite),
     ELECTRON_ENTRY: `${output}/main/index.js`, NODE_ENV: 'development', npm_config_cache: paths.cache,
   };
+  if (mode === 'local') env.BABEL_LOCAL_PI_CONFIG = environment.BABEL_LOCAL_PI_CONFIG;
   const experiments = { glassRefraction: environment.VITE_BABEL_GLASS_REFRACTION === 'true' };
   if (experiments.glassRefraction) env.VITE_BABEL_GLASS_REFRACTION = 'true';
   // Never borrow credentials or Node/Electron launch overrides from the caller.
   for (const key of ['NODE_OPTIONS', 'NODE_PATH', 'REMOTE_DEBUGGING_PORT', 'V8_INSPECTOR_PORT', 'V8_INSPECTOR_BRK_PORT', 'NO_SANDBOX', 'RUN_ONE_DEV_MODE', 'ANTHROPIC_API_KEY', 'OPENAI_API_KEY']) delete env[key];
-  return { paths, ports, output, env, experiments };
+  return { paths, ports, output, env, experiments, mode, serviceEntry: mode === 'local' ? 'src/server/main.ts' : 'scripts/acceptance-server.ts' };
 }
 
-export function prepareProfile(root, repository = repo) {
+export function prepareProfile(root, repository = repo, mode = 'demo') {
   const marker = path.join(root, '.babel-macos-dev.json');
   if (existsSync(root)) {
     if (lstatSync(root).isSymbolicLink()) throw new Error('Profile root must not be a symlink');
@@ -60,8 +77,9 @@ export function prepareProfile(root, repository = repo) {
   if (existsSync(marker)) {
     const owner = readJson(marker);
     if (owner.version !== 1 || owner.repository !== repository) throw new Error('Profile belongs to another checkout');
-  } else writeFileSync(marker, JSON.stringify({ version: 1, repository }, null, 2), { flag: 'wx', mode: 0o600 });
-  for (const name of ['demo', 'electron', 'system', 'logs', 'cache']) {
+    if ((owner.mode || 'demo') !== mode) throw new Error('Profile belongs to another execution mode; use a separate local profile');
+  } else writeFileSync(marker, JSON.stringify({ version: 1, repository, mode }, null, 2), { flag: 'wx', mode: 0o600 });
+  for (const name of [mode === 'local' ? 'local' : 'demo', 'electron', 'system', 'logs', 'cache']) {
     const dir = path.join(root, name);
     if (existsSync(dir) && lstatSync(dir).isSymbolicLink()) throw new Error(`Refusing a symlinked profile directory: ${dir}`);
     mkdirSync(dir, { recursive: true, mode: 0o700 });
@@ -189,8 +207,8 @@ function versions(env) {
 }
 
 async function start(config) {
-  const { paths, ports, env, output, experiments } = config;
-  prepareProfile(paths.root);
+  const { paths, ports, env, output, experiments, mode, serviceEntry } = config;
+  prepareProfile(paths.root, repo, mode);
   const stateFile = path.join(paths.root, 'run.json');
   const lockFile = path.join(paths.root, 'start.lock');
   let lock;
@@ -209,7 +227,7 @@ async function start(config) {
     }
     for (const port of Object.values(ports)) if (listeners(port).length) throw new Error(`TCP port ${port} is occupied; no process was stopped`);
     const vite = resolveBinary('electron-vite');
-    state = { version: 1, repository: repo, createdAt: new Date().toISOString(), status: 'preparing', versions: versions(env), paths, ports, output, experiments, processes: started };
+    state = { version: 1, repository: repo, createdAt: new Date().toISOString(), status: 'preparing', mode, versions: versions(env), paths, ports, output, experiments, processes: started };
     save(stateFile, state);
     const buildLog = path.join(paths.logs, 'prepare.log');
     const fd = openSync(buildLog, 'a', 0o600);
@@ -220,7 +238,7 @@ async function start(config) {
       }
     } finally { closeSync(fd); }
     abort.signal.throwIfAborted();
-    started.push(await launch(process.execPath, ['--import', 'tsx', 'scripts/acceptance-server.ts'], babel, env, path.join(paths.logs, 'babel.log')));
+    started.push(await launch(process.execPath, ['--import', 'tsx', serviceEntry], babel, env, path.join(paths.logs, 'babel.log')));
     state.status = 'starting'; save(stateFile, state);
     await waitReady(`${env.BABEL_ENDPOINT}/v2/health`, started[0], 30_000, abort.signal);
     localListeners(ports.babel, started[0]);
@@ -265,7 +283,7 @@ async function inspectOrStop(profile, stop) {
 
 export async function main(args = process.argv.slice(2)) {
   if (!args.length || args.includes('--help')) {
-    console.log('Usage: node scripts/dev-macos.mjs start|status|stop [--profile /absolute/path]\nNode >=24, npm >=11, macOS arm64. BABEL_NODE_BIN selects the Node bin directory.\nOptional ports: BABEL_PORT=7780 VITE_PORT=5273 NIMBALYST_CDP_PORT=9223.\nStart preserves data; stop only signals recorded process identities.');
+    console.log('Usage: node scripts/dev-macos.mjs start|status|stop [--profile /absolute/path]\nNode >=24, npm >=11, macOS arm64. BABEL_NODE_BIN selects the Node bin directory.\nOptional ports: BABEL_PORT=7780 VITE_PORT=5273 NIMBALYST_CDP_PORT=9223. Local Pi: BABEL_MODE=local BABEL_LOCAL_PI_CONFIG=/absolute/config.json (defaults 7783/5274/9224).\nStart preserves data; stop only signals recorded process identities.');
     return;
   }
   const [command, ...rest] = args;
@@ -278,9 +296,12 @@ export async function main(args = process.argv.slice(2)) {
     if (result.error) throw result.error;
     process.exitCode = result.status ?? 1; return;
   }
-  const profile = rest[1] || path.join(homedir(), 'Library/Application Support/Babel/mac-dev');
-  const config = configuration(profile, { ...process.env, PATH: `${bin}${path.delimiter}${process.env.PATH || ''}` });
-  console.log(JSON.stringify(command === 'start' ? await start(config) : await inspectOrStop(config.paths.root, command === 'stop'), null, 2));
+  const profile = rest[1] || path.join(homedir(), 'Library/Application Support/Babel', process.env.BABEL_MODE === 'local' ? 'mac-local-dev' : 'mac-dev');
+  if (!path.isAbsolute(profile)) throw new Error('--profile must be an absolute path');
+  const result = command === 'start'
+    ? await start(configuration(profile, { ...process.env, PATH: `${bin}${path.delimiter}${process.env.PATH || ''}` }))
+    : await inspectOrStop(path.resolve(profile), command === 'stop');
+  console.log(JSON.stringify(result, null, 2));
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === script) {

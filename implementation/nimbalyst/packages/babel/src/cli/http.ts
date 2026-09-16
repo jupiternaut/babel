@@ -74,7 +74,7 @@ export class CliHttp {
           try {
             const parsed = text ? JSON.parse(text) : {};
             if (parsed && parsed.ok === false && parsed.code) {
-              onError?.(new BabelError(parsed.code as ErrorCode, parsed.message ?? "事件流失败", parsed.details ?? {}, Boolean(parsed.retryable)));
+              onError?.(new BabelError(parsed.code as ErrorCode, parsed.message ?? "事件流失败", { ...parsed.details, ...(parsed.mode === "local" ? { mode: "local" } : {}) }, Boolean(parsed.retryable)));
               return;
             }
           } catch {
@@ -102,7 +102,7 @@ export class CliHttp {
       res.on("error", (error) => onError?.(error));
     });
     req.on("error", (error) => {
-      onError?.(new BabelError("UNAVAILABLE", `无法连接演示服务 ${this.endpoint}`, { cause: String(error) }, true));
+      onError?.(new BabelError("UNAVAILABLE", `无法连接服务 ${this.endpoint}`, { cause: String(error) }, true));
     });
     req.end();
     return {
@@ -137,7 +137,7 @@ export class CliHttp {
           try {
             const parsed = text ? JSON.parse(text) : {};
             if (parsed && parsed.ok === false && parsed.code) {
-              reject(new BabelError(parsed.code as ErrorCode, parsed.message ?? "请求失败", parsed.details ?? {}, Boolean(parsed.retryable)));
+              reject(new BabelError(parsed.code as ErrorCode, parsed.message ?? "请求失败", { ...parsed.details, ...(parsed.mode === "local" ? { mode: "local" } : {}) }, Boolean(parsed.retryable)));
               return;
             }
             resolve(parsed as T);
@@ -150,7 +150,7 @@ export class CliHttp {
         req.destroy(new BabelError("WAIT_TIMEOUT", "请求超时", { endpoint: this.endpoint }, true));
       });
       req.on("error", (error) => {
-        reject(new BabelError("UNAVAILABLE", `无法连接演示服务 ${this.endpoint}`, { cause: String(error) }, true));
+        reject(new BabelError("UNAVAILABLE", `无法连接服务 ${this.endpoint}`, { cause: String(error) }, true));
       });
       if (payload) req.write(payload);
       req.end();

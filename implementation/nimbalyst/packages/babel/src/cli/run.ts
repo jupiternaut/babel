@@ -83,7 +83,7 @@ function fail(io: CliIo, error: unknown): number {
     retryable: babel.retryable,
     details: babel.details,
     exitCode: EXIT_BY_CODE[babel.code],
-    mode: "demo" as const,
+    mode: babel.details.mode === "local" ? "local" as const : "demo" as const,
   };
   io.stdout.write(`${JSON.stringify(body)}\n`);
   if (babel.code === "USAGE") {
@@ -438,12 +438,23 @@ async function dispatch(flags: CliFlags, io: CliIo): Promise<unknown> {
   if (resource === "run") {
     const projectId = requireProject(flags);
     if (verb === "start") {
+      const id = trackerId(flags);
+      const input = flags.inputPath ? await readInputJson(flags.inputPath) : {};
+      const detail = await http.query<{ mode?: "demo" | "local" }>({ name: "task.get", projectId, input: { trackerId: id } });
+      if (detail.mode === "local") {
+        const target = input.executionTarget;
+        if (flags.expectedRevision == null || !flags.idempotencyKey?.trim() || !target || typeof target !== "object"
+          || Array.isArray(target) || ["workdir", "provider", "model"].some(key => typeof (target as Record<string, unknown>)[key] !== "string" || !(target as Record<string, string>)[key]?.trim())) {
+          throw new BabelError("USAGE", "本地 Pi 启动需明确 --expected-revision、--idempotency-key 和 --input.executionTarget {workdir,provider,model}；先用 task get 核对目标，不会自动确认", { mode: "local" });
+        }
+      }
       const result = annotateCommand(await http.command({
         name: "run.start",
         projectId,
         input: {
-          trackerId: trackerId(flags),
+          trackerId: id,
           ...(flags.device ? { deviceId: flags.device } : {}),
+          ...(input.executionTarget ? { executionTarget: input.executionTarget } : {}),
         },
         expectedRevision: flags.expectedRevision,
         idempotencyKey: flags.idempotencyKey,

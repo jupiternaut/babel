@@ -1,4 +1,4 @@
-export const HELP_TEXT = `babel — 巴别塔 M0 非交互 CLI（演示数据，经 HTTP 连接同一 demo 服务）
+export const HELP_TEXT = `babel — 巴别塔非交互 CLI（经 HTTP 连接同一 demo 或本地 Pi 服务）
 
 用法:
   babel <资源> <动作> [选项]
@@ -62,6 +62,7 @@ export const HELP_TEXT = `babel — 巴别塔 M0 非交互 CLI（演示数据，
 说明:
   标准输出只含 JSON 或 JSONL，不含 ANSI。诊断写 stderr。
   pi probe 仅用空配置检查真实 Pi RPC，不调用模型、不接任务；输出 mode=pi-rpc-probe，不是 demo 执行。
+  本地 Pi run start 必须带 --expected-revision、--idempotency-key 和 --input 文件；文件中 executionTarget 为已确认的 {workdir,provider,model}。先 task get 核对，CLI 不自动复制并确认目标。
   启动成功只表示 command accepted；settled=false 时 run 尚未完成。
   events watch 的 Ctrl-C 只断开订阅，不会取消 run。
   task list --attention-only 只看等待输入、失败、失联、待验收，保留四阶段并排除归档。
