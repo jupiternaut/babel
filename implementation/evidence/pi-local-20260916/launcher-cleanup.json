@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "repository": "/Users/gengrf/Projects/babel",
+  "createdAt": "2026-09-16T13:46:14.063Z",
+  "status": "not-running",
+  "mode": "local",
+  "versions": {
+    "node": "v24.15.0",
+    "nodePath": "/opt/homebrew/Cellar/node@24/24.15.0/bin/node",
+    "npm": "11.12.1",
+    "arch": "arm64",
+    "macOS": "27.0",
+    "xcode": "/Applications/Xcode.app/Contents/Developer",
+    "commit": "7b24529cbb967dc5e3ac43880d545fc4a601d3ee",
+    "worktreeDirty": true,
+    "electron": "43.2.0",
+    "electronVite": "4.0.1"
+  },
+  "paths": {
+    "root": "/Users/gengrf/Library/Application Support/Babel/mac-pi-protocol-final-20260916",
+    "demo": "/Users/gengrf/Library/Application Support/Babel/mac-pi-protocol-final-20260916/demo",
+    "electron": "/Users/gengrf/Library/Application Support/Babel/mac-pi-protocol-final-20260916/electron",
+    "system": "/Users/gengrf/Library/Application Support/Babel/mac-pi-protocol-final-20260916/system",
+    "logs": "/Users/gengrf/Library/Application Support/Babel/mac-pi-protocol-final-20260916/logs",
+    "cache": "/Users/gengrf/Library/Application Support/Babel/mac-pi-protocol-final-20260916/cache",
+    "workspace": "/Users/gengrf/Library/Application Support/Babel/pi-protocol-workspace-20260916",
+    "service": "/Users/gengrf/Library/Application Support/Babel/mac-pi-protocol-final-20260916/local"
+  },
+  "ports": {
+    "babel": 7783,
+    "vite": 5274,
+    "cdp": 9224
+  },
+  "output": "out-macos-552dfd2e7b",
+  "experiments": {
+    "glassRefraction": false
+  },
+  "processes": [
+    {
+      "pid": 31274,
+      "group": 31274,
+      "started": "Wed Sep 16 08:46:15 2026",
+      "command": "/opt/homebrew/Cellar/node@24/24.15.0/bin/node --import tsx src/server/main.ts",
+      "logFile": "/Users/gengrf/Library/Application Support/Babel/mac-pi-protocol-final-20260916/logs/babel.log",
+      "args": [
+        "--import",
+        "tsx",
+        "src/server/main.ts"
+      ],
+      "cwd": "/Users/gengrf/Projects/babel/implementation/nimbalyst/packages/babel",
+      "alive": false
+    },
+    {
+      "pid": 31282,
+      "group": 31282,
+      "started": "Wed Sep 16 08:46:16 2026",
+      "command": "/opt/homebrew/Cellar/node@24/24.15.0/bin/node /Users/gengrf/Projects/babel/implementation/nimbalyst/node_modules/electron-vite/bin/electron-vite.js dev --outDir=out-macos-552dfd2e7b -- --remote-debugging-address=127.0.0.1 --workspace /Users/gengrf/Library/Application Support/Babel/pi-protocol-workspace-20260916",
+      "logFile": "/Users/gengrf/Library/Application Support/Babel/mac-pi-protocol-final-20260916/logs/electron.log",
+      "args": [
+        "/Users/gengrf/Projects/babel/implementation/nimbalyst/node_modules/electron-vite/bin/electron-vite.js",
+        "dev",
+        "--outDir=out-macos-552dfd2e7b",
+        "--",
+        "--remote-debugging-address=127.0.0.1",
+        "--workspace",
+        "/Users/gengrf/Library/Application Support/Babel/pi-protocol-workspace-20260916"
+      ],
+      "cwd": "/Users/gengrf/Projects/babel/implementation/nimbalyst/packages/electron",
+      "alive": false
+    }
+  ],
+  "stoppedAt": "2026-09-16T13:47:29.633Z",
+  "lastStartStatus": "stopped",
+  "listeners": {
+    "babel": [],
+    "vite": [],
+    "cdp": []
+  }
+}

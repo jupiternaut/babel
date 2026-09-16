@@ -1,0 +1,10 @@
+Error: Command failed: /opt/homebrew/Cellar/node@24/24.15.0/bin/node --import tsx src/cli/main.ts run cancel --id run-8a0634b2-ca6b-4fb0-b174-022e34846b74 --idempotency-key cleanup-run-8a0634b2-ca6b-4fb0-b174-022e34846b74 --project pi-protocol-validation --endpoint http://127.0.0.1:7783 --json
+(node:31022) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+LOST_UNRECONCILED: 本服务不再持有原 Pi 进程，不能声称已停止
+
+(node:31022) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+LOST_UNRECONCILED: 本服务不再持有原 Pi 进程，不能声称已停止
+
+{"ok":false,"code":"LOST_UNRECONCILED","message":"本服务不再持有原 Pi 进程，不能声称已停止","retryable":false,"details":{},"exitCode":9,"mode":"demo"}

@@ -34,8 +34,8 @@
     },
     {
       "path": "AGENTS.md",
-      "bytes": 12563,
-      "sha256": "581dacec0c2f93e6f70d48aec475de32ece2e30a675b4545fdd7089266bd1210",
+      "bytes": 13003,
+      "sha256": "2ac7a1f4f0a3d7228081f9fcc3b8101cc877f928f8a7256c404aad808bcf4173",
       "origin": {
         "kind": "copied_from_development_kit",
         "source_sha256": "8a240ebaf2b2cd160d86362dc662a712b2dd5adc80e10e965de13a63b5ad19c0",
@@ -202,8 +202,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 8464,
-      "sha256": "a7f645bdbfa4b92c8329abac5891d4ba0871a10143f94e6aab1406008ba4381c",
+      "bytes": 8884,
+      "sha256": "fc67d267e419310637b9f29df4e1dd81d2a7fa52babe7d27485a5a42f95aa8ce",
       "origin": {
         "kind": "publication_adaptation",
         "source_sha256": "58b7531abe5795affee8cd6cf3fc3b8f40eb6f40011c177879626b6c9a851ccd",
@@ -271,8 +271,8 @@
     },
     {
       "path": "TASKS.md",
-      "bytes": 19478,
-      "sha256": "c9714123b9b7ae9148f3ebabf97033a7f881e2104dcb5d4847ac55a6aaa8ada1",
+      "bytes": 21719,
+      "sha256": "17255f1aee91b0eab4575f2d79e260ca35f39656388f0a85790042f467f95238",
       "origin": {
         "kind": "publication_entry_or_configuration"
       }
@@ -282,8 +282,8 @@
       "origin": {
         "kind": "macos-development-and-acceptance"
       },
-      "bytes": 34736,
-      "sha256": "3375f3d58e719f6feddb17ea095d2284eaace313e32f194f2f778679ac911e75"
+      "bytes": 39373,
+      "sha256": "e6562eee5716b994cdddab58091f7d73afd5649bca4118f541bffcedbfc2a323"
     },
     {
       "path": "WAYLAND-DEVIN-BENCHMARK.md",
@@ -1440,16 +1440,16 @@
       "origin": {
         "kind": "macos-development-and-acceptance"
       },
-      "bytes": 17057,
-      "sha256": "252f86f1113b632713ea9f8cdb5607b9187d86e540bde3fd79a45fa0a74363e5"
+      "bytes": 19210,
+      "sha256": "8e623b391d9e70320bbe67bb6808596084d6da69cbfa8292bae9e5c77204fbe2"
     },
     {
       "path": "scripts/tests/dev-macos.test.mjs",
       "origin": {
         "kind": "macos-development-and-acceptance"
       },
-      "bytes": 5369,
-      "sha256": "a8feaa6fdc5f8c8e7b60a78dea9345d7decbe2559ef334c6b3cb2263e90883c7"
+      "bytes": 7447,
+      "sha256": "ca6542ee038477d07409af78a31acc676c725dbb017a219ff80a954544e301a2"
     },
     {
       "path": "scripts/verify-package.py",

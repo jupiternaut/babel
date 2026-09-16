@@ -1,0 +1,91 @@
+{
+  "version": 1,
+  "repository": "/Users/gengrf/Projects/babel",
+  "createdAt": "2026-09-16T11:50:02.624Z",
+  "status": "processes-running",
+  "versions": {
+    "node": "v24.15.0",
+    "nodePath": "/opt/homebrew/Cellar/node@24/24.15.0/bin/node",
+    "npm": "11.12.1",
+    "arch": "arm64",
+    "macOS": "27.0",
+    "xcode": "/Applications/Xcode.app/Contents/Developer",
+    "commit": "89c26060fd1c1c5cb8100c649621246d15bea06c",
+    "worktreeDirty": true,
+    "electron": "43.2.0",
+    "electronVite": "4.0.1"
+  },
+  "paths": {
+    "root": "/Users/gengrf/Library/Application Support/Babel/mac-glass-script-20260916",
+    "demo": "/Users/gengrf/Library/Application Support/Babel/mac-glass-script-20260916/demo",
+    "electron": "/Users/gengrf/Library/Application Support/Babel/mac-glass-script-20260916/electron",
+    "system": "/Users/gengrf/Library/Application Support/Babel/mac-glass-script-20260916/system",
+    "logs": "/Users/gengrf/Library/Application Support/Babel/mac-glass-script-20260916/logs",
+    "cache": "/Users/gengrf/Library/Application Support/Babel/mac-glass-script-20260916/cache",
+    "workspace": "/Users/gengrf/Library/Application Support/Babel/mac-glass-script-20260916/demo/workspaces/babel"
+  },
+  "ports": {
+    "babel": 7780,
+    "vite": 5273,
+    "cdp": 9223
+  },
+  "output": "out-macos-ce837c3d6e",
+  "experiments": {
+    "glassRefraction": false
+  },
+  "processes": [
+    {
+      "pid": 83181,
+      "group": 83181,
+      "started": "Wed Sep 16 06:50:05 2026",
+      "command": "/opt/homebrew/Cellar/node@24/24.15.0/bin/node --import tsx scripts/acceptance-server.ts",
+      "logFile": "/Users/gengrf/Library/Application Support/Babel/mac-glass-script-20260916/logs/babel.log",
+      "args": [
+        "--import",
+        "tsx",
+        "scripts/acceptance-server.ts"
+      ],
+      "cwd": "/Users/gengrf/Projects/babel/implementation/nimbalyst/packages/babel",
+      "alive": true
+    },
+    {
+      "pid": 83193,
+      "group": 83193,
+      "started": "Wed Sep 16 06:50:05 2026",
+      "command": "/opt/homebrew/Cellar/node@24/24.15.0/bin/node /Users/gengrf/Projects/babel/implementation/nimbalyst/node_modules/electron-vite/bin/electron-vite.js dev --outDir=out-macos-ce837c3d6e -- --remote-debugging-address=127.0.0.1 --workspace /Users/gengrf/Library/Application Support/Babel/mac-glass-script-20260916/demo/workspaces/babel",
+      "logFile": "/Users/gengrf/Library/Application Support/Babel/mac-glass-script-20260916/logs/electron.log",
+      "args": [
+        "/Users/gengrf/Projects/babel/implementation/nimbalyst/node_modules/electron-vite/bin/electron-vite.js",
+        "dev",
+        "--outDir=out-macos-ce837c3d6e",
+        "--",
+        "--remote-debugging-address=127.0.0.1",
+        "--workspace",
+        "/Users/gengrf/Library/Application Support/Babel/mac-glass-script-20260916/demo/workspaces/babel"
+      ],
+      "cwd": "/Users/gengrf/Projects/babel/implementation/nimbalyst/packages/electron",
+      "alive": true
+    }
+  ],
+  "lastStartStatus": "ready",
+  "listeners": {
+    "babel": [
+      {
+        "pid": 83181,
+        "address": "127.0.0.1:7780"
+      }
+    ],
+    "vite": [
+      {
+        "pid": 83193,
+        "address": "[::1]:5273"
+      }
+    ],
+    "cdp": [
+      {
+        "pid": 83846,
+        "address": "127.0.0.1:9223"
+      }
+    ]
+  }
+}

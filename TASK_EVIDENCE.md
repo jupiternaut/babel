@@ -280,3 +280,14 @@ Mac 平台 Apple M3 / macOS27 / Node24.15，profile `mac-glass-script-20260916`�
 日志根 `/Users/gengrf/Library/Logs/Babel-Dev/pi-rpc-20260916/`；可移植证据见 [索引](implementation/evidence/pi-rpc-20260916/README.md)、[预检输出](implementation/evidence/pi-rpc-20260916/real-probe.json)、[校验与版本](implementation/evidence/pi-rpc-20260916/validation.json)、[源码哈希](implementation/evidence/pi-rpc-20260916/source-sha256.json)。源码冻结后完成全部检查，再更新文档；不以文档改动重复运行全套测试。
 
 未验证：独立验收、真实模型/工具/文件修改、任务/run/session 绑定、生产持久托管和恢复、GUI/TUI Pi 界面、完整取消/接管、真实 Git Diff、Windows/Ubuntu 及其他 Pi 版本。本片无视觉改动，不重复引用旧截图为新验收。下一片将已验证的传输接到任务身份、三端日志/输入与实际运行状态；真正调用模型前仍需明确 provider/model/账号范围。
+
+
+## 2026-09-16：M1-02b 本地 Pi 三端任务接入
+
+基线 `e37b51e`，功能源码 `7b24529cbb967dc5e3ac43880d545fc4a601d3ee`；工作目录 `/Users/gengrf/Projects/babel`，分支 `ui/macos-glass`。沿对标报告完成首片 local 模式：保存的 TrackerRecord → 显式目录/模型/revision 确认 → Pi RPC 会话/消息 → 有证据的停止。令牌留主进程，三端共享身份、守卫与单写者存储；未另造推理或工具执行引擎。
+
+[完整证据](implementation/evidence/pi-local-20260916/README.md)包括原生浅深截图、实际 POSIX PTY、CLI 身份读回、失败与修正、源码 SHA-256。完整宿主 14,211 通过/26 跳过，Babel 361 通过/4 跳过；26 工作区类型检查通过。其后修正的消息去重、确认刷新和 Mac EPERM 分别定向验证，最终原生三端协议闭环 1/1 通过。
+
+本次模型提供方为协议替身，不调用真实模型或个人账号；真实 Pi 0.84.1 无凭据握手是上一片独立工程证据。M1-02b 开发列勾选，独立验收列保持空，完整 M1-02 仍不勾。真实 Diff/测试证据、worktree、PR、预览、恢复和计划交互已列入 TASKS 后续稳定 ID。
+
+最终测试实例已停止并保留数据，原演示实例未停止。真实 provider/model 验收等待用户指定专用账号配置。下一步优先工作目录/分支/worktree 与真实差异审查，不用模拟验收完成替代。
